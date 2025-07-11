@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Marketing Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <h1>Email Marketing</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger hidden"></div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <div class="mt-3 text-center">
+                <small>Use: admin / password</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">Email Marketing</div>
+                <nav class="nav">
+                    <a href="#" id="dashboardLink">Dashboard</a>
+                    <a href="#" id="campaignsLink">Campaigns</a>
+                    <a href="#" id="segmentsLink">Segments</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Dashboard View -->
+            <div id="dashboardView">
+                <h1 class="dashboard-title">Marketing Dashboard</h1>
+                <div class="widgets-grid">
+                    <div class="widget campaigns" id="campaignsWidget">
+                        <div class="widget-header">
+                            <div class="widget-title">Email Campaigns</div>
+                            <div class="widget-icon">📧</div>
+                        </div>
+                        <div class="widget-stats" id="campaignStats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalCampaigns">-</div>
+                                <div class="stat-label">Total</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="campaignClicks">-</div>
+                                <div class="stat-label">Clicks</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="campaignOpens">-</div>
+                                <div class="stat-label">Opens</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="campaignFails">-</div>
+                                <div class="stat-label">Fails</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="widget segments" id="segmentsWidget">
+                        <div class="widget-header">
+                            <div class="widget-title">Customer Segments</div>
+                            <div class="widget-icon">👥</div>
+                        </div>
+                        <div class="widget-stats" id="segmentStats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalSegments">-</div>
+                                <div class="stat-label">Segments</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalCustomers">-</div>
+                                <div class="stat-label">Customers</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="campaign-list" id="recentCampaigns">
+                    <h2 style="margin-bottom: 20px;">Recent Campaigns</h2>
+                    <div id="campaignsList"></div>
+                </div>
+            </div>
+
+            <!-- Campaigns List View -->
+            <div id="campaignsListView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Email Campaigns</h1>
+                    <button class="btn btn-success" id="createCampaignBtn">Create Campaign</button>
+                </div>
+                <div id="allCampaignsList"></div>
+                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
+            </div>
+
+            <!-- Campaign Detail View -->
+            <div id="campaignDetailView" class="hidden">
+                <div class="campaign-detail">
+                    <div class="detail-header">
+                        <h1 class="detail-title" id="campaignDetailTitle">Campaign Details</h1>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary btn-small" id="editCampaignBtn">Edit</button>
+                            <button class="btn btn-danger btn-small" id="deleteCampaignBtn">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-metrics" id="campaignDetailMetrics"></div>
+                </div>
+
+                <div class="email-editor">
+                    <div class="editor-header">
+                        <h2 class="editor-title">Email Design</h2>
+                    </div>
+                    <div class="editor-content" id="emailContent"></div>
+                </div>
+
+                <div class="recipients-table">
+                    <div class="page-header">
+                        <h2>Recipients</h2>
+                        <div class="filters">
+                            <div class="filters-grid">
+                                <div class="form-group">
+                                    <label for="statusFilter">Filter by Status</label>
+                                    <select id="statusFilter">
+                                        <option value="">All</option>
+                                        <option value="sent">Sent</option>
+                                        <option value="bounced">Bounced</option>
+                                        <option value="opened">Opened</option>
+                                        <option value="clicked">Clicked</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="table" id="recipientsTable">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Sent At</th>
+                                    <th>Opened At</th>
+                                    <th>Clicked At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recipientsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <a href="#" class="back-link" id="backToCampaigns">← Back to Campaigns</a>
+            </div>
+
+            <!-- Segments List View -->
+            <div id="segmentsListView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Customer Segments</h1>
+                    <button class="btn btn-success" id="createSegmentBtn">Create Segment</button>
+                </div>
+                <div id="segmentsList"></div>
+                <a href="#" class="back-link" id="backToDashboardFromSegments">← Back to Dashboard</a>
+            </div>
+
+            <!-- Segment Detail View -->
+            <div id="segmentDetailView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="segmentDetailTitle">Segment Details</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-success btn-small" id="addCustomerBtn">Add Customer</button>
+                        <button class="btn btn-secondary btn-small" id="uploadCsvBtn">Upload CSV</button>
+                        <button class="btn btn-danger btn-small" id="deleteSegmentBtn">Delete Segment</button>
+                    </div>
+                </div>
+
+                <div class="recipients-table">
+                    <div class="table-container">
+                        <table class="table" id="segmentCustomersTable">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Added Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="segmentCustomersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <a href="#" class="back-link" id="backToSegmentsList">← Back to Segments</a>
+            </div>
+
+            <!-- Campaign Form View -->
+            <div id="campaignFormView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="campaignFormTitle">Create Campaign</h1>
+                </div>
+                <div class="campaign-detail">
+                    <form id="campaignForm">
+                        <div class="form-group">
+                            <label for="campaignName">Campaign Name</label>
+                            <input type="text" id="campaignName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="campaignSubject">Email Subject</label>
+                            <input type="text" id="campaignSubject" name="subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="campaignSegment">Target Segment</label>
+                            <select id="campaignSegment" name="segmentId" required>
+                                <option value="">Select a segment</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="campaignContent">Email Content (HTML)</label>
+                            <textarea id="campaignContent" name="content" rows="10" required></textarea>
+                        </div>
+                        <div class="page-actions">
+                            <button type="submit" class="btn btn-success">Save Campaign</button>
+                            <button type="button" class="btn btn-secondary" id="cancelCampaignBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Segment Form View -->
+            <div id="segmentFormView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="segmentFormTitle">Create Segment</h1>
+                </div>
+                <div class="campaign-detail">
+                    <form id="segmentForm">
+                        <div class="form-group">
+                            <label for="segmentName">Segment Name</label>
+                            <input type="text" id="segmentNameInput" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="segmentDescription">Description</label>
+                            <textarea id="segmentDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="page-actions">
+                            <button type="submit" class="btn btn-success">Save Segment</button>
+                            <button type="button" class="btn btn-secondary" id="cancelSegmentBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addCustomerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Customer</h2>
+                <button class="modal-close" id="closeCustomerModal">&times;</button>
+            </div>
+            <form id="addCustomerForm">
+                <div class="form-group">
+                    <label for="customerEmail">Email</label>
+                    <input type="email" id="customerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="customerName">Name</label>
+                    <input type="text" id="customerName" name="name" required>
+                </div>
+                <div class="page-actions">
+                    <button type="submit" class="btn btn-success">Add Customer</button>
+                    <button type="button" class="btn btn-secondary" id="cancelAddCustomer">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="uploadCsvModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Upload CSV</h2>
+                <button class="modal-close" id="closeCsvModal">&times;</button>
+            </div>
+            <div class="file-upload" id="csvUpload">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Click to select CSV file or drag and drop</div>
+                <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+            </div>
+            <div class="mt-3">
+                <small>CSV should contain columns: email, name</small>
+            </div>
+            <div class="page-actions mt-3">
+                <button class="btn btn-secondary" id="cancelCsvUpload">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

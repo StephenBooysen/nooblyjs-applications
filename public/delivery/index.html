@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <h1>Delivery Platform</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger hidden"></div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <div class="mt-3 text-center">
+                <small>Use: admin / password</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">🚚 Delivery Platform</div>
+                <nav class="nav">
+                    <a href="#" id="dashboardLink">Dashboard</a>
+                    <a href="#" id="ordersLink">Orders</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Dashboard View -->
+            <div id="dashboardView">
+                <h1 class="dashboard-title">Delivery Dashboard</h1>
+                
+                <!-- Status Widgets -->
+                <div class="widgets-grid">
+                    <div class="widget waiting clickable" onclick="app.filterOrdersByStatus('waiting')">
+                        <div class="widget-icon">📦</div>
+                        <h3>Waiting Orders</h3>
+                        <div class="widget-count" id="waitingCount">-</div>
+                        <div class="widget-status">Ready for pickup</div>
+                    </div>
+                    
+                    <div class="widget delivery clickable" onclick="app.filterOrdersByStatus('delivery')">
+                        <div class="widget-icon">🚚</div>
+                        <h3>Out for Delivery</h3>
+                        <div class="widget-count" id="deliveryCount">-</div>
+                        <div class="widget-status">In transit</div>
+                    </div>
+                    
+                    <div class="widget delivered clickable" onclick="app.filterOrdersByStatus('delivered')">
+                        <div class="widget-icon">✅</div>
+                        <h3>Delivered</h3>
+                        <div class="widget-count" id="deliveredCount">-</div>
+                        <div class="widget-status">Completed today</div>
+                    </div>
+                </div>
+
+                <!-- Orders Section -->
+                <div class="orders-section">
+                    <div class="page-header">
+                        <h2>Orders</h2>
+                        <div class="filters">
+                            <div class="filters-grid">
+                                <div class="form-group">
+                                    <label for="statusFilter">Filter by Status</label>
+                                    <select id="statusFilter">
+                                        <option value="waiting">Waiting</option>
+                                        <option value="delivery">Out for Delivery</option>
+                                        <option value="delivered">Delivered</option>
+                                        <option value="">All Orders</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="order-list" id="ordersList">
+                        <!-- Orders will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders List View -->
+            <div id="ordersView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="ordersTitle">All Orders</h1>
+                </div>
+
+                <div class="filters">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label for="ordersStatusFilter">Filter by Status</label>
+                            <select id="ordersStatusFilter">
+                                <option value="">All Orders</option>
+                                <option value="waiting">Waiting</option>
+                                <option value="delivery">Out for Delivery</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateFilter">Filter by Date</label>
+                            <select id="dateFilter">
+                                <option value="">All Dates</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-list" id="allOrdersList">
+                    <!-- Orders will be populated here -->
+                </div>
+
+                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
+            </div>
+
+            <!-- Order Detail View -->
+            <div id="orderDetailView" class="hidden">
+                <div class="order-detail">
+                    <div class="order-detail-header">
+                        <h1 class="order-detail-title" id="orderDetailTitle">Order Details</h1>
+                        <div class="order-id" id="orderDetailId">#12345</div>
+                    </div>
+                    
+                    <div class="order-info-grid" id="orderInfoGrid">
+                        <!-- Order information will be populated here -->
+                    </div>
+                </div>
+
+                <div class="map-section">
+                    <div class="map-header">
+                        <h2 class="map-title">Delivery Location</h2>
+                    </div>
+                    <div class="map-container" id="mapContainer">
+                        <div class="map-placeholder">
+                            <div class="map-placeholder-icon">📍</div>
+                            <div class="map-placeholder-text">Delivery Address</div>
+                            <div class="map-address" id="mapAddress">Address will be displayed here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline">
+                    <div class="timeline-header">
+                        <h2 class="timeline-title">Delivery Timeline</h2>
+                    </div>
+                    <div id="deliveryTimeline">
+                        <!-- Timeline will be populated here -->
+                    </div>
+                </div>
+
+                <div class="delivery-actions">
+                    <div class="delivery-actions-header">
+                        <h2 class="delivery-actions-title">Delivery Actions</h2>
+                        <div class="current-status">
+                            Current Status: <span class="order-status" id="currentOrderStatus">waiting</span>
+                        </div>
+                    </div>
+                    <div class="delivery-buttons">
+                        <button class="btn btn-success" id="startDeliveryBtn">Start Delivery</button>
+                        <button class="btn btn-warning" id="markDeliveredBtn">Mark as Delivered</button>
+                        <button class="btn btn-danger" id="reportIssueBtn">Report Issue</button>
+                    </div>
+                </div>
+
+                <a href="#" class="back-link" id="backToOrders">← Back to Orders</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

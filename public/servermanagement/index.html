@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <h1>Admin Dashboard</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger hidden"></div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <div class="mt-3 text-center">
+                <small>Use: admin / password</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">Admin Dashboard</div>
+                <nav class="nav">
+                    <a href="#" id="dashboardLink">Dashboard</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="dashboardView">
+                <h1 class="dashboard-title">System Overview</h1>
+                <div class="widgets-grid">
+                    <div class="widget servers" data-type="servers">
+                        <div class="widget-icon">🖥️</div>
+                        <h3>Servers</h3>
+                        <div class="widget-count" id="serversCount">-</div>
+                        <div class="widget-status" id="serversStatus">Loading...</div>
+                    </div>
+                    <div class="widget databases" data-type="databases">
+                        <div class="widget-icon">🗄️</div>
+                        <h3>Databases</h3>
+                        <div class="widget-count" id="databasesCount">-</div>
+                        <div class="widget-status" id="databasesStatus">Loading...</div>
+                    </div>
+                    <div class="widget storage" data-type="storage">
+                        <div class="widget-icon">💾</div>
+                        <h3>Storage</h3>
+                        <div class="widget-count" id="storageCount">-</div>
+                        <div class="widget-status" id="storageStatus">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div id="listView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="listTitle">Items</h1>
+                    <button class="btn btn-success" id="addItemBtn">Add New</button>
+                </div>
+                <div class="items-grid" id="itemsList"></div>
+                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
+            </div>
+
+            <!-- Detail View -->
+            <div id="detailView" class="hidden">
+                <div class="detail-container">
+                    <div class="detail-header">
+                        <h1 class="detail-title" id="detailTitle">Item Details</h1>
+                        <div>
+                            <button class="btn btn-secondary" id="editItemBtn">Edit</button>
+                            <button class="btn btn-danger" id="deleteItemBtn">Delete</button>
+                        </div>
+                    </div>
+                    <div class="detail-info" id="detailInfo"></div>
+                </div>
+                <a href="#" class="back-link" id="backToList">← Back to List</a>
+            </div>
+
+            <!-- Form View -->
+            <div id="formView" class="hidden">
+                <div class="form-container">
+                    <div class="page-header">
+                        <h1 class="page-title" id="formTitle">Add Item</h1>
+                    </div>
+                    <form id="itemForm">
+                        <div id="formFields"></div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Save</button>
+                            <button type="button" class="btn btn-secondary" id="cancelFormBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

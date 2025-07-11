@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <h1>Warehouse Management</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger hidden"></div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <div class="mt-3 text-center">
+                <small>Use: admin / password</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">Warehouse Management</div>
+                <nav class="nav">
+                    <a href="#" id="dashboardLink">Dashboard</a>
+                    <a href="#" id="ordersLink">Orders</a>
+                    <a href="#" id="inventoryLink">Inventory</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Dashboard View -->
+            <div id="dashboardView">
+                <h1 class="dashboard-title">Warehouse Dashboard</h1>
+                
+                <!-- Main Widgets -->
+                <div class="widgets-grid">
+                    <!-- Picking Orders Widget -->
+                    <div class="widget picking">
+                        <div class="widget-header">
+                            <div class="widget-title">Today's Picking</div>
+                            <div class="widget-icon">📦</div>
+                        </div>
+                        <div class="widget-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="waitingOrders">-</div>
+                                <div class="stat-label">Waiting</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="inProgressOrders">-</div>
+                                <div class="stat-label">In Progress</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="doneOrders">-</div>
+                                <div class="stat-label">Done</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="shortPicks">-</div>
+                                <div class="stat-label">Short Picks</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Queues Widget -->
+                    <div class="widget queues">
+                        <div class="widget-header">
+                            <div class="widget-title">Order Queues</div>
+                            <div class="widget-icon">🏗️</div>
+                        </div>
+                        <div class="queue-grid" id="queueGrid">
+                            <!-- Queues will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="orders-section">
+                    <h2 style="margin-bottom: 20px;">Recent Orders</h2>
+                    <div id="recentOrdersList">
+                        <!-- Recent orders will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders List View -->
+            <div id="ordersView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="ordersTitle">All Orders</h1>
+                </div>
+
+                <div class="filters">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label for="statusFilter">Filter by Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="waiting">Waiting</option>
+                                <option value="picking">Picking</option>
+                                <option value="packing">Packing</option>
+                                <option value="despatching">Despatching</option>
+                                <option value="despatched">Despatched</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateFilter">Filter by Date</label>
+                            <select id="dateFilter">
+                                <option value="">All Dates</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-list" id="ordersList">
+                    <!-- Orders will be populated here -->
+                </div>
+
+                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
+            </div>
+
+            <!-- Picking View -->
+            <div id="pickingView" class="hidden">
+                <div class="picking-interface">
+                    <div class="picking-header">
+                        <h1 class="picking-title" id="pickingTitle">Pick Order</h1>
+                        <div class="order-id" id="pickingOrderId">#12345</div>
+                    </div>
+                    
+                    <div class="picking-items" id="pickingItems">
+                        <!-- Picking items will be populated here -->
+                    </div>
+
+                    <div class="page-actions">
+                        <button class="btn btn-success" id="completePickBtn">Complete Pick</button>
+                        <button class="btn btn-warning" id="partialPickBtn">Partial Pick</button>
+                        <button class="btn btn-secondary" id="cancelPickBtn">Cancel</button>
+                    </div>
+                </div>
+
+                <a href="#" class="back-link" id="backToOrders">← Back to Orders</a>
+            </div>
+
+            <!-- Inventory View -->
+            <div id="inventoryView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Inventory Management</h1>
+                    <button class="btn btn-success" id="addItemBtn">Add New Item</button>
+                </div>
+
+                <div class="inventory-grid" id="inventoryGrid">
+                    <!-- Inventory items will be populated here -->
+                </div>
+
+                <a href="#" class="back-link" id="backToDashboardFromInventory">← Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Item Modal -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="itemModalTitle">Add New Item</h2>
+                <button class="modal-close" id="closeItemModal">&times;</button>
+            </div>
+            <form id="itemForm">
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+                    <input type="text" id="itemName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemSku">SKU</label>
+                    <input type="text" id="itemSku" name="sku" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemLocation">Location</label>
+                    <input type="text" id="itemLocation" name="location" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemStock">Stock Count</label>
+                    <input type="number" id="itemStock" name="stock" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemDescription">Description</label>
+                    <textarea id="itemDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="page-actions">
+                    <button type="submit" class="btn btn-success">Save Item</button>
+                    <button type="button" class="btn btn-secondary" id="cancelItemBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

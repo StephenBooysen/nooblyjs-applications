@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Service Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <h1>Customer Service</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger hidden"></div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <div class="mt-3 text-center">
+                <small>Use: admin / password</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">Customer Service</div>
+                <nav class="nav">
+                    <a href="#" id="dashboardLink">Dashboard</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Dashboard View -->
+            <div id="dashboardView">
+                <h1 class="dashboard-title">Service Dashboard</h1>
+                
+                <!-- Case Statistics Widget -->
+                <div class="widgets-grid">
+                    <div class="widget cases">
+                        <div class="widget-header">
+                            <div class="widget-title">Case Statistics</div>
+                            <div class="widget-icon">📋</div>
+                        </div>
+                        <div class="widget-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="openCases">-</div>
+                                <div class="stat-label">Open</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="inProgressCases">-</div>
+                                <div class="stat-label">In Progress</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="closedCases">-</div>
+                                <div class="stat-label">Closed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Queues Widget -->
+                    <div class="widget queues">
+                        <div class="widget-header">
+                            <div class="widget-title">Support Queues</div>
+                            <div class="widget-icon">📞</div>
+                        </div>
+                        <div class="queue-grid" id="queueGrid">
+                            <!-- Queues will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Critical Cases -->
+                <div class="critical-cases">
+                    <h2 style="margin-bottom: 20px; color: #dc3545;">🚨 Critical Cases</h2>
+                    <div id="criticalCasesList">
+                        <!-- Critical cases will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Queue View -->
+            <div id="queueView" class="hidden">
+                <div class="page-header">
+                    <h1 class="page-title" id="queueTitle">Queue Cases</h1>
+                </div>
+
+                <div class="filters">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label for="priorityFilter">Filter by Priority</label>
+                            <select id="priorityFilter">
+                                <option value="">All Priorities</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateFilter">Filter by Date</label>
+                            <select id="dateFilter">
+                                <option value="">All Dates</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="statusFilter">Filter by Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="new">New</option>
+                                <option value="inprogress">In Progress</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="case-list" id="queueCasesList">
+                    <!-- Queue cases will be populated here -->
+                </div>
+
+                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
+            </div>
+
+            <!-- Case Detail View -->
+            <div id="caseDetailView" class="hidden">
+                <div class="case-detail">
+                    <div class="case-detail-header">
+                        <h1 class="case-detail-title" id="caseDetailTitle">Case Details</h1>
+                        <div class="case-id" id="caseDetailId">#12345</div>
+                    </div>
+                    
+                    <div class="case-info-grid" id="caseInfoGrid">
+                        <!-- Case information will be populated here -->
+                    </div>
+                </div>
+
+                <div class="comments-section">
+                    <div class="comments-header">
+                        <h2 class="comments-title">Comments & History</h2>
+                    </div>
+                    <div id="commentsList">
+                        <!-- Comments will be populated here -->
+                    </div>
+                    
+                    <div class="add-comment">
+                        <form id="addCommentForm">
+                            <div class="form-group">
+                                <label for="newComment">Add Comment</label>
+                                <textarea id="newComment" name="comment" placeholder="Enter your comment..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-small">Add Comment</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="status-actions">
+                    <div class="status-actions-header">
+                        <h2 class="status-actions-title">Case Status</h2>
+                        <div class="current-status">
+                            Current Status: <span class="case-status" id="currentCaseStatus">new</span>
+                        </div>
+                    </div>
+                    <div class="status-buttons">
+                        <button class="btn btn-secondary btn-small" id="setNewBtn">Set to New</button>
+                        <button class="btn btn-warning btn-small" id="setInProgressBtn">Set to In Progress</button>
+                        <button class="btn btn-success btn-small" id="setDoneBtn">Set to Done</button>
+                    </div>
+                </div>
+
+                <a href="#" class="back-link" id="backToQueue">← Back to Queue</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
