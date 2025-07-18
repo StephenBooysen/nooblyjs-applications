@@ -1,4 +1,7 @@
-/* Customer Service Application - Flat Theme Styles */
+/* Import shared design system */
+@import url('../../../ui-template/design-system.css');
+
+/* Customer Service - Using Design System */
 * {
   margin: 0;
   padding: 0;
@@ -6,9 +9,9 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f5f5;
-  color: #333;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -24,7 +27,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #3498db 0%, #9b59b6 100%);
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-turquoise) 100%);
 }
 
 .login-form {
@@ -76,20 +79,24 @@ body {
 
 .btn {
   display: inline-block;
-  padding: 12px 24px;
-  background: #3498db;
-  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--primary-blue);
+  color: var(--text-white);
   text-decoration: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-medium);
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: var(--transition-normal);
   width: 100%;
 }
 
 .btn:hover {
-  background: #2980b9;
+  background: var(--hover-primary);
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
@@ -149,9 +156,9 @@ body {
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: 600;
-  color: #3498db;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-blue);
 }
 
 .nav {

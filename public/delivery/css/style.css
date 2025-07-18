@@ -1,4 +1,7 @@
-/* Delivery Platform - Flat Theme Styles */
+/* Import shared design system */
+@import url('../../../ui-template/design-system.css');
+
+/* Delivery Platform - Using Design System */
 * {
   margin: 0;
   padding: 0;
@@ -6,16 +9,16 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f5f5;
-  color: #333;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--spacing-xl);
 }
 
 /* Login Page */
@@ -24,14 +27,14 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-turquoise) 100%);
 }
 
 .login-form {
-  background: white;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: var(--white);
+  padding: var(--spacing-2xl);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-large);
   width: 100%;
   max-width: 400px;
 }
@@ -71,20 +74,24 @@ body {
 
 .btn {
   display: inline-block;
-  padding: 12px 24px;
-  background: #27ae60;
-  color: white;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--primary-blue);
+  color: var(--text-white);
   text-decoration: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-medium);
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: var(--transition-normal);
   width: 100%;
 }
 
 .btn:hover {
-  background: #229954;
+  background: var(--hover-primary);
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
@@ -144,9 +151,9 @@ body {
 }
 
 .logo {
-  font-size: 24px;
-  font-weight: 600;
-  color: #27ae60;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-blue);
 }
 
 .nav {
