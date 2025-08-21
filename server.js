@@ -2,12 +2,26 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
+const serviceRegistry = require('noobly-core');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+serviceRegistry.initialize(app);
+const log = serviceRegistry.logger('console');
+const cache = serviceRegistry.cache('memory');
+const dataserve = serviceRegistry.dataServe('memory');
+const filing = serviceRegistry.filing('local');
+const queue = serviceRegistry.queue('memory');
+const scheduling = serviceRegistry.scheduling('memory');
+const searching = serviceRegistry.searching('memory');
+const measuring = serviceRegistry.measuring('memory');
+const notifying = serviceRegistry.notifying('memory');
+const worker = serviceRegistry.working('memory');
+const workflow = serviceRegistry.workflow('memory');
 
 app.use(session({
   secret: 'admin-dashboard-secret',
@@ -271,15 +285,15 @@ app.get('/api/marketing/segments/:id/customers', (req, res) => {
 });
 
 // Service routes
-app.get('/service', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'service', 'index.html'));
+app.get('/customerservice', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'customerservice', 'index.html'));
 });
 
-app.get('/service/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'service', 'index.html'));
+app.get('/customerservice/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'customerservice', 'index.html'));
 });
 
-app.post('/service/login', (req, res) => {
+app.post('/customerservice/login', (req, res) => {
   const { username, password } = req.body;
   
   if (username === 'admin' && password === 'password') {
@@ -290,16 +304,16 @@ app.post('/service/login', (req, res) => {
   }
 });
 
-app.post('/service/logout', (req, res) => {
+app.post('/customerservice/logout', (req, res) => {
   req.session.serviceAuthenticated = false;
   res.json({ success: true });
 });
 
-app.get('/api/service/auth/check', (req, res) => {
+app.get('/api/customerservice/auth/check', (req, res) => {
   res.json({ authenticated: !!req.session.serviceAuthenticated });
 });
 
-app.get('/api/service/cases', (req, res) => {
+app.get('/api/customerservice/cases', (req, res) => {
   res.json([
     {
       id: 1,
@@ -472,7 +486,7 @@ app.get('/api/service/cases', (req, res) => {
   ]);
 });
 
-app.get('/api/service/cases/:id', (req, res) => {
+app.get('/api/customerservice/cases/:id', (req, res) => {
   const caseId = parseInt(req.params.id);
   
   // Get all cases and find the specific one
