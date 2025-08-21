@@ -4,7 +4,7 @@ const session = require('express-session');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -17,6 +17,7 @@ app.use(session({
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/ui-template', express.static(path.join(__dirname, 'ui-template')));
 
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
