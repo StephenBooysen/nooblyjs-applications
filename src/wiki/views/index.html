@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Artifacts Wiki</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    
+    <!-- SVG Icons Sprite -->
+    <svg style="display: none;">
+        <defs>
+            <!-- Book/Wiki Icon -->
+            <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </symbol>
+            
+            <!-- Home Icon -->
+            <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </symbol>
+            
+            <!-- Folder/Spaces Icon -->
+            <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </symbol>
+            
+            <!-- Plus/Create Icon -->
+            <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </symbol>
+            
+            <!-- Template/Clipboard Icon -->
+            <symbol id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            </symbol>
+            
+            <!-- Logout/Exit Icon -->
+            <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </symbol>
+            
+            <!-- Search Icon -->
+            <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </symbol>
+            
+            <!-- Edit/Pen Icon -->
+            <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </symbol>
+            
+            <!-- File/Document Icon -->
+            <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <line x1="10" y1="9" x2="8" y2="9"/>
+            </symbol>
+            
+            <!-- Browse/Eye Icon -->
+            <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </symbol>
+            
+            <!-- Share Icon -->
+            <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16,6 12,2 8,6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+            </symbol>
+            
+            <!-- History/Clock Icon -->
+            <symbol id="icon-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+            </symbol>
+            
+            <!-- Settings/Gear Icon -->
+            <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m10.5-5.5L7 5m0 14 3.5-3.5M16.5 7.5L17 17m-14 0 3.5-3.5"/>
+            </symbol>
+            
+            <!-- Close/X Icon -->
+            <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </symbol>
+        </defs>
+    </svg>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-form">
+            <h1>Design Artifacts Wiki</h1>
+            <p class="login-subtitle">Enterprise Knowledge Management Platform</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger hidden"></div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div class="text-center" style="margin-top: 1rem;">
+                <small style="color: var(--muted-foreground);">Use: admin / password</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Wiki Application -->
+    <div id="wikiApp" class="hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg class="logo-icon" width="20" height="20">
+                        <use href="#icon-book"></use>
+                    </svg>
+                    <span class="logo-text">Design Artifacts Wiki</span>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <input type="text" id="globalSearch" placeholder="Search knowledge base..." class="search-input">
+                    <button id="searchBtn" class="search-btn">
+                        <svg width="16" height="16">
+                            <use href="#icon-search"></use>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="nav">
+                    <a href="#" id="homeLink" class="nav-link active">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-home"></use>
+                        </svg>
+                        Home
+                    </a>
+                    <a href="#" id="spacesLink" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-folder"></use>
+                        </svg>
+                        Spaces
+                    </a>
+                    <a href="#" id="createLink" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-plus"></use>
+                        </svg>
+                        Create
+                    </a>
+                    <a href="#" id="templatesLink" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-clipboard"></use>
+                        </svg>
+                        Templates
+                    </a>
+                    <a href="#" id="logoutBtn" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-logout"></use>
+                        </svg>
+                        Logout
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Spaces</h3>
+                    <div id="spacesList" class="spaces-list">
+                        <!-- Dynamic content -->
+                    </div>
+                    <button id="createSpaceBtn" class="btn btn-secondary btn-sm">+ New Space</button>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>Recent</h3>
+                    <div id="recentList" class="recent-list">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main id="mainContent" class="main-content">
+                <!-- Home View -->
+                <div id="homeView" class="view">
+                    <div class="welcome-section">
+                        <h1>Welcome to Design Artifacts Wiki</h1>
+                        <p>Your comprehensive enterprise knowledge management platform</p>
+                        
+                        <div class="quick-actions">
+                            <button id="quickCreateDoc" class="action-card">
+                                <svg class="action-icon" width="32" height="32">
+                                    <use href="#icon-edit"></use>
+                                </svg>
+                                <h3>Create Document</h3>
+                                <p>Start writing with Markdown</p>
+                            </button>
+                            
+                            <button id="quickCreateSpace" class="action-card">
+                                <svg class="action-icon" width="32" height="32">
+                                    <use href="#icon-folder"></use>
+                                </svg>
+                                <h3>New Space</h3>
+                                <p>Organize your content</p>
+                            </button>
+                            
+                            <button id="quickBrowse" class="action-card">
+                                <svg class="action-icon" width="32" height="32">
+                                    <use href="#icon-eye"></use>
+                                </svg>
+                                <h3>Browse Knowledge</h3>
+                                <p>Explore existing content</p>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-widgets">
+                        <div class="widget">
+                            <h3>Recently Modified</h3>
+                            <div id="recentlyModified" class="widget-content">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                        
+                        <div class="widget">
+                            <h3>Popular Content</h3>
+                            <div id="popularContent" class="widget-content">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spaces View -->
+                <div id="spacesView" class="view hidden">
+                    <div class="view-header">
+                        <h1>Spaces</h1>
+                        <button id="createSpaceFromView" class="btn btn-primary">+ Create Space</button>
+                    </div>
+                    <div id="spacesGrid" class="spaces-grid">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <!-- Space Detail View -->
+                <div id="spaceView" class="view hidden">
+                    <div class="view-header">
+                        <nav class="breadcrumb">
+                            <a href="#" id="backToSpaces">Spaces</a>
+                            <span class="breadcrumb-separator">/</span>
+                            <span id="currentSpaceName"></span>
+                        </nav>
+                        <div class="space-actions">
+                            <button id="createDocInSpace" class="btn btn-primary">+ New Document</button>
+                            <button id="spaceSettings" class="btn btn-secondary">Settings</button>
+                        </div>
+                    </div>
+                    <div id="spaceContent" class="space-content">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <!-- Editor View -->
+                <div id="editorView" class="view hidden">
+                    <div class="editor-container">
+                        <div class="editor-header">
+                            <input type="text" id="docTitle" placeholder="Document Title" class="doc-title-input">
+                            <div class="editor-actions">
+                                <button id="saveDoc" class="btn btn-primary">Save</button>
+                                <button id="previewDoc" class="btn btn-secondary">Preview</button>
+                                <button id="closeEditor" class="btn btn-secondary">Close</button>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-main">
+                            <div id="markdownEditor" class="editor-pane">
+                                <textarea id="editorTextarea" placeholder="Start writing in Markdown..."></textarea>
+                            </div>
+                            <div id="previewPane" class="preview-pane hidden">
+                                <div id="previewContent" class="preview-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document View -->
+                <div id="documentView" class="view hidden">
+                    <div class="document-container">
+                        <div class="document-header">
+                            <nav class="breadcrumb">
+                                <a href="#" id="docBackToSpace">Space</a>
+                                <span class="breadcrumb-separator">/</span>
+                                <span id="currentDocTitle"></span>
+                            </nav>
+                            <div class="document-actions">
+                                <button id="editDocBtn" class="btn btn-primary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-edit"></use>
+                                    </svg>
+                                    Edit
+                                </button>
+                                <button id="shareDocBtn" class="btn btn-secondary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-share"></use>
+                                    </svg>
+                                    Share
+                                </button>
+                                <button id="docHistory" class="btn btn-secondary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-history"></use>
+                                    </svg>
+                                    History
+                                </button>
+                            </div>
+                        </div>
+                        <div id="documentContent" class="document-content">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Results View -->
+                <div id="searchView" class="view hidden">
+                    <div class="view-header">
+                        <h1>Search Results</h1>
+                        <span id="searchQuery" class="search-query"></span>
+                    </div>
+                    <div id="searchResults" class="search-results">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="createSpaceModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Space</h2>
+                <button id="closeCreateSpaceModal" class="modal-close">
+                    <svg width="16" height="16">
+                        <use href="#icon-x"></use>
+                    </svg>
+                </button>
+            </div>
+            <form id="createSpaceForm">
+                <div class="form-group">
+                    <label for="spaceName">Space Name</label>
+                    <input type="text" id="spaceName" name="spaceName" required>
+                </div>
+                <div class="form-group">
+                    <label for="spaceDescription">Description</label>
+                    <textarea id="spaceDescription" name="spaceDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="spaceVisibility">Visibility</label>
+                    <select id="spaceVisibility" name="spaceVisibility">
+                        <option value="private">Private</option>
+                        <option value="team">Team</option>
+                        <option value="public">Public</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="cancelCreateSpace" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Space</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="overlay" class="overlay hidden"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

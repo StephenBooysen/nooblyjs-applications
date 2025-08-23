@@ -11,7 +11,7 @@
     "body-parser": "^1.20.2",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "noobly-core": "1.2.1"
+    "noobly-core": "1.2.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a multi-tenant admin dashboard system built with Express.js and vanilla JavaScript. The application serves five distinct dashboard modules:
 
-- **Server Management** (`/servermanagement`) - System monitoring for servers, databases, and storage
+- **Server Management** (`/infrastructure`) - System monitoring for servers, databases, and storage
 - **Marketing** (`/marketing`) - Email campaign management with customer segmentation  
 - **Service** (`/service`) - Customer service ticket system with case management
 - **Warehouse** (`/warehouse`) - Order fulfillment and inventory management

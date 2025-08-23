@@ -25,23 +25,9 @@ const express = require('express');
  * @param {Object} options - Configuration options for the views setup
  * @param {express.Application} options.express-app - The Express application instance
  * @param {Object} eventEmitter - Event emitter instance for inter-service communication
- * @param {Object} logger - The logging service provider instance
  * @returns {void}
- * 
- * @example
- * const express = require('express');
- * const app = express();
- * const loggingViews = require('./src/logging/views');
- * 
- * loggingViews({
- *   'express-app': app
- * }, eventEmitter, loggingService);
  */
 module.exports = (options, eventEmitter, logger) => {
-  if (options['express-app']) {
-    const app = options['express-app'];
-    
-    // Serve static files from the views directory for logging service
-    app.use('/services/logging', express.static(path.join(__dirname)));
-  }
+  const app = options['express-app'];
+  app.use('/wiki', express.static(path.join(__dirname)));
 };

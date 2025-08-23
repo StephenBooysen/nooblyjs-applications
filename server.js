@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
 const serviceRegistry = require('noobly-core');
+const { EventEmitter } = require('events');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -10,7 +11,10 @@ const PORT = process.env.PORT || 3001;
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-serviceRegistry.initialize(app);
+const eventEmitter = new EventEmitter()
+patchEmitter(eventEmitter);
+serviceRegistry.initialize(app,eventEmitter);
+
 const log = serviceRegistry.logger('console');
 const cache = serviceRegistry.cache('memory');
 const dataserve = serviceRegistry.dataServe('memory');
@@ -31,17 +35,11 @@ app.use(session({
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/ui-template', express.static(path.join(__dirname, 'ui-template')));
 
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  
-  //if (username === 'admin' && password === 'password') {
-    req.session.authenticated = true;
-    res.json({ success: true });
-  //} else {
-  //  res.status(401).json({ success: false, message: 'Invalid credentials' });
-  //}
+  req.session.authenticated = true;
+  res.json({ success: true });
 });
 
 app.post('/logout', (req, res) => {
@@ -77,12 +75,8 @@ app.get('/api/storage', (req, res) => {
   ]);
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'servermanagement', 'index.html'));
-});
-
-app.get('/servermanagement', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'servermanagement', 'index.html'));
+app.get('/infrastructure', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'infrastructure', 'index.html'));
 });
 
 // Marketing routes
@@ -90,13 +84,8 @@ app.get('/marketing', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'marketing', 'index.html'));
 });
 
-app.get('/marketing/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'marketing', 'index.html'));
-});
-
 app.post('/marketing/login', (req, res) => {
   const { username, password } = req.body;
-  
   if (username === 'admin' && password === 'password') {
     req.session.marketingAuthenticated = true;
     res.json({ success: true });
@@ -193,7 +182,7 @@ app.get('/api/marketing/segments', (req, res) => {
 
 app.get('/api/marketing/campaigns/:id/recipients', (req, res) => {
   const campaignId = parseInt(req.params.id);
-  
+
   // Sample recipients data based on campaign
   const recipients = [
     {
@@ -242,13 +231,13 @@ app.get('/api/marketing/campaigns/:id/recipients', (req, res) => {
       clickedAt: '2024-06-15T16:50:00Z'
     }
   ];
-  
+
   res.json(recipients);
 });
 
 app.get('/api/marketing/segments/:id/customers', (req, res) => {
   const segmentId = parseInt(req.params.id);
-  
+
   // Sample customers data based on segment
   const customers = [
     {
@@ -280,7 +269,7 @@ app.get('/api/marketing/segments/:id/customers', (req, res) => {
       addedDate: '2024-05-15'
     }
   ];
-  
+
   res.json(customers);
 });
 
@@ -295,7 +284,7 @@ app.get('/customerservice/', (req, res) => {
 
 app.post('/customerservice/login', (req, res) => {
   const { username, password } = req.body;
-  
+
   if (username === 'admin' && password === 'password') {
     req.session.serviceAuthenticated = true;
     res.json({ success: true });
@@ -488,7 +477,7 @@ app.get('/api/customerservice/cases', (req, res) => {
 
 app.get('/api/customerservice/cases/:id', (req, res) => {
   const caseId = parseInt(req.params.id);
-  
+
   // Get all cases and find the specific one
   const cases = [
     {
@@ -540,7 +529,7 @@ app.get('/api/customerservice/cases/:id', (req, res) => {
       ]
     }
   ];
-  
+
   const foundCase = cases.find(c => c.id === caseId);
   if (foundCase) {
     res.json(foundCase);
@@ -560,7 +549,7 @@ app.get('/warehouse/', (req, res) => {
 
 app.post('/warehouse/login', (req, res) => {
   const { username, password } = req.body;
-  
+
   if (username === 'admin' && password === 'password') {
     req.session.warehouseAuthenticated = true;
     res.json({ success: true });
@@ -795,7 +784,7 @@ app.get('/delivery/', (req, res) => {
 
 app.post('/delivery/login', (req, res) => {
   const { username, password } = req.body;
-  
+
   if (username === 'admin' && password === 'password') {
     req.session.deliveryAuthenticated = true;
     res.json({ success: true });
@@ -914,6 +903,22 @@ app.get('/api/delivery/orders', (req, res) => {
   ]);
 });
 
+/**
+ * Patch event emitter to capture all events for debugging
+ */
+function patchEmitter(eventEmitter) {
+  const originalEmit = eventEmitter.emit;
+  eventEmitter.emit = function () {
+    const eventName = arguments[0];
+    const args = Array.from(arguments).slice(1);
+    console.log(`Caught event: "${eventName}" with arguments:`, args);
+    return originalEmit.apply(this, arguments);
+  };
+}
+
+// Launch the wiki
+const wiki = require("./src/wiki")({'express-app': app}, eventEmitter);
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Nooblyjs Applications Server running on port ${PORT}`);
 });
