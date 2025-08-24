@@ -1,8 +1,7 @@
 /**
- * @fileoverview Logging service views module for noobly-core framework.
+ * @fileoverview Warehouse service views module for noobly-applications framework.
  * This module provides Express.js view registration and static file serving 
- * capabilities for the logging service. It registers static routes to serve
- * logging-related view files and templates through the Express application.
+ * warehouse for the warehouse service. 
  * 
  * @author NooblyJS
  * @version 1.0.14
@@ -16,10 +15,7 @@ const path = require('path');
 const express = require('express');
 
 /**
- * Registers logging service views with the Express application.
- * Sets up static file serving for logging-related view templates and assets.
- * This function integrates the logging service views into the main Express
- * application by mounting static file middleware at the '/services/logging' route.
+ * Registers Warehouse service views with the Express application.
  * 
  * @function
  * @param {Object} options - Configuration options for the views setup
@@ -29,5 +25,5 @@ const express = require('express');
  */
 module.exports = (options, eventEmitter, logger) => {
   const app = options['express-app'];
-  app.use('/wiki', express.static(path.join(__dirname)));
+  app.use('/warehouse', express.static(path.join(__dirname)));
 };

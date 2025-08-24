@@ -1,7 +1,6 @@
 /**
- * @fileoverview Logging API routes for Express.js application.
- * Provides RESTful endpoints for structured logging operations including
- * info, warning, error level logging, and service status monitoring.
+ * @fileoverview Wiki API routes for Express.js application.
+ * Provides RESTful endpoints for structured wiki operations 
  *
  * @author NooblyJS Core Team
  * @version 1.0.14

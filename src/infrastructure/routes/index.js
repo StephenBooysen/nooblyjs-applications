@@ -1,7 +1,6 @@
 /**
- * @fileoverview Logging API routes for Express.js application.
- * Provides RESTful endpoints for structured logging operations including
- * info, warning, error level logging, and service status monitoring.
+ * @fileoverview Infrastrucuture API routes for Express.js application.
+ * Provides RESTful endpoints for structured infrastructure operations.
  *
  * @author NooblyJS Core Team
  * @version 1.0.14
@@ -12,7 +11,7 @@
 const path = require('path')
 
 /**
- * Configures and registers wiki routes with the Express application.
+ * Configures and registers infrastructure routes with the Express application.
  *
  * @param {Object} options - Configuration options object
  * @param {Object} options.express-app - The Express application instance
@@ -47,8 +46,4 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
   
-  app.get('/infrastructure', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'infrastructure', 'index.html'));
-  });
-
 };

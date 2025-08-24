@@ -1,7 +1,6 @@
 /**
- * @fileoverview Logging API routes for Express.js application.
- * Provides RESTful endpoints for structured logging operations including
- * info, warning, error level logging, and service status monitoring.
+ * @fileoverview Marketing API routes for Express.js application.
+ * Provides RESTful endpoints for structured marketing operations.
  *
  * @author NooblyJS Core Team
  * @version 1.0.14
@@ -12,7 +11,7 @@
 const path = require('path')
 
 /**
- * Configures and registers wiki routes with the Express application.
+ * Configures and registers marketing routes with the Express application.
  *
  * @param {Object} options - Configuration options object
  * @param {Object} options.express-app - The Express application instance
@@ -22,11 +21,6 @@ const path = require('path')
 module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
-
-  // Marketing routes
-  app.get('/marketing', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'marketing', 'index.html'));
-  });
 
   app.post('/marketing/login', (req, res) => {
     const { username, password } = req.body;
@@ -216,4 +210,5 @@ module.exports = (options, eventEmitter) => {
 
     res.json(customers);
   });
+  
 };

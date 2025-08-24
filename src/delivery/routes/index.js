@@ -23,15 +23,6 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
 
-  // Delivery routes
-  app.get('/delivery', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'delivery', 'index.html'));
-  });
-
-  app.get('/delivery/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'delivery', 'index.html'));
-  });
-
   app.post('/delivery/login', (req, res) => {
     const { username, password } = req.body;
 

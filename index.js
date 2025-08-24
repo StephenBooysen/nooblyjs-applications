@@ -1,11 +1,9 @@
 /**
- * @fileoverview Logging API routes for Express.js application.
- * Provides RESTful endpoints for structured logging operations including
- * info, warning, error level logging, and service status monitoring.
+ * @fileoverview The file define and instantiates the various NooblyJS applications.
  *
  * @author NooblyJS Core Team
- * @version 1.0.14
- * @since 1.0.0
+ * @version 1.0.0
+ * @since 2025-08-24
  */
 
 'use strict';
@@ -13,7 +11,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
-const serviceRegistry = require('noobly-core');
 const { EventEmitter } = require('events');
 
 const app = express();
@@ -24,6 +21,8 @@ app.use(bodyParser.json());
 
 const eventEmitter = new EventEmitter()
 patchEmitter(eventEmitter);
+
+const serviceRegistry = require('noobly-core');
 serviceRegistry.initialize(app,eventEmitter);
 
 const log = serviceRegistry.logger('console');
@@ -60,7 +59,6 @@ app.get('/api/auth/check', (req, res) => {
   res.json({ authenticated: !!req.session.authenticated });
 });
 
-
 /**
  * Patch event emitter to capture all events for debugging
  */
@@ -77,9 +75,12 @@ function patchEmitter(eventEmitter) {
 // Launch the wiki
 app.use(express.static(path.join(__dirname, 'public')));
 
-const customerService = require("./src/wiki")({'express-app': app}, eventEmitter);
+const customerservice = require(path.join(__dirname, '/src/customerservice'))({'express-app': app}, eventEmitter);
+const delivery = require(path.join(__dirname, '/src/delivery'))({'express-app': app}, eventEmitter);
+const infrastructure = require(path.join(__dirname, '/src/infrastructure'))({'express-app': app}, eventEmitter);
+const marketing = require(path.join(__dirname, '/src/marketing'))({'express-app': app}, eventEmitter);
+const warehouse = require(path.join(__dirname, '/src/warehouse'))({'express-app': app}, eventEmitter);
 const wiki = require(path.join(__dirname, '/src/wiki'))({'express-app': app}, eventEmitter);
-
 
 app.listen(PORT, () => {
   console.log(`Nooblyjs Applications Server running on port ${PORT}`);

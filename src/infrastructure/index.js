@@ -1,6 +1,6 @@
 /**
  * @fileoverview Infrastructure Application
- * Factory module for creating a Wiki application instance.
+ * Factory module for creating a infrastructure application instance.
  * 
  * @author NooblyJS Team
  * @version 1.0.14
@@ -13,12 +13,10 @@ const Routes = require('./routes');
 const Views = require('./views');
 
 /**
- * Creates the wiki service
- * Automatically configures routes and views for the logging service.
- * @param {string} type - The logging provider type ('console', 'file')
+ * Creates the Infrastructure Application
+ * Automatically configures routes and views for the marketing application.
  * @param {Object} options - Provider-specific configuration options
  * @param {EventEmitter} eventEmitter - Global event emitter for inter-service communication
- * @return {logging|loggingFile} Logging service instance with specified provider
  */
 module.exports = (options, eventEmitter) => {
   Routes(options, eventEmitter);
