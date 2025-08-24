@@ -81,7 +81,6 @@ app.get('/api/auth/check', (req, res) => {
   res.json({ authenticated: !!req.session.authenticated });
 });
 
-
 // Launch the application manager
 app.use(express.static(path.join(__dirname, 'public')));
 

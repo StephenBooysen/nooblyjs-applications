@@ -29,7 +29,7 @@ class WikiApp {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/wiki/auth/check');
+            const response = await fetch('/applications/wiki/api/auth/check');
             const data = await response.json();
             if (data.authenticated) {
                 await this.loadInitialData();
@@ -199,9 +199,9 @@ class WikiApp {
     async loadInitialData() {
         try {
             const [spacesRes, docsRes, recentRes] = await Promise.all([
-                fetch('/api/wiki/spaces'),
-                fetch('/api/wiki/documents'),
-                fetch('/api/wiki/recent')
+                fetch('/applications/wiki/api/spaces'),
+                fetch('/applications/wiki/api/documents'),
+                fetch('/applications/wiki/api/recent')
             ]);
 
             this.data.spaces = await spacesRes.json();
@@ -220,7 +220,7 @@ class WikiApp {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/wiki/login', {
+            const response = await fetch('/applications/wiki/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -246,7 +246,7 @@ class WikiApp {
 
     async handleLogout() {
         try {
-            await fetch('/wiki/logout', {
+            await fetch('/applications/wiki/logout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -415,8 +415,8 @@ class WikiApp {
     async loadHomeData() {
         try {
             const [recentModifiedRes, popularRes] = await Promise.all([
-                fetch('/api/wiki/documents/recent'),
-                fetch('/api/wiki/documents/popular')
+                fetch('/applications/wiki/api/documents/recent'),
+                fetch('/applications/wiki/api/documents/popular')
             ]);
 
             const recentModified = await recentModifiedRes.json();
@@ -513,7 +513,7 @@ class WikiApp {
         document.getElementById('currentSpaceName').textContent = space.name;
         
         try {
-            const response = await fetch(`/api/wiki/spaces/${space.id}/documents`);
+            const response = await fetch(`/applications/wiki/api/spaces/${space.id}/documents`);
             const documents = await response.json();
             
             const spaceContent = document.getElementById('spaceContent');
@@ -630,7 +630,7 @@ class WikiApp {
         }
 
         try {
-            const response = await fetch('/api/wiki/documents', {
+            const response = await fetch('/applications/wiki/api/documents', {
                 method: this.currentDocument?.id ? 'PUT' : 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -672,7 +672,7 @@ class WikiApp {
         document.getElementById('currentDocTitle').textContent = document.title;
         
         try {
-            const response = await fetch(`/api/wiki/documents/${document.id}`);
+            const response = await fetch(`/applications/wiki/api/documents/${document.id}`);
             const fullDocument = await response.json();
             
             const content = document.getElementById('documentContent');
@@ -693,7 +693,7 @@ class WikiApp {
 
     shareDocument() {
         // Implement document sharing
-        const shareUrl = `${window.location.origin}/wiki/doc/${this.currentDocument.id}`;
+        const shareUrl = `${window.location.origin}/applications/wiki/doc/${this.currentDocument.id}`;
         navigator.clipboard.writeText(shareUrl).then(() => {
             this.showNotification('Share link copied to clipboard', 'success');
         }).catch(() => {
@@ -721,7 +721,7 @@ class WikiApp {
         document.getElementById('searchQuery').textContent = `"${query}"`;
         
         try {
-            const response = await fetch(`/api/wiki/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`/applications/wiki/api/search?q=${encodeURIComponent(query)}`);
             const results = await response.json();
             
             this.renderSearchResults(results);
@@ -784,7 +784,7 @@ class WikiApp {
         };
 
         try {
-            const response = await fetch('/api/wiki/spaces', {
+            const response = await fetch('/applications/wiki/api/spaces', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

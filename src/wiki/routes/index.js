@@ -22,7 +22,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
  
-  app.post('/wiki/login', (req, res) => {
+  app.post('/applications/wiki/login', (req, res) => {
     const { username, password } = req.body;
 
     if (username === 'admin' && password === 'password') {
@@ -33,17 +33,17 @@ module.exports = (options, eventEmitter) => {
     }
   });
 
-  app.post('/wiki/logout', (req, res) => {
+  app.post('/applications/wiki/logout', (req, res) => {
     req.session.wikiAuthenticated = false;
     res.json({ success: true });
   });
 
-  app.get('/api/wiki/auth/check', (req, res) => {
+  app.get('/applications/wiki/api/auth/check', (req, res) => {
     res.json({ authenticated: !!req.session.wikiAuthenticated });
   });
 
   // Wiki API endpoints
-  app.get('/api/wiki/spaces', (req, res) => {
+  app.get('/applications/wiki/api/spaces', (req, res) => {
     res.json([
       {
         id: 1,
@@ -103,7 +103,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/wiki/documents', (req, res) => {
+  app.get('/applications/wiki/api/documents', (req, res) => {
     res.json([
       {
         id: 1,
@@ -168,7 +168,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/wiki/recent', (req, res) => {
+  app.get('/applications/wiki/api/recent', (req, res) => {
     res.json([
       {
         id: 5,
@@ -203,7 +203,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/wiki/documents/recent', (req, res) => {
+  app.get('/applications/wiki/api/documents/recent', (req, res) => {
     res.json([
       {
         id: 5,
@@ -238,7 +238,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/wiki/documents/popular', (req, res) => {
+  app.get('/applications/wiki/api/documents/popular', (req, res) => {
     res.json([
       {
         id: 3,
@@ -273,7 +273,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/wiki/spaces/:id/documents', (req, res) => {
+  app.get('/applications/wiki/api/spaces/:id/documents', (req, res) => {
     const spaceId = parseInt(req.params.id);
 
     const documentsData = {
@@ -338,7 +338,7 @@ module.exports = (options, eventEmitter) => {
     res.json(documents);
   });
 
-  app.get('/api/wiki/documents/:id', (req, res) => {
+  app.get('/applications/wiki/api/documents/:id', (req, res) => {
     const docId = parseInt(req.params.id);
 
     const documents = {
@@ -503,7 +503,7 @@ CREATE TABLE users (
     }
   });
 
-  app.get('/api/wiki/search', (req, res) => {
+  app.get('/applications/wiki/api/search', (req, res) => {
     const query = req.query.q?.toLowerCase() || '';
 
     if (!query) {
@@ -549,7 +549,7 @@ CREATE TABLE users (
     res.json(searchResults);
   });
 
-  app.post('/api/wiki/spaces', (req, res) => {
+  app.post('/applications/wiki/api/spaces', (req, res) => {
     const { name, description, visibility } = req.body;
 
     if (!name) {
@@ -571,7 +571,7 @@ CREATE TABLE users (
     res.json({ success: true, space: newSpace });
   });
 
-  app.post('/api/wiki/documents', (req, res) => {
+  app.post('/applications/wiki/api/documents', (req, res) => {
     const { title, content, spaceId } = req.body;
 
     if (!title) {
@@ -596,7 +596,7 @@ CREATE TABLE users (
     res.json({ success: true, document: newDocument });
   });
 
-  app.put('/api/wiki/documents', (req, res) => {
+  app.put('/applications/wiki/api/documents', (req, res) => {
     const { id, title, content, spaceId } = req.body;
 
     if (!id || !title) {

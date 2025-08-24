@@ -46,9 +46,9 @@ class ApplicatioRegistry {
           apiKeys: globalOptions.apiKeys,
           requireApiKey: globalOptions.requireApiKey !== false,
           excludePaths: globalOptions.excludePaths || [
-            '/services/*/status',
-            '/services/',
-            '/services/*/views/*',
+            '/applications/*/status',
+            '/applications/',
+            '/applications/*/views/*',
           ],
         },
         this.eventEmitter,
