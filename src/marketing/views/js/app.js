@@ -18,7 +18,7 @@ class EmailMarketing {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/marketing/auth/check');
+            const response = await fetch('/applications/marketing/api/auth/check');
             const data = await response.json();
             if (data.authenticated) {
                 this.showDashboard();
@@ -188,7 +188,7 @@ class EmailMarketing {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/marketing/login', {
+            const response = await fetch('/applications/marketing/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -212,7 +212,7 @@ class EmailMarketing {
 
     async handleLogout() {
         try {
-            await fetch('/marketing/logout', { method: 'POST' });
+            await fetch('/applications/marketing/logout', { method: 'POST' });
             this.showLogin();
         } catch (error) {
             console.error('Logout failed:', error);
@@ -239,8 +239,8 @@ class EmailMarketing {
     async loadDashboardData() {
         try {
             const [campaigns, segments] = await Promise.all([
-                fetch('/api/marketing/campaigns').then(r => r.json()),
-                fetch('/api/marketing/segments').then(r => r.json())
+                fetch('/applications/marketing/api/campaigns').then(r => r.json()),
+                fetch('/applications/marketing/api/segments').then(r => r.json())
             ]);
 
             this.data.campaigns = campaigns;
@@ -390,7 +390,7 @@ class EmailMarketing {
 
     async loadCampaignRecipients(campaignId) {
         try {
-            const recipients = await fetch(`/api/marketing/campaigns/${campaignId}/recipients`).then(r => r.json());
+            const recipients = await fetch(`/applications/marketing/api/campaigns/${campaignId}/recipients`).then(r => r.json());
             this.currentRecipients = recipients;
             this.renderRecipients(recipients);
         } catch (error) {
@@ -457,7 +457,7 @@ class EmailMarketing {
 
     async loadSegmentCustomers(segmentId) {
         try {
-            const customers = await fetch(`/api/marketing/segments/${segmentId}/customers`).then(r => r.json());
+            const customers = await fetch(`/applications/marketing/ap/segments/${segmentId}/customers`).then(r => r.json());
             this.currentSegmentCustomers = customers;
             this.renderSegmentCustomers(customers);
         } catch (error) {

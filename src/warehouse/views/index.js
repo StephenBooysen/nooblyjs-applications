@@ -25,5 +25,5 @@ const express = require('express');
  */
 module.exports = (options, eventEmitter, logger) => {
   const app = options['express-app'];
-  app.use('/warehouse', express.static(path.join(__dirname)));
+  app.use('/applications/warehouse', express.static(path.join(__dirname)));
 };

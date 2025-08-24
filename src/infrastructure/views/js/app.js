@@ -149,9 +149,9 @@ class AdminDashboard {
     async loadDashboardData() {
         try {
             const [servers, databases, storage] = await Promise.all([
-                fetch('/api/servers').then(r => r.json()),
-                fetch('/api/databases').then(r => r.json()),
-                fetch('/api/storage').then(r => r.json())
+                fetch('/appications/infrastructure/api/servers').then(r => r.json()),
+                fetch('/appications/infrastructure/api/databases').then(r => r.json()),
+                fetch('/appications/infrastructure/api/storage').then(r => r.json())
             ]);
 
             this.data.servers = servers;

@@ -22,7 +22,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
 
-  app.post('/warehouse/login', (req, res) => {
+  app.post('/applications/warehouse/login', (req, res) => {
     const { username, password } = req.body;
 
     if (username === 'admin' && password === 'password') {
@@ -33,16 +33,16 @@ module.exports = (options, eventEmitter) => {
     }
   });
 
-  app.post('/warehouse/logout', (req, res) => {
+  app.post('/applications/warehouse/logout', (req, res) => {
     req.session.warehouseAuthenticated = false;
     res.json({ success: true });
   });
 
-  app.get('/api/warehouse/auth/check', (req, res) => {
+  app.get('/applications/warehouse/api/auth/check', (req, res) => {
     res.json({ authenticated: !!req.session.warehouseAuthenticated });
   });
 
-  app.get('/api/warehouse/orders', (req, res) => {
+  app.get('/applications/warehouse/api/orders', (req, res) => {
     res.json([
       {
         id: 1001,
@@ -131,7 +131,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/warehouse/inventory', (req, res) => {
+  app.get('/applications/warehouse/api/inventory', (req, res) => {
     res.json([
       {
         id: 1,

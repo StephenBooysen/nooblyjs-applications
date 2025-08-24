@@ -22,7 +22,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
  
-  app.get('/api/servers', (req, res) => {
+  app.get('/appications/infrastructure/api/servers', (req, res) => {
     res.json([
       { id: 1, name: 'Web Server 01', status: 'running', type: 'Apache', description: 'Main web server handling HTTP requests' },
       { id: 2, name: 'Database Server 01', status: 'running', type: 'MySQL', description: 'Primary database server' },
@@ -30,7 +30,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
   
-  app.get('/api/databases', (req, res) => {
+  app.get('/appications/infrastructure/api/databases', (req, res) => {
     res.json([
       { id: 1, name: 'UserDB', status: 'running', type: 'PostgreSQL', size: '2.5GB', description: 'User data and authentication' },
       { id: 2, name: 'AnalyticsDB', status: 'running', type: 'MongoDB', size: '1.2GB', description: 'Analytics and reporting data' },
@@ -38,7 +38,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
   
-  app.get('/api/storage', (req, res) => {
+  app.get('/appications/infrastructure/api/storage', (req, res) => {
     res.json([
       { id: 1, name: 'Primary Storage', status: 'healthy', type: 'SSD', used: '45GB', total: '100GB', description: 'Main application storage' },
       { id: 2, name: 'Backup Storage', status: 'healthy', type: 'HDD', used: '120GB', total: '500GB', description: 'Automated backup storage' },

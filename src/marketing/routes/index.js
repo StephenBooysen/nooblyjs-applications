@@ -22,7 +22,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
 
-  app.post('/marketing/login', (req, res) => {
+  app.post('/applications/marketing/login', (req, res) => {
     const { username, password } = req.body;
     if (username === 'admin' && password === 'password') {
       req.session.marketingAuthenticated = true;
@@ -32,16 +32,16 @@ module.exports = (options, eventEmitter) => {
     }
   });
 
-  app.post('/marketing/logout', (req, res) => {
+  app.post('/applications/marketing/logout', (req, res) => {
     req.session.marketingAuthenticated = false;
     res.json({ success: true });
   });
 
-  app.get('/api/marketing/auth/check', (req, res) => {
+  app.get('/applications/marketing/api/auth/check', (req, res) => {
     res.json({ authenticated: !!req.session.marketingAuthenticated });
   });
 
-  app.get('/api/marketing/campaigns', (req, res) => {
+  app.get('/applications/marketing/api/campaigns', (req, res) => {
     res.json([
       {
         id: 1,
@@ -85,7 +85,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/marketing/segments', (req, res) => {
+  app.get('/applications/marketing/api/segments', (req, res) => {
     res.json([
       {
         id: 1,
@@ -118,7 +118,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
-  app.get('/api/marketing/campaigns/:id/recipients', (req, res) => {
+  app.get('/applications/marketing/api/campaigns/:id/recipients', (req, res) => {
     const campaignId = parseInt(req.params.id);
 
     // Sample recipients data based on campaign
@@ -173,7 +173,7 @@ module.exports = (options, eventEmitter) => {
     res.json(recipients);
   });
 
-  app.get('/api/marketing/segments/:id/customers', (req, res) => {
+  app.get('/applications/marketing/api/segments/:id/customers', (req, res) => {
     const segmentId = parseInt(req.params.id);
 
     // Sample customers data based on segment

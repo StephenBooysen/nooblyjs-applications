@@ -19,7 +19,7 @@ class WarehouseManagement {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/warehouse/auth/check');
+            const response = await fetch('/applications/warehouse/api/auth/check');
             const data = await response.json();
             if (data.authenticated) {
                 this.showDashboard();
@@ -123,7 +123,7 @@ class WarehouseManagement {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/warehouse/login', {
+            const response = await fetch('/applications/warehouse/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -147,7 +147,7 @@ class WarehouseManagement {
 
     async handleLogout() {
         try {
-            await fetch('/warehouse/logout', { method: 'POST' });
+            await fetch('/applications/warehouse/logout', { method: 'POST' });
             this.showLogin();
         } catch (error) {
             console.error('Logout failed:', error);
@@ -174,8 +174,8 @@ class WarehouseManagement {
     async loadDashboardData() {
         try {
             const [orders, inventory] = await Promise.all([
-                fetch('/api/warehouse/orders').then(r => r.json()),
-                fetch('/api/warehouse/inventory').then(r => r.json())
+                fetch('/applications/warehouse/api/orders').then(r => r.json()),
+                fetch('/applications/warehouse/api/inventory').then(r => r.json())
             ]);
 
             this.data.orders = orders;
@@ -352,7 +352,6 @@ class WarehouseManagement {
         if (order.status === 'picking') {
             this.showPicking(order);
         } else {
-            // For other statuses, just show order info or navigate to appropriate view
             this.showAlert(`Order #${orderId} is currently in ${order.status} status`, 'info');
         }
     }
