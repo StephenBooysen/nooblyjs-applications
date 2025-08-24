@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev:web": "nodemon app.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
