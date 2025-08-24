@@ -4,14 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Service Dashboard</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../../styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- SVG Icons Sprite -->
+    <svg style="display: none;">
+        <defs>
+            <!-- Customer Service/Headset Icon -->
+            <symbol id="icon-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 11v3a3 3 0 0 0 3 3h1a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H6a3 3 0 0 0-3 3Z"/>
+                <path d="M21 11v3a3 3 0 0 1-3 3h-1a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1h1a3 3 0 0 1 3 3Z"/>
+                <path d="M3 11V8a9 9 0 1 1 18 0v3"/>
+            </symbol>
+            <!-- Home Icon -->
+            <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </symbol>
+            <!-- Clipboard/Cases Icon -->
+            <symbol id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            </symbol>
+            <!-- Users/Queue Icon -->
+            <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </symbol>
+            <!-- Logout Icon -->
+            <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </symbol>
+            <!-- Clock/Time Icon -->
+            <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+            </symbol>
+            <!-- CheckCircle/Complete Icon -->
+            <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22,4 12,14.01 9,11.01"/>
+            </symbol>
+            <!-- Activity/Progress Icon -->
+            <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </symbol>
+            <!-- Filter Icon -->
+            <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+            </symbol>
+            <!-- Alert/Critical Icon -->
+            <symbol id="icon-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </symbol>
+            <!-- Message/Comment Icon -->
+            <symbol id="icon-message-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <!-- Login Page -->
     <div id="loginPage" class="login-container">
         <div class="login-form">
-            <h1>Customer Service</h1>
+            <h1>Customer Service Dashboard</h1>
+            <p class="login-subtitle">Support Case Management & Customer Care System</p>
             <form id="loginForm">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -22,169 +86,260 @@
                     <input type="password" id="password" name="password" required>
                 </div>
                 <div id="loginError" class="alert alert-danger hidden"></div>
-                <button type="submit" class="btn">Login</button>
+                <button type="submit" class="btn btn-primary">Login</button>
             </form>
-            <div class="mt-3 text-center">
-                <small>Use: admin / password</small>
+            <div class="text-center" style="margin-top: 1rem;">
+                <small style="color: var(--muted-foreground);">Use: admin / password</small>
             </div>
         </div>
     </div>
 
-    <!-- Dashboard -->
+    <!-- Main Customer Service Application -->
     <div id="dashboardPage" class="hidden">
-        <div class="header">
+        <header class="header">
             <div class="header-content">
-                <div class="logo">Customer Service</div>
+                <div class="logo">
+                    <svg class="logo-icon" width="20" height="20">
+                        <use href="#icon-headset"></use>
+                    </svg>
+                    <span class="logo-text">Customer Service Dashboard</span>
+                </div>
+                
                 <nav class="nav">
-                    <a href="#" id="dashboardLink">Dashboard</a>
-                    <a href="#" id="logoutBtn">Logout</a>
+                    <a href="#" id="dashboardLink" class="nav-link active">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-home"></use>
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="#" id="logoutBtn" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-logout"></use>
+                        </svg>
+                        Logout
+                    </a>
                 </nav>
             </div>
-        </div>
+        </header>
 
-        <div class="container">
-            <!-- Dashboard View -->
-            <div id="dashboardView">
-                <h1 class="dashboard-title">Service Dashboard</h1>
-                
-                <!-- Case Statistics Widget -->
-                <div class="widgets-grid">
-                    <div class="widget cases">
-                        <div class="widget-header">
-                            <div class="widget-title">Case Statistics</div>
-                            <div class="widget-icon">📋</div>
+        <div class="main-container">
+            <main class="main-content">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="view">
+                    <div class="welcome-section">
+                        <h1>Service Dashboard</h1>
+                        <p>Real-time customer support case management and queue monitoring</p>
+                    </div>
+                    
+                    <div class="dashboard-widgets">
+                        <!-- Open Cases Widget -->
+                        <div class="widget clickable" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                                <svg width="32" height="32" style="color: var(--warning);">
+                                    <use href="#icon-clipboard"></use>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0;">Open Cases</h3>
+                                    <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">New and pending</p>
+                                </div>
+                            </div>
+                            <div class="widget-stats">
+                                <div class="stat-item" style="text-align: center;">
+                                    <div class="stat-value" id="openCases" style="font-size: 2rem; font-weight: 700; color: var(--warning);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Awaiting</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="widget-stats">
-                            <div class="stat-item">
-                                <div class="stat-value" id="openCases">-</div>
-                                <div class="stat-label">Open</div>
+
+                        <!-- In Progress Widget -->
+                        <div class="widget clickable" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                                <svg width="32" height="32" style="color: var(--primary);">
+                                    <use href="#icon-activity"></use>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0;">In Progress</h3>
+                                    <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">Being handled</p>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="inProgressCases">-</div>
-                                <div class="stat-label">In Progress</div>
+                            <div class="widget-stats">
+                                <div class="stat-item" style="text-align: center;">
+                                    <div class="stat-value" id="inProgressCases" style="font-size: 2rem; font-weight: 700; color: var(--primary);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Active</div>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="closedCases">-</div>
-                                <div class="stat-label">Closed</div>
+                        </div>
+
+                        <!-- Closed Cases Widget -->
+                        <div class="widget clickable" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                                <svg width="32" height="32" style="color: var(--success);">
+                                    <use href="#icon-check-circle"></use>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0;">Closed Cases</h3>
+                                    <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">Completed today</p>
+                                </div>
+                            </div>
+                            <div class="widget-stats">
+                                <div class="stat-item" style="text-align: center;">
+                                    <div class="stat-value" id="closedCases" style="font-size: 2rem; font-weight: 700; color: var(--success);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Resolved</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Queues Widget -->
-                    <div class="widget queues">
-                        <div class="widget-header">
-                            <div class="widget-title">Support Queues</div>
-                            <div class="widget-icon">📞</div>
+                    <!-- Support Queues Section -->
+                    <div class="widget">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                            <svg width="24" height="24" style="color: var(--primary);">
+                                <use href="#icon-users"></use>
+                            </svg>
+                            <h3 style="margin: 0;">Support Queues</h3>
                         </div>
-                        <div class="queue-grid" id="queueGrid">
+                        <div id="queueGrid" class="widget-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-lg);">
                             <!-- Queues will be populated here -->
                         </div>
                     </div>
-                </div>
 
-                <!-- Critical Cases -->
-                <div class="critical-cases">
-                    <h2 style="margin-bottom: 20px; color: #dc3545;">🚨 Critical Cases</h2>
-                    <div id="criticalCasesList">
-                        <!-- Critical cases will be populated here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Queue View -->
-            <div id="queueView" class="hidden">
-                <div class="page-header">
-                    <h1 class="page-title" id="queueTitle">Queue Cases</h1>
-                </div>
-
-                <div class="filters">
-                    <div class="filters-grid">
-                        <div class="form-group">
-                            <label for="priorityFilter">Filter by Priority</label>
-                            <select id="priorityFilter">
-                                <option value="">All Priorities</option>
-                                <option value="critical">Critical</option>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low">Low</option>
-                            </select>
+                    <!-- Critical Cases Section -->
+                    <div class="widget">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                            <svg width="24" height="24" style="color: var(--destructive);">
+                                <use href="#icon-alert-triangle"></use>
+                            </svg>
+                            <h3 style="margin: 0; color: var(--destructive);">Critical Cases</h3>
                         </div>
-                        <div class="form-group">
-                            <label for="dateFilter">Filter by Date</label>
-                            <select id="dateFilter">
-                                <option value="">All Dates</option>
-                                <option value="today">Today</option>
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="statusFilter">Filter by Status</label>
-                            <select id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="new">New</option>
-                                <option value="inprogress">In Progress</option>
-                                <option value="done">Done</option>
-                            </select>
+                        <div id="criticalCasesList" class="widget-content">
+                            <!-- Critical cases will be populated here -->
                         </div>
                     </div>
                 </div>
 
-                <div class="case-list" id="queueCasesList">
-                    <!-- Queue cases will be populated here -->
-                </div>
+                <!-- Queue View -->
+                <div id="queueView" class="view hidden">
+                    <div class="view-header">
+                        <h1 id="queueTitle">Queue Cases</h1>
+                    </div>
 
-                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
-            </div>
-
-            <!-- Case Detail View -->
-            <div id="caseDetailView" class="hidden">
-                <div class="case-detail">
-                    <div class="case-detail-header">
-                        <h1 class="case-detail-title" id="caseDetailTitle">Case Details</h1>
-                        <div class="case-id" id="caseDetailId">#12345</div>
-                    </div>
-                    
-                    <div class="case-info-grid" id="caseInfoGrid">
-                        <!-- Case information will be populated here -->
-                    </div>
-                </div>
-
-                <div class="comments-section">
-                    <div class="comments-header">
-                        <h2 class="comments-title">Comments & History</h2>
-                    </div>
-                    <div id="commentsList">
-                        <!-- Comments will be populated here -->
-                    </div>
-                    
-                    <div class="add-comment">
-                        <form id="addCommentForm">
-                            <div class="form-group">
-                                <label for="newComment">Add Comment</label>
-                                <textarea id="newComment" name="comment" placeholder="Enter your comment..." required></textarea>
+                    <div class="card" style="margin-bottom: var(--spacing-lg);">
+                        <div class="card-content">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-lg);">
+                                <div class="form-group">
+                                    <label for="priorityFilter">
+                                        <svg width="16" height="16"><use href="#icon-filter"></use></svg>
+                                        Filter by Priority
+                                    </label>
+                                    <select id="priorityFilter">
+                                        <option value="">All Priorities</option>
+                                        <option value="critical">Critical</option>
+                                        <option value="high">High</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateFilter">Filter by Date</label>
+                                    <select id="dateFilter">
+                                        <option value="">All Dates</option>
+                                        <option value="today">Today</option>
+                                        <option value="week">This Week</option>
+                                        <option value="month">This Month</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="statusFilter">Filter by Status</label>
+                                    <select id="statusFilter">
+                                        <option value="">All Status</option>
+                                        <option value="new">New</option>
+                                        <option value="inprogress">In Progress</option>
+                                        <option value="done">Done</option>
+                                    </select>
+                                </div>
                             </div>
-                            <button type="submit" class="btn btn-success btn-small">Add Comment</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="status-actions">
-                    <div class="status-actions-header">
-                        <h2 class="status-actions-title">Case Status</h2>
-                        <div class="current-status">
-                            Current Status: <span class="case-status" id="currentCaseStatus">new</span>
                         </div>
                     </div>
-                    <div class="status-buttons">
-                        <button class="btn btn-secondary btn-small" id="setNewBtn">Set to New</button>
-                        <button class="btn btn-warning btn-small" id="setInProgressBtn">Set to In Progress</button>
-                        <button class="btn btn-success btn-small" id="setDoneBtn">Set to Done</button>
+
+                    <div class="card">
+                        <div class="card-content">
+                            <div id="queueCasesList">
+                                <!-- Queue cases will be populated here -->
+                            </div>
+                        </div>
                     </div>
+
+                    <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
                 </div>
 
-                <a href="#" class="back-link" id="backToQueue">← Back to Queue</a>
-            </div>
+                <!-- Case Detail View -->
+                <div id="caseDetailView" class="view hidden">
+                    <div class="view-header">
+                        <h1 id="caseDetailTitle">Case Details</h1>
+                        <div class="order-id" id="caseDetailId" style="color: var(--muted-foreground); font-size: 1.125rem;">#12345</div>
+                    </div>
+
+                    <div class="dashboard-widgets">
+                        <!-- Case Information Card -->
+                        <div class="widget">
+                            <h3>Case Information</h3>
+                            <div id="caseInfoGrid" class="widget-content">
+                                <!-- Case information will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Status Card -->
+                        <div class="widget">
+                            <h3>Current Status</h3>
+                            <div class="widget-content" style="text-align: center; padding: var(--spacing-xl);">
+                                <div style="color: var(--muted-foreground); font-size: 0.875rem; margin-bottom: var(--spacing-sm);">Case Status</div>
+                                <span class="badge badge-secondary" id="currentCaseStatus" style="font-size: 0.875rem;">new</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comments Section -->
+                    <div class="card" style="margin-bottom: var(--spacing-lg);">
+                        <div class="card-header">
+                            <h3>
+                                <svg width="20" height="20" style="margin-right: var(--spacing-sm);">
+                                    <use href="#icon-message-square"></use>
+                                </svg>
+                                Comments & History
+                            </h3>
+                        </div>
+                        <div class="card-content">
+                            <div id="commentsList" style="margin-bottom: var(--spacing-lg);">
+                                <!-- Comments will be populated here -->
+                            </div>
+                            
+                            <form id="addCommentForm">
+                                <div class="form-group">
+                                    <label for="newComment">Add Comment</label>
+                                    <textarea id="newComment" name="comment" placeholder="Enter your comment..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Add Comment</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Status Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Case Actions</h3>
+                        </div>
+                        <div class="card-content">
+                            <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+                                <button class="btn btn-secondary" id="setNewBtn">Set to New</button>
+                                <button class="btn btn-primary" id="setInProgressBtn">Set to In Progress</button>
+                                <button class="btn btn-secondary" id="setDoneBtn">Set to Done</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="#" class="back-link" id="backToQueue">← Back to Queue</a>
+                </div>
+            </main>
         </div>
     </div>
 

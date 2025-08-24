@@ -144,6 +144,10 @@ class CustomerService {
         document.getElementById('dashboardView').classList.remove('hidden');
         this.currentView = 'dashboard';
         
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('dashboardLink').classList.add('active');
+        
         await this.loadDashboardData();
     }
 
@@ -157,6 +161,83 @@ class CustomerService {
             this.renderCriticalCases();
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
+            // Set default demo data for demonstration purposes
+            this.data.cases = [
+                { 
+                    id: 1, 
+                    customerName: 'John Smith', 
+                    customerEmail: 'john.smith@email.com',
+                    subject: 'Login Issues with Account', 
+                    priority: 'high', 
+                    status: 'new', 
+                    queue: 'Login',
+                    createdAt: '2024-01-15T10:30:00Z',
+                    comments: [
+                        { id: 1, author: 'System', text: 'Case created automatically', createdAt: '2024-01-15T10:30:00Z' },
+                        { id: 2, author: 'John Smith', text: 'I cannot log into my account. Getting error 500.', createdAt: '2024-01-15T10:35:00Z' }
+                    ]
+                },
+                {
+                    id: 2,
+                    customerName: 'Sarah Johnson',
+                    customerEmail: 'sarah.j@company.com',
+                    subject: 'Payment Processing Failed',
+                    priority: 'critical',
+                    status: 'inprogress',
+                    queue: 'Payments',
+                    createdAt: '2024-01-15T09:15:00Z',
+                    comments: [
+                        { id: 1, author: 'System', text: 'Case escalated to critical priority', createdAt: '2024-01-15T09:15:00Z' },
+                        { id: 2, author: 'Sarah Johnson', text: 'My payment was charged but order shows as failed', createdAt: '2024-01-15T09:20:00Z' },
+                        { id: 3, author: 'Agent Mike', text: 'Investigating payment gateway logs', createdAt: '2024-01-15T09:45:00Z' }
+                    ]
+                },
+                {
+                    id: 3,
+                    customerName: 'Mike Wilson',
+                    customerEmail: 'mike.w@email.com',
+                    subject: 'Delivery Status Inquiry',
+                    priority: 'medium',
+                    status: 'done',
+                    queue: 'Deliveries',
+                    createdAt: '2024-01-14T14:20:00Z',
+                    comments: [
+                        { id: 1, author: 'Mike Wilson', text: 'Where is my order #12345?', createdAt: '2024-01-14T14:20:00Z' },
+                        { id: 2, author: 'Agent Lisa', text: 'Checking delivery status now', createdAt: '2024-01-14T14:25:00Z' },
+                        { id: 3, author: 'Agent Lisa', text: 'Your order is out for delivery and will arrive today', createdAt: '2024-01-14T14:30:00Z' }
+                    ]
+                },
+                {
+                    id: 4,
+                    customerName: 'Emma Davis',
+                    customerEmail: 'emma.davis@email.com',
+                    subject: 'Refund Request for Damaged Item',
+                    priority: 'high',
+                    status: 'new',
+                    queue: 'Refunds',
+                    createdAt: '2024-01-15T11:45:00Z',
+                    comments: [
+                        { id: 1, author: 'Emma Davis', text: 'Received damaged product. Need full refund.', createdAt: '2024-01-15T11:45:00Z' }
+                    ]
+                },
+                {
+                    id: 5,
+                    customerName: 'Robert Brown',
+                    customerEmail: 'r.brown@company.org',
+                    subject: 'Order Modification Request',
+                    priority: 'low',
+                    status: 'inprogress',
+                    queue: 'Orders',
+                    createdAt: '2024-01-15T08:30:00Z',
+                    comments: [
+                        { id: 1, author: 'Robert Brown', text: 'Can I change my shipping address?', createdAt: '2024-01-15T08:30:00Z' },
+                        { id: 2, author: 'Agent Tom', text: 'Let me check if your order has been processed', createdAt: '2024-01-15T08:35:00Z' }
+                    ]
+                }
+            ];
+            this.updateDashboardStats();
+            this.renderQueues();
+            this.renderCriticalCases();
         }
     }
 
@@ -175,9 +256,17 @@ class CustomerService {
         container.innerHTML = this.data.queues.map(queue => {
             const queueCases = this.data.cases.filter(c => c.queue === queue);
             return `
-                <div class="queue-item" onclick="app.showQueue('${queue}')">
-                    <div class="queue-name">${queue}</div>
-                    <div class="queue-count">${queueCases.length}</div>
+                <div class="card" style="cursor: pointer;" onclick="app.showQueue('${queue}')">
+                    <div class="card-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                            <h4 style="color: var(--primary); margin: 0;">${queue}</h4>
+                            <span class="badge badge-secondary">${queueCases.length} cases</span>
+                        </div>
+                        <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">
+                            ${queueCases.filter(c => c.status === 'new').length} new, 
+                            ${queueCases.filter(c => c.status === 'inprogress').length} in progress
+                        </p>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -188,18 +277,24 @@ class CustomerService {
         const criticalCases = this.data.cases.filter(c => c.priority === 'critical').slice(0, 5);
         
         if (criticalCases.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No critical cases at the moment.</p>';
+            container.innerHTML = '<div style="text-align: center; color: var(--muted-foreground); padding: var(--spacing-xl);">No critical cases at the moment.</div>';
             return;
         }
 
         container.innerHTML = criticalCases.map(caseItem => `
-            <div class="case-item" onclick="app.showCaseDetail(${caseItem.id})">
-                <div class="case-header">
-                    <div class="case-customer">${caseItem.customerName}</div>
-                    <div class="case-priority ${caseItem.priority}">${caseItem.priority}</div>
+            <div class="card" style="cursor: pointer;" onclick="app.showCaseDetail(${caseItem.id})">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                        <h4 style="color: var(--primary); margin: 0;">${caseItem.customerName}</h4>
+                        <span class="badge badge-destructive">${caseItem.priority}</span>
+                    </div>
+                    <p style="margin: 0 0 var(--spacing-sm) 0; color: var(--text-primary); font-weight: 500;">
+                        ${caseItem.subject}
+                    </p>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-style: italic;">
+                        "${this.getLastComment(caseItem)}"
+                    </div>
                 </div>
-                <div class="case-subject">${caseItem.subject}</div>
-                <div class="case-comment">"${this.getLastComment(caseItem)}"</div>
             </div>
         `).join('');
     }
@@ -230,23 +325,25 @@ class CustomerService {
         const container = document.getElementById('queueCasesList');
         
         if (this.filteredCases.length === 0) {
-            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No cases found matching the current filters.</div>';
+            container.innerHTML = '<div style="padding: var(--spacing-xl); text-align: center; color: var(--muted-foreground);">No cases found matching the current filters.</div>';
             return;
         }
 
         container.innerHTML = this.filteredCases.map(caseItem => `
-            <div class="case-list-item" onclick="app.showCaseDetail(${caseItem.id})">
-                <div class="case-list-header">
-                    <div class="flex items-center gap-2">
-                        <span class="case-id">#${caseItem.id}</span>
-                        <span class="case-priority ${caseItem.priority}">${caseItem.priority}</span>
+            <div class="card" style="cursor: pointer; margin-bottom: var(--spacing-md);" onclick="app.showCaseDetail(${caseItem.id})">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                            <span style="color: var(--muted-foreground); font-size: 0.875rem;">#${caseItem.id}</span>
+                            <span class="badge badge-${this.getPriorityBadgeClass(caseItem.priority)}">${caseItem.priority}</span>
+                        </div>
+                        <span class="badge badge-${this.getStatusBadgeClass(caseItem.status)}">${caseItem.status}</span>
                     </div>
-                    <span class="case-status ${caseItem.status}">${caseItem.status}</span>
-                </div>
-                <div class="case-subject">${caseItem.subject}</div>
-                <div class="case-meta">
-                    <span>Customer: ${caseItem.customerName}</span>
-                    <span>Created: ${this.formatDate(caseItem.createdAt)}</span>
+                    <h4 style="color: var(--primary); margin: 0 0 var(--spacing-sm) 0;">${caseItem.subject}</h4>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem;">
+                        <div>Customer: ${caseItem.customerName}</div>
+                        <div>Created: ${this.formatDate(caseItem.createdAt)}</div>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -321,39 +418,43 @@ class CustomerService {
         // Case information grid
         const infoGrid = document.getElementById('caseInfoGrid');
         infoGrid.innerHTML = `
-            <div class="info-item">
-                <div class="info-label">Customer</div>
-                <div class="info-value">${caseItem.customerName}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Email</div>
-                <div class="info-value">${caseItem.customerEmail}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Priority</div>
-                <div class="info-value">
-                    <span class="case-priority ${caseItem.priority}">${caseItem.priority}</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-lg);">
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Customer</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">
+                        ${caseItem.customerName}
+                    </div>
                 </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Status</div>
-                <div class="info-value">
-                    <span class="case-status ${caseItem.status}">${caseItem.status}</span>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Email</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">
+                        ${caseItem.customerEmail}
+                    </div>
                 </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Queue</div>
-                <div class="info-value">${caseItem.queue}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Created</div>
-                <div class="info-value">${this.formatDateTime(caseItem.createdAt)}</div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Priority</div>
+                    <div style="margin-top: var(--spacing-xs);">
+                        <span class="badge badge-${this.getPriorityBadgeClass(caseItem.priority)}">${caseItem.priority}</span>
+                    </div>
+                </div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Queue</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">
+                        ${caseItem.queue}
+                    </div>
+                </div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Created</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">
+                        ${this.formatDateTime(caseItem.createdAt)}
+                    </div>
+                </div>
             </div>
         `;
 
         // Current status
         document.getElementById('currentCaseStatus').textContent = caseItem.status;
-        document.getElementById('currentCaseStatus').className = `case-status ${caseItem.status}`;
+        document.getElementById('currentCaseStatus').className = `badge badge-${this.getStatusBadgeClass(caseItem.status)}`;
 
         // Comments
         this.renderComments();
@@ -364,17 +465,17 @@ class CustomerService {
         const comments = this.currentCase.comments || [];
 
         if (comments.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No comments yet.</p>';
+            container.innerHTML = '<div style="text-align: center; color: var(--muted-foreground); padding: var(--spacing-xl);">No comments yet.</div>';
             return;
         }
 
         container.innerHTML = comments.map(comment => `
-            <div class="comment">
-                <div class="comment-header">
-                    <div class="comment-author">${comment.author}</div>
-                    <div class="comment-date">${this.formatDateTime(comment.createdAt)}</div>
+            <div style="border-bottom: 1px solid var(--border); padding: var(--spacing-md) 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                    <div style="font-weight: 600; color: var(--text-primary);">${comment.author}</div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem;">${this.formatDateTime(comment.createdAt)}</div>
                 </div>
-                <div class="comment-text">${comment.text}</div>
+                <div style="color: var(--text-primary);">${comment.text}</div>
             </div>
         `).join('');
     }
@@ -452,6 +553,25 @@ class CustomerService {
         setTimeout(() => {
             document.body.removeChild(alert);
         }, 3000);
+    }
+
+    getPriorityBadgeClass(priority) {
+        switch (priority) {
+            case 'critical': return 'destructive';
+            case 'high': return 'warning';
+            case 'medium': return 'secondary';
+            case 'low': return 'secondary';
+            default: return 'secondary';
+        }
+    }
+
+    getStatusBadgeClass(status) {
+        switch (status) {
+            case 'new': return 'warning';
+            case 'inprogress': return 'primary';
+            case 'done': return 'secondary';
+            default: return 'secondary';
+        }
     }
 
     formatDate(dateString) {

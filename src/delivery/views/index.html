@@ -3,15 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery Platform</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Delivery Management Platform</title>
+    <link rel="stylesheet" href="../../styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- SVG Icons Sprite -->
+    <svg style="display: none;">
+        <defs>
+            <!-- Truck/Delivery Icon -->
+            <symbol id="icon-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"/>
+                <polygon points="16,8 20,8 23,11 23,16 16,16"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+            </symbol>
+            <!-- Home Icon -->
+            <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </symbol>
+            <!-- Package Icon -->
+            <symbol id="icon-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/>
+                <path d="M21 16V8a2 2 0 0 0-1-1.73L12 2L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73L12 22l8-4.27A2 2 0 0 0 21 16z"/>
+                <polyline points="3.29,7 12,12 20.71,7"/>
+                <line x1="12" y1="22" x2="12" y2="12"/>
+            </symbol>
+            <!-- Logout Icon -->
+            <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </symbol>
+            <!-- Clock/Waiting Icon -->
+            <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+            </symbol>
+            <!-- Check/Delivered Icon -->
+            <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22,4 12,14.01 9,11.01"/>
+            </symbol>
+            <!-- Map Pin Icon -->
+            <symbol id="icon-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </symbol>
+            <!-- Filter Icon -->
+            <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+            </symbol>
+            <!-- Play/Start Icon -->
+            <symbol id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5,3 19,12 5,21"/>
+            </symbol>
+            <!-- Alert/Issue Icon -->
+            <symbol id="icon-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <!-- Login Page -->
     <div id="loginPage" class="login-container">
         <div class="login-form">
-            <h1>Delivery Platform</h1>
+            <h1>Delivery Management Platform</h1>
+            <p class="login-subtitle">Order Tracking & Delivery Coordination System</p>
             <form id="loginForm">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -22,167 +83,253 @@
                     <input type="password" id="password" name="password" required>
                 </div>
                 <div id="loginError" class="alert alert-danger hidden"></div>
-                <button type="submit" class="btn">Login</button>
+                <button type="submit" class="btn btn-primary">Login</button>
             </form>
-            <div class="mt-3 text-center">
-                <small>Use: admin / password</small>
+            <div class="text-center" style="margin-top: 1rem;">
+                <small style="color: var(--muted-foreground);">Use: admin / password</small>
             </div>
         </div>
     </div>
 
-    <!-- Dashboard -->
+    <!-- Main Delivery Application -->
     <div id="dashboardPage" class="hidden">
-        <div class="header">
+        <header class="header">
             <div class="header-content">
-                <div class="logo">🚚 Delivery Platform</div>
+                <div class="logo">
+                    <svg class="logo-icon" width="20" height="20">
+                        <use href="#icon-truck"></use>
+                    </svg>
+                    <span class="logo-text">Delivery Management Platform</span>
+                </div>
+                
                 <nav class="nav">
-                    <a href="#" id="dashboardLink">Dashboard</a>
-                    <a href="#" id="ordersLink">Orders</a>
-                    <a href="#" id="logoutBtn">Logout</a>
+                    <a href="#" id="dashboardLink" class="nav-link active">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-home"></use>
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="#" id="ordersLink" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-package"></use>
+                        </svg>
+                        Orders
+                    </a>
+                    <a href="#" id="logoutBtn" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-logout"></use>
+                        </svg>
+                        Logout
+                    </a>
                 </nav>
             </div>
-        </div>
+        </header>
 
-        <div class="container">
-            <!-- Dashboard View -->
-            <div id="dashboardView">
-                <h1 class="dashboard-title">Delivery Dashboard</h1>
-                
-                <!-- Status Widgets -->
-                <div class="widgets-grid">
-                    <div class="widget waiting clickable" onclick="app.filterOrdersByStatus('waiting')">
-                        <div class="widget-icon">📦</div>
-                        <h3>Waiting Orders</h3>
-                        <div class="widget-count" id="waitingCount">-</div>
-                        <div class="widget-status">Ready for pickup</div>
+        <div class="main-container">
+            <main class="main-content">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="view">
+                    <div class="welcome-section">
+                        <h1>Delivery Dashboard</h1>
+                        <p>Real-time tracking and management of delivery operations</p>
                     </div>
                     
-                    <div class="widget delivery clickable" onclick="app.filterOrdersByStatus('delivery')">
-                        <div class="widget-icon">🚚</div>
-                        <h3>Out for Delivery</h3>
-                        <div class="widget-count" id="deliveryCount">-</div>
-                        <div class="widget-status">In transit</div>
+                    <div class="dashboard-widgets">
+                        <!-- Waiting Orders Widget -->
+                        <div class="widget clickable" onclick="app.filterOrdersByStatus('waiting')" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                                <svg width="32" height="32" style="color: var(--warning);">
+                                    <use href="#icon-clock"></use>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0;">Waiting Orders</h3>
+                                    <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">Ready for pickup</p>
+                                </div>
+                            </div>
+                            <div class="widget-stats">
+                                <div class="stat-item" style="text-align: center;">
+                                    <div class="stat-value" id="waitingCount" style="font-size: 2rem; font-weight: 700; color: var(--warning);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Pending</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Out for Delivery Widget -->
+                        <div class="widget clickable" onclick="app.filterOrdersByStatus('delivery')" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                                <svg width="32" height="32" style="color: var(--primary);">
+                                    <use href="#icon-truck"></use>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0;">Out for Delivery</h3>
+                                    <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">In transit</p>
+                                </div>
+                            </div>
+                            <div class="widget-stats">
+                                <div class="stat-item" style="text-align: center;">
+                                    <div class="stat-value" id="deliveryCount" style="font-size: 2rem; font-weight: 700; color: var(--primary);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">In Transit</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivered Widget -->
+                        <div class="widget clickable" onclick="app.filterOrdersByStatus('delivered')" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                                <svg width="32" height="32" style="color: var(--success);">
+                                    <use href="#icon-check-circle"></use>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0;">Delivered</h3>
+                                    <p style="margin: 0; color: var(--muted-foreground); font-size: 0.875rem;">Completed today</p>
+                                </div>
+                            </div>
+                            <div class="widget-stats">
+                                <div class="stat-item" style="text-align: center;">
+                                    <div class="stat-value" id="deliveredCount" style="font-size: 2rem; font-weight: 700; color: var(--success);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Completed</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="widget delivered clickable" onclick="app.filterOrdersByStatus('delivered')">
-                        <div class="widget-icon">✅</div>
-                        <h3>Delivered</h3>
-                        <div class="widget-count" id="deliveredCount">-</div>
-                        <div class="widget-status">Completed today</div>
+
+                    <!-- Recent Orders Section -->
+                    <div class="widget">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+                            <h3 style="margin: 0;">Recent Orders</h3>
+                            <div class="form-group" style="margin: 0; max-width: 200px;">
+                                <label for="statusFilter">
+                                    <svg width="16" height="16"><use href="#icon-filter"></use></svg>
+                                    Filter
+                                </label>
+                                <select id="statusFilter">
+                                    <option value="">All Orders</option>
+                                    <option value="waiting">Waiting</option>
+                                    <option value="delivery">Out for Delivery</option>
+                                    <option value="delivered">Delivered</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="ordersList" class="widget-content">
+                            <!-- Orders will be populated here -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Orders Section -->
-                <div class="orders-section">
-                    <div class="page-header">
-                        <h2>Orders</h2>
-                        <div class="filters">
-                            <div class="filters-grid">
+                <!-- Orders List View -->
+                <div id="ordersView" class="view hidden">
+                    <div class="view-header">
+                        <h1 id="ordersTitle">All Orders</h1>
+                    </div>
+
+                    <div class="card" style="margin-bottom: var(--spacing-lg);">
+                        <div class="card-content">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-lg);">
                                 <div class="form-group">
-                                    <label for="statusFilter">Filter by Status</label>
-                                    <select id="statusFilter">
+                                    <label for="ordersStatusFilter">Filter by Status</label>
+                                    <select id="ordersStatusFilter">
+                                        <option value="">All Orders</option>
                                         <option value="waiting">Waiting</option>
                                         <option value="delivery">Out for Delivery</option>
                                         <option value="delivered">Delivered</option>
-                                        <option value="">All Orders</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateFilter">Filter by Date</label>
+                                    <select id="dateFilter">
+                                        <option value="">All Dates</option>
+                                        <option value="today">Today</option>
+                                        <option value="week">This Week</option>
+                                        <option value="month">This Month</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="order-list" id="ordersList">
-                        <!-- Orders will be populated here -->
-                    </div>
-                </div>
-            </div>
 
-            <!-- Orders List View -->
-            <div id="ordersView" class="hidden">
-                <div class="page-header">
-                    <h1 class="page-title" id="ordersTitle">All Orders</h1>
-                </div>
-
-                <div class="filters">
-                    <div class="filters-grid">
-                        <div class="form-group">
-                            <label for="ordersStatusFilter">Filter by Status</label>
-                            <select id="ordersStatusFilter">
-                                <option value="">All Orders</option>
-                                <option value="waiting">Waiting</option>
-                                <option value="delivery">Out for Delivery</option>
-                                <option value="delivered">Delivered</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="dateFilter">Filter by Date</label>
-                            <select id="dateFilter">
-                                <option value="">All Dates</option>
-                                <option value="today">Today</option>
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                            </select>
+                    <div class="card">
+                        <div class="card-content">
+                            <div id="allOrdersList">
+                                <!-- Orders will be populated here -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="order-list" id="allOrdersList">
-                    <!-- Orders will be populated here -->
-                </div>
-
-                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
-            </div>
-
-            <!-- Order Detail View -->
-            <div id="orderDetailView" class="hidden">
-                <div class="order-detail">
-                    <div class="order-detail-header">
-                        <h1 class="order-detail-title" id="orderDetailTitle">Order Details</h1>
-                        <div class="order-id" id="orderDetailId">#12345</div>
+                <!-- Order Detail View -->
+                <div id="orderDetailView" class="view hidden">
+                    <div class="view-header">
+                        <h1 id="orderDetailTitle">Order Details</h1>
+                        <div class="order-id" id="orderDetailId" style="color: var(--muted-foreground); font-size: 1.125rem;">#12345</div>
                     </div>
-                    
-                    <div class="order-info-grid" id="orderInfoGrid">
-                        <!-- Order information will be populated here -->
-                    </div>
-                </div>
 
-                <div class="map-section">
-                    <div class="map-header">
-                        <h2 class="map-title">Delivery Location</h2>
+                    <div class="dashboard-widgets">
+                        <!-- Order Information Card -->
+                        <div class="widget">
+                            <h3>Order Information</h3>
+                            <div id="orderInfoGrid" class="widget-content">
+                                <!-- Order information will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Delivery Location Card -->
+                        <div class="widget">
+                            <h3>
+                                <svg width="20" height="20" style="margin-right: var(--spacing-sm);">
+                                    <use href="#icon-map-pin"></use>
+                                </svg>
+                                Delivery Location
+                            </h3>
+                            <div class="widget-content">
+                                <div style="text-align: center; padding: var(--spacing-xl) var(--spacing-lg); background: var(--muted); border-radius: var(--radius); border: 2px dashed var(--border);">
+                                    <svg width="48" height="48" style="color: var(--muted-foreground); margin-bottom: var(--spacing-md);">
+                                        <use href="#icon-map-pin"></use>
+                                    </svg>
+                                    <div style="color: var(--text-primary); font-weight: 500; margin-bottom: var(--spacing-sm);">Delivery Address</div>
+                                    <div id="mapAddress" style="color: var(--muted-foreground); font-size: 0.875rem;">Address will be displayed here</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Status Card -->
+                        <div class="widget">
+                            <h3>Delivery Status</h3>
+                            <div class="widget-content">
+                                <div style="text-align: center; margin-bottom: var(--spacing-lg);">
+                                    <div style="color: var(--muted-foreground); font-size: 0.875rem; margin-bottom: var(--spacing-sm);">Current Status</div>
+                                    <span class="badge badge-secondary" id="currentOrderStatus" style="font-size: 0.875rem;">waiting</span>
+                                </div>
+                                <div id="deliveryTimeline">
+                                    <!-- Timeline will be populated here -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="map-container" id="mapContainer">
-                        <div class="map-placeholder">
-                            <div class="map-placeholder-icon">📍</div>
-                            <div class="map-placeholder-text">Delivery Address</div>
-                            <div class="map-address" id="mapAddress">Address will be displayed here</div>
+
+                    <!-- Delivery Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Delivery Actions</h3>
+                        </div>
+                        <div class="card-content">
+                            <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+                                <button class="btn btn-primary" id="startDeliveryBtn">
+                                    <svg width="16" height="16"><use href="#icon-play"></use></svg>
+                                    Start Delivery
+                                </button>
+                                <button class="btn btn-secondary" id="markDeliveredBtn">
+                                    <svg width="16" height="16"><use href="#icon-check-circle"></use></svg>
+                                    Mark as Delivered
+                                </button>
+                                <button class="btn btn-secondary" id="reportIssueBtn">
+                                    <svg width="16" height="16"><use href="#icon-alert-circle"></use></svg>
+                                    Report Issue
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="timeline">
-                    <div class="timeline-header">
-                        <h2 class="timeline-title">Delivery Timeline</h2>
-                    </div>
-                    <div id="deliveryTimeline">
-                        <!-- Timeline will be populated here -->
-                    </div>
-                </div>
-
-                <div class="delivery-actions">
-                    <div class="delivery-actions-header">
-                        <h2 class="delivery-actions-title">Delivery Actions</h2>
-                        <div class="current-status">
-                            Current Status: <span class="order-status" id="currentOrderStatus">waiting</span>
-                        </div>
-                    </div>
-                    <div class="delivery-buttons">
-                        <button class="btn btn-success" id="startDeliveryBtn">Start Delivery</button>
-                        <button class="btn btn-warning" id="markDeliveredBtn">Mark as Delivered</button>
-                        <button class="btn btn-danger" id="reportIssueBtn">Report Issue</button>
-                    </div>
-                </div>
-
-                <a href="#" class="back-link" id="backToOrders">← Back to Orders</a>
-            </div>
+            </main>
         </div>
     </div>
 

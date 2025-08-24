@@ -23,7 +23,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
 
-  app.post('/applications/delivery/login', (req, res) => {
+  app.post('/applications/delivery/api/login', (req, res) => {
     const { username, password } = req.body;
 
     if (username === 'admin' && password === 'password') {
@@ -34,7 +34,7 @@ module.exports = (options, eventEmitter) => {
     }
   });
 
-  app.post('/applications/delivery/logout', (req, res) => {
+  app.post('/applications/delivery/api/logout', (req, res) => {
     req.session.deliveryAuthenticated = false;
     res.json({ success: true });
   });

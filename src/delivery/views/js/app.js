@@ -52,17 +52,6 @@ class DeliveryPlatform {
             this.showOrders();
         });
 
-        // Back links
-        document.getElementById('backToDashboard').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showDashboard();
-        });
-
-        document.getElementById('backToOrders').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showOrders();
-        });
-
         // Filters
         document.getElementById('statusFilter').addEventListener('change', (e) => {
             this.filterOrdersByStatus(e.target.value);
@@ -96,7 +85,7 @@ class DeliveryPlatform {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/applications/delivery/login', {
+            const response = await fetch('/applications/delivery/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -120,7 +109,7 @@ class DeliveryPlatform {
 
     async handleLogout() {
         try {
-            await fetch('/applications/delivery/logout', { method: 'POST' });
+            await fetch('/applications/delivery/api/logout', { method: 'POST' });
             this.showLogin();
         } catch (error) {
             console.error('Logout failed:', error);
@@ -141,6 +130,10 @@ class DeliveryPlatform {
         document.getElementById('dashboardView').classList.remove('hidden');
         this.currentView = 'dashboard';
         
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('dashboardLink').classList.add('active');
+        
         await this.loadDashboardData();
     }
 
@@ -153,6 +146,44 @@ class DeliveryPlatform {
             this.renderDashboardOrders();
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
+            // Set default data for demo purposes
+            this.data.orders = [
+                {
+                    id: 1,
+                    customerName: 'John Smith',
+                    phoneNumber: '+1-555-0123',
+                    address: '123 Main St, City, State 12345',
+                    orderTime: new Date().toISOString(),
+                    status: 'waiting',
+                    priority: 'High',
+                    items: ['Package #001', 'Package #002']
+                },
+                {
+                    id: 2,
+                    customerName: 'Jane Doe',
+                    phoneNumber: '+1-555-0456',
+                    address: '456 Oak Ave, City, State 12345',
+                    orderTime: new Date(Date.now() - 3600000).toISOString(),
+                    status: 'delivery',
+                    priority: 'Normal',
+                    items: ['Package #003'],
+                    startDeliveryTime: new Date(Date.now() - 1800000).toISOString()
+                },
+                {
+                    id: 3,
+                    customerName: 'Bob Wilson',
+                    phoneNumber: '+1-555-0789',
+                    address: '789 Pine St, City, State 12345',
+                    orderTime: new Date(Date.now() - 7200000).toISOString(),
+                    status: 'delivered',
+                    priority: 'Low',
+                    items: ['Package #004', 'Package #005'],
+                    startDeliveryTime: new Date(Date.now() - 3600000).toISOString(),
+                    deliveredTime: new Date(Date.now() - 1800000).toISOString()
+                }
+            ];
+            this.updateDashboardStats();
+            this.renderDashboardOrders();
         }
     }
 
@@ -167,8 +198,8 @@ class DeliveryPlatform {
     }
 
     renderDashboardOrders() {
-        // Default to showing waiting orders
-        this.filterOrdersByStatus('waiting');
+        // Default to showing all recent orders
+        this.filterOrdersByStatus('');
     }
 
     filterOrdersByStatus(status) {
@@ -183,34 +214,55 @@ class DeliveryPlatform {
         const container = document.getElementById(containerId);
         
         if (orders.length === 0) {
-            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No orders found.</div>';
+            container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted-foreground);">No orders found.</div>';
             return;
         }
 
-        container.innerHTML = orders.map(order => `
-            <div class="order-item" onclick="app.showOrderDetail(${order.id})">
-                <div class="order-header">
-                    <div class="order-id">#${order.id}</div>
-                    <div class="order-status ${order.status}">${this.getStatusLabel(order.status)}</div>
+        // Use different rendering based on container
+        if (containerId === 'ordersList') {
+            // Dashboard widget style
+            container.innerHTML = orders.slice(0, 5).map(order => `
+                <div class="widget-item" onclick="app.showOrderDetail(${order.id})" style="cursor: pointer;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="widget-item-title">
+                            <a href="#" onclick="app.showOrderDetail(${order.id}); return false;">#${order.id} - ${order.customerName}</a>
+                        </div>
+                        <span class="badge badge-secondary" style="font-size: 0.75rem;">${this.getStatusLabel(order.status)}</span>
+                    </div>
+                    <div class="widget-item-meta">
+                        📍 ${order.address} | ${this.formatTime(order.orderTime)} | Priority: ${order.priority}
+                    </div>
                 </div>
-                <div class="order-details">
-                    <strong>${order.customerName}</strong>
+            `).join('');
+        } else {
+            // Full list view style
+            container.innerHTML = orders.map(order => `
+                <div class="document-card" onclick="app.showOrderDetail(${order.id})" style="margin-bottom: var(--spacing-md); cursor: pointer;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                        <h4 style="color: var(--primary); margin: 0;">#${order.id} - ${order.customerName}</h4>
+                        <span class="badge badge-secondary">${this.getStatusLabel(order.status)}</span>
+                    </div>
+                    <p style="margin: 0 0 var(--spacing-sm) 0; color: var(--text-primary);">
+                        📍 ${order.address}
+                    </p>
+                    <div class="document-meta">
+                        <span>Order Time: ${this.formatTime(order.orderTime)}</span>
+                        <span>Priority: ${order.priority}</span>
+                        <span>Items: ${order.items.length}</span>
+                    </div>
                 </div>
-                <div class="order-address">
-                    📍 ${order.address}
-                </div>
-                <div class="order-meta">
-                    <span>Order Time: ${this.formatTime(order.orderTime)}</span>
-                    <span>Priority: ${order.priority}</span>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     showOrders() {
         this.hideAllViews();
         document.getElementById('ordersView').classList.remove('hidden');
         this.currentView = 'orders';
+
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('ordersLink').classList.add('active');
 
         this.filteredOrders = [...this.data.orders];
         this.renderOrdersList(this.filteredOrders, 'allOrdersList');
@@ -272,29 +324,27 @@ class DeliveryPlatform {
         // Order information grid
         const infoGrid = document.getElementById('orderInfoGrid');
         infoGrid.innerHTML = `
-            <div class="info-item">
-                <div class="info-label">Customer Name</div>
-                <div class="info-value">${order.customerName}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Phone Number</div>
-                <div class="info-value">${order.phoneNumber}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Delivery Address</div>
-                <div class="info-value">${order.address}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Order Time</div>
-                <div class="info-value">${this.formatDateTime(order.orderTime)}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Priority</div>
-                <div class="info-value">${order.priority}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Items</div>
-                <div class="info-value">${order.items.join(', ')}</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-lg);">
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Customer Name</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">${order.customerName}</div>
+                </div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Phone Number</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">${order.phoneNumber}</div>
+                </div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Order Time</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">${this.formatDateTime(order.orderTime)}</div>
+                </div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Priority</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">${order.priority}</div>
+                </div>
+                <div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">Items</div>
+                    <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">${order.items.join(', ')}</div>
+                </div>
             </div>
         `;
 
@@ -302,8 +352,9 @@ class DeliveryPlatform {
         document.getElementById('mapAddress').textContent = order.address;
 
         // Current status
-        document.getElementById('currentOrderStatus').textContent = this.getStatusLabel(order.status);
-        document.getElementById('currentOrderStatus').className = `order-status ${order.status}`;
+        const statusBadge = document.getElementById('currentOrderStatus');
+        statusBadge.textContent = this.getStatusLabel(order.status);
+        statusBadge.className = 'badge badge-secondary';
 
         // Update action buttons based on status
         this.updateActionButtons();
@@ -318,21 +369,27 @@ class DeliveryPlatform {
         const status = this.currentOrder.status;
 
         // Reset button states
-        startBtn.style.display = 'inline-block';
-        deliveredBtn.style.display = 'inline-block';
+        startBtn.style.display = 'inline-flex';
+        deliveredBtn.style.display = 'inline-flex';
 
         if (status === 'waiting') {
-            startBtn.textContent = 'Start Delivery';
+            startBtn.innerHTML = '<svg width="16" height="16"><use href="#icon-play"></use></svg>Start Delivery';
             startBtn.disabled = false;
+            startBtn.className = 'btn btn-primary';
             deliveredBtn.disabled = true;
+            deliveredBtn.className = 'btn btn-secondary';
         } else if (status === 'delivery') {
-            startBtn.textContent = 'En Route';
+            startBtn.innerHTML = '<svg width="16" height="16"><use href="#icon-truck"></use></svg>En Route';
             startBtn.disabled = true;
+            startBtn.className = 'btn btn-secondary';
             deliveredBtn.disabled = false;
+            deliveredBtn.className = 'btn btn-primary';
         } else if (status === 'delivered') {
             startBtn.disabled = true;
-            deliveredBtn.textContent = 'Delivered ✓';
+            startBtn.className = 'btn btn-secondary';
+            deliveredBtn.innerHTML = '<svg width="16" height="16"><use href="#icon-check-circle"></use></svg>Delivered ✓';
             deliveredBtn.disabled = true;
+            deliveredBtn.className = 'btn btn-secondary';
         }
     }
 
@@ -362,11 +419,11 @@ class DeliveryPlatform {
         ];
 
         container.innerHTML = timeline.map(item => `
-            <div class="timeline-item ${item.active ? 'active' : ''}">
-                <div class="timeline-icon">${item.icon}</div>
-                <div class="timeline-content">
-                    <div class="timeline-status">${item.status}</div>
-                    <div class="timeline-time">${item.time ? this.formatDateTime(item.time) : 'Pending'}</div>
+            <div style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); padding: var(--spacing-md); border-radius: var(--radius); ${item.active ? 'background: var(--muted);' : 'opacity: 0.6;'}">
+                <div style="font-size: 1.5rem; line-height: 1;">${item.icon}</div>
+                <div style="flex: 1;">
+                    <div style="color: var(--text-primary); font-weight: 500; margin-bottom: var(--spacing-xs);">${item.status}</div>
+                    <div style="color: var(--muted-foreground); font-size: 0.875rem;">${item.time ? this.formatDateTime(item.time) : 'Pending'}</div>
                 </div>
             </div>
         `).join('');

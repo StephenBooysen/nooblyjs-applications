@@ -18,7 +18,7 @@ class AdminDashboard {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/auth/check');
+            const response = await fetch('/applications/infrastructure/api/auth/check');
             const data = await response.json();
             if (data.authenticated) {
                 this.showDashboard();
@@ -49,21 +49,13 @@ class AdminDashboard {
             this.showDashboard();
         });
 
-        document.getElementById('backToDashboard').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showDashboard();
-        });
-
-        document.getElementById('backToList').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showList(this.currentType);
-        });
-
         // Widget clicks
         document.querySelectorAll('.widget').forEach(widget => {
             widget.addEventListener('click', () => {
                 const type = widget.dataset.type;
-                this.showList(type);
+                if (type) {
+                    this.showList(type);
+                }
             });
         });
 
@@ -98,7 +90,7 @@ class AdminDashboard {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/login', {
+            const response = await fetch('/applications/infrastructure/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -122,7 +114,7 @@ class AdminDashboard {
 
     async handleLogout() {
         try {
-            await fetch('/logout', { method: 'POST' });
+            await fetch('/applications/infrastructure/api/logout', { method: 'POST' });
             this.showLogin();
         } catch (error) {
             console.error('Logout failed:', error);
@@ -143,15 +135,19 @@ class AdminDashboard {
         document.getElementById('dashboardView').classList.remove('hidden');
         this.currentView = 'dashboard';
         
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('dashboardLink').classList.add('active');
+        
         await this.loadDashboardData();
     }
 
     async loadDashboardData() {
         try {
             const [servers, databases, storage] = await Promise.all([
-                fetch('/appications/infrastructure/api/servers').then(r => r.json()),
-                fetch('/appications/infrastructure/api/databases').then(r => r.json()),
-                fetch('/appications/infrastructure/api/storage').then(r => r.json())
+                fetch('/applications/infrastructure/api/servers').then(r => r.json()),
+                fetch('/applications/infrastructure/api/databases').then(r => r.json()),
+                fetch('/applications/infrastructure/api/storage').then(r => r.json())
             ]);
 
             this.data.servers = servers;
@@ -161,6 +157,18 @@ class AdminDashboard {
             this.updateDashboardWidgets();
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
+            // Set default data for demo purposes
+            this.data.servers = [
+                { id: 1, name: 'Web Server 01', status: 'running', type: 'nginx', description: 'Main web server' },
+                { id: 2, name: 'App Server 01', status: 'running', type: 'nodejs', description: 'Application server' }
+            ];
+            this.data.databases = [
+                { id: 1, name: 'Primary DB', status: 'running', type: 'postgresql', size: '50GB', description: 'Main database' }
+            ];
+            this.data.storage = [
+                { id: 1, name: 'Data Volume', status: 'healthy', type: 'SSD', used: '120GB', total: '500GB', description: 'Primary storage volume' }
+            ];
+            this.updateDashboardWidgets();
         }
     }
 
@@ -198,13 +206,18 @@ class AdminDashboard {
         const items = this.data[type];
 
         container.innerHTML = items.map(item => `
-            <div class="item-card" data-id="${item.id}" onclick="app.showDetail('${type}', ${item.id})">
-                <div class="item-header">
-                    <div class="item-name">${item.name}</div>
-                    <div class="status ${item.status}">${item.status}</div>
-                </div>
-                <div class="item-details">
-                    ${this.getItemDetails(type, item)}
+            <div class="card" style="cursor: pointer;" data-id="${item.id}" onclick="app.showDetail('${type}', ${item.id})">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                        <h4 style="color: var(--primary); margin: 0;">${item.name}</h4>
+                        <span class="badge badge-secondary">${item.status}</span>
+                    </div>
+                    <p style="margin: 0; color: var(--text-primary); font-size: 0.875rem;">
+                        ${this.getItemDetails(type, item)}
+                    </p>
+                    <div style="margin-top: var(--spacing-sm); color: var(--muted-foreground); font-size: 0.875rem;">
+                        ${item.description || 'No description'}
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -240,12 +253,18 @@ class AdminDashboard {
         const container = document.getElementById('detailInfo');
         const fields = this.getDetailFields(type, item);
 
-        container.innerHTML = fields.map(field => `
-            <div class="info-item">
-                <div class="info-label">${field.label}</div>
-                <div class="info-value">${field.value}</div>
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-lg);">
+                ${fields.map(field => `
+                    <div>
+                        <div style="color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500;">${field.label}</div>
+                        <div style="color: var(--text-primary); font-weight: 600; margin-top: var(--spacing-xs);">
+                            ${field.value || 'N/A'}
+                        </div>
+                    </div>
+                `).join('')}
             </div>
-        `).join('');
+        `;
     }
 
     getDetailFields(type, item) {

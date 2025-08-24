@@ -168,6 +168,10 @@ class WarehouseManagement {
         document.getElementById('dashboardView').classList.remove('hidden');
         this.currentView = 'dashboard';
         
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('dashboardLink').classList.add('active');
+        
         await this.loadDashboardData();
     }
 
@@ -220,9 +224,9 @@ class WarehouseManagement {
             const status = statusMap[queue];
             const queueOrders = this.data.orders.filter(o => o.status === status);
             return `
-                <div class="queue-item" onclick="app.showOrdersByStatus('${status}')">
-                    <div class="queue-name">${queue}</div>
-                    <div class="queue-count">${queueOrders.length}</div>
+                <div class="action-card" onclick="app.showOrdersByStatus('${status}')" style="text-align: center; padding: var(--spacing-lg); cursor: pointer;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 var(--spacing-sm) 0; font-size: 1rem;">${queue}</h4>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${queueOrders.length}</div>
                 </div>
             `;
         }).join('');
@@ -238,17 +242,15 @@ class WarehouseManagement {
         }
 
         container.innerHTML = recentOrders.map(order => `
-            <div class="order-item" onclick="app.showOrderDetail(${order.id})">
-                <div class="order-header">
-                    <div class="order-id">#${order.id}</div>
-                    <div class="order-status ${order.status}">${order.status}</div>
+            <div class="widget-item" onclick="app.showOrderDetail(${order.id})" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="widget-item-title">
+                        <a href="#" onclick="app.showOrderDetail(${order.id}); return false;">#${order.id}</a>
+                    </div>
+                    <span class="badge badge-secondary" style="font-size: 0.75rem;">${order.status}</span>
                 </div>
-                <div class="order-details">
-                    Customer: ${order.customerName} | Items: ${order.items.length}
-                </div>
-                <div class="order-meta">
-                    <span>Created: ${this.formatDate(order.createdAt)}</span>
-                    <span>Priority: ${order.priority}</span>
+                <div class="widget-item-meta">
+                    Customer: ${order.customerName} | Items: ${order.items.length} | ${this.formatDate(order.createdAt)}
                 </div>
             </div>
         `).join('');
@@ -258,6 +260,10 @@ class WarehouseManagement {
         this.hideAllViews();
         document.getElementById('ordersView').classList.remove('hidden');
         this.currentView = 'orders';
+
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('ordersLink').classList.add('active');
 
         document.getElementById('ordersTitle').textContent = title;
         this.filteredOrders = [...this.data.orders];
@@ -293,16 +299,16 @@ class WarehouseManagement {
         }
 
         container.innerHTML = this.filteredOrders.map(order => `
-            <div class="order-item" onclick="app.showOrderDetail(${order.id})">
-                <div class="order-header">
-                    <div class="order-id">#${order.id}</div>
-                    <div class="order-status ${order.status}">${order.status}</div>
+            <div class="document-card" onclick="app.showOrderDetail(${order.id})" style="margin-bottom: var(--spacing-md); cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                    <h4 style="color: var(--primary); margin: 0;">#${order.id}</h4>
+                    <span class="badge badge-secondary">${order.status}</span>
                 </div>
-                <div class="order-details">
+                <p style="margin: 0 0 var(--spacing-sm) 0; color: var(--text-primary);">
                     Customer: ${order.customerName} | Items: ${order.items.length}
                     ${order.hasShortPicks ? ' | ⚠️ Has Short Picks' : ''}
-                </div>
-                <div class="order-meta">
+                </p>
+                <div class="document-meta" style="display: flex; gap: var(--spacing-lg);">
                     <span>Created: ${this.formatDate(order.createdAt)}</span>
                     <span>Priority: ${order.priority}</span>
                 </div>
@@ -377,36 +383,36 @@ class WarehouseManagement {
             const availableStock = inventoryItem ? inventoryItem.stock : 0;
             
             return `
-                <div class="pick-item">
-                    <div class="pick-item-header">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-location">${inventoryItem ? inventoryItem.location : 'Unknown'}</div>
+                <div class="card" style="margin-bottom: var(--spacing-lg); padding: var(--spacing-lg);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: var(--text-primary); margin: 0;">${item.name}</h4>
+                        <div style="color: var(--muted-foreground); font-weight: 500;">${inventoryItem ? inventoryItem.location : 'Unknown'}</div>
                     </div>
-                    <div class="pick-item-details">
-                        <div class="detail-item">
-                            <div class="detail-label">SKU</div>
-                            <div class="detail-value">${item.sku}</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">SKU</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${item.sku}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Required</div>
-                            <div class="detail-value">${item.quantity}</div>
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">Required</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${item.quantity}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Available</div>
-                            <div class="detail-value">${availableStock}</div>
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">Available</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${availableStock}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Status</div>
-                            <div class="detail-value" id="pickStatus${index}">${item.pickStatus || 'Pending'}</div>
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">Status</div>
+                            <div id="pickStatus${index}" style="color: var(--text-primary); font-weight: 500;">${item.pickStatus || 'Pending'}</div>
                         </div>
                     </div>
-                    <div class="pick-actions">
-                        <label>Pick Quantity:</label>
-                        <input type="number" class="pick-quantity" id="pickQty${index}" 
-                               min="0" max="${Math.min(item.quantity, availableStock)}" 
-                               value="${Math.min(item.quantity, availableStock)}">
-                        <button class="btn btn-success btn-small" onclick="app.pickItem(${index})">Pick</button>
-                        <button class="btn btn-warning btn-small" onclick="app.shortPickItem(${index})">Short Pick</button>
+                    <div style="display: flex; gap: var(--spacing-sm); align-items: center; padding-top: var(--spacing-md); border-top: 1px solid var(--border);">
+                        <label style="color: var(--muted-foreground); font-size: 0.875rem;">Pick Quantity:</label>
+                        <input type="number" id="pickQty${index}" min="0" max="${Math.min(item.quantity, availableStock)}" 
+                               value="${Math.min(item.quantity, availableStock)}"
+                               style="width: 80px; padding: var(--spacing-xs) var(--spacing-sm); border: 1px solid var(--border); border-radius: var(--radius);">
+                        <button class="btn btn-sm btn-primary" onclick="app.pickItem(${index})">Pick</button>
+                        <button class="btn btn-sm btn-secondary" onclick="app.shortPickItem(${index})">Short Pick</button>
                     </div>
                 </div>
             `;
@@ -487,6 +493,11 @@ class WarehouseManagement {
         this.hideAllViews();
         document.getElementById('inventoryView').classList.remove('hidden');
         this.currentView = 'inventory';
+        
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('inventoryLink').classList.add('active');
+        
         this.renderInventory();
     }
 
@@ -500,36 +511,37 @@ class WarehouseManagement {
 
         container.innerHTML = this.data.inventory.map(item => {
             const stockLevel = item.stock > 50 ? 'high' : item.stock > 20 ? 'medium' : 'low';
+            const stockColor = stockLevel === 'high' ? 'var(--success)' : stockLevel === 'medium' ? 'var(--warning)' : 'var(--destructive)';
             
             return `
-                <div class="inventory-item">
-                    <div class="inventory-header">
-                        <div class="inventory-name">${item.name}</div>
-                        <div class="stock-level ${stockLevel}">${stockLevel}</div>
+                <div class="card" style="padding: var(--spacing-lg);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: var(--text-primary); margin: 0;">${item.name}</h4>
+                        <span class="badge badge-secondary" style="background-color: ${stockColor}; color: white;">${stockLevel}</span>
                     </div>
-                    <div class="inventory-details">
-                        <div class="detail-item">
-                            <div class="detail-label">SKU</div>
-                            <div class="detail-value">${item.sku}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">SKU</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${item.sku}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Location</div>
-                            <div class="detail-value">${item.location}</div>
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">Location</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${item.location}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Stock</div>
-                            <div class="detail-value">${item.stock}</div>
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">Stock</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${item.stock}</div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Description</div>
-                            <div class="detail-value">${item.description || 'N/A'}</div>
+                        <div>
+                            <div style="color: var(--muted-foreground); font-size: 0.875rem;">Description</div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${item.description || 'N/A'}</div>
                         </div>
                     </div>
-                    <div class="inventory-actions">
-                        <input type="number" class="stock-input" id="stock${item.id}" 
-                               value="${item.stock}" min="0">
-                        <button class="btn btn-success btn-small" onclick="app.updateStock(${item.id})">Update</button>
-                        <button class="btn btn-secondary btn-small" onclick="app.editItem(${item.id})">Edit</button>
+                    <div style="display: flex; gap: var(--spacing-sm); align-items: center; padding-top: var(--spacing-md); border-top: 1px solid var(--border);">
+                        <input type="number" id="stock${item.id}" value="${item.stock}" min="0" 
+                               style="flex: 1; padding: var(--spacing-xs) var(--spacing-sm); border: 1px solid var(--border); border-radius: var(--radius);">
+                        <button class="btn btn-sm btn-primary" onclick="app.updateStock(${item.id})">Update</button>
+                        <button class="btn btn-sm btn-secondary" onclick="app.editItem(${item.id})">Edit</button>
                     </div>
                 </div>
             `;
@@ -557,6 +569,7 @@ class WarehouseManagement {
 
     showItemModal(item = null) {
         const modal = document.getElementById('itemModal');
+        const overlay = document.getElementById('overlay');
         const title = document.getElementById('itemModalTitle');
         
         if (item) {
@@ -572,11 +585,13 @@ class WarehouseManagement {
             this.currentItem = null;
         }
         
-        modal.classList.add('show');
+        modal.classList.remove('hidden');
+        overlay.classList.remove('hidden');
     }
 
     hideModal(modalId) {
-        document.getElementById(modalId).classList.remove('show');
+        document.getElementById(modalId).classList.add('hidden');
+        document.getElementById('overlay').classList.add('hidden');
     }
 
     handleItemSubmit() {

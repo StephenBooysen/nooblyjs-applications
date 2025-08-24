@@ -21,6 +21,25 @@ const path = require('path')
 module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
+
+  app.post('/applications/infrastructure/api/login', (req, res) => {
+    const { username, password } = req.body;
+    if (username === 'admin' && password === 'password') {
+      req.session.marketingAuthenticated = true;
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+  });
+
+  app.post('/applications/infrastructure/api/logout', (req, res) => {
+    req.session.marketingAuthenticated = false;
+    res.json({ success: true });
+  });
+
+  app.get('/applications/infrastructure/api/auth/check', (req, res) => {
+    res.json({ authenticated: !!req.session.marketingAuthenticated });
+  });
  
   app.get('/appications/infrastructure/api/servers', (req, res) => {
     res.json([

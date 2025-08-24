@@ -4,14 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warehouse Management System</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../../styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- SVG Icons Sprite -->
+    <svg style="display: none;">
+        <defs>
+            <!-- Warehouse/Box Icon -->
+            <symbol id="icon-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73L12 2L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73L12 22l8-4.27A2 2 0 0 0 21 16z"/>
+                <polyline points="3.29,7 12,12 20.71,7"/>
+                <line x1="12" y1="22" x2="12" y2="12"/>
+            </symbol>
+            <!-- Home Icon -->
+            <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </symbol>
+            <!-- Package/Orders Icon -->
+            <symbol id="icon-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/>
+                <path d="M21 16V8a2 2 0 0 0-1-1.73L12 2L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73L12 22l8-4.27A2 2 0 0 0 21 16z"/>
+                <polyline points="3.29,7 12,12 20.71,7"/>
+                <line x1="12" y1="22" x2="12" y2="12"/>
+            </symbol>
+            <!-- Inventory Icon -->
+            <symbol id="icon-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="21,8 21,21 3,21 3,8"/>
+                <rect x="1" y="3" width="22" height="5"/>
+                <line x1="10" y1="12" x2="14" y2="12"/>
+            </symbol>
+            <!-- Logout Icon -->
+            <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </symbol>
+            <!-- Plus/Add Icon -->
+            <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </symbol>
+            <!-- Check/Success Icon -->
+            <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20,6 9,17 4,12"/>
+            </symbol>
+            <!-- X/Close Icon -->
+            <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </symbol>
+            <!-- Filter Icon -->
+            <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <!-- Login Page -->
     <div id="loginPage" class="login-container">
         <div class="login-form">
-            <h1>Warehouse Management</h1>
+            <h1>Warehouse Management System</h1>
+            <p class="login-subtitle">Order Fulfillment & Inventory Management Platform</p>
             <form id="loginForm">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -22,164 +77,202 @@
                     <input type="password" id="password" name="password" required>
                 </div>
                 <div id="loginError" class="alert alert-danger hidden"></div>
-                <button type="submit" class="btn">Login</button>
+                <button type="submit" class="btn btn-primary">Login</button>
             </form>
-            <div class="mt-3 text-center">
-                <small>Use: admin / password</small>
+            <div class="text-center" style="margin-top: 1rem;">
+                <small style="color: var(--muted-foreground);">Use: admin / password</small>
             </div>
         </div>
     </div>
 
-    <!-- Dashboard -->
+    <!-- Main Warehouse Application -->
     <div id="dashboardPage" class="hidden">
-        <div class="header">
+        <header class="header">
             <div class="header-content">
-                <div class="logo">Warehouse Management</div>
+                <div class="logo">
+                    <svg class="logo-icon" width="20" height="20">
+                        <use href="#icon-box"></use>
+                    </svg>
+                    <span class="logo-text">Warehouse Management System</span>
+                </div>
+                
                 <nav class="nav">
-                    <a href="#" id="dashboardLink">Dashboard</a>
-                    <a href="#" id="ordersLink">Orders</a>
-                    <a href="#" id="inventoryLink">Inventory</a>
-                    <a href="#" id="logoutBtn">Logout</a>
+                    <a href="#" id="dashboardLink" class="nav-link active">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-home"></use>
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="#" id="ordersLink" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-package"></use>
+                        </svg>
+                        Orders
+                    </a>
+                    <a href="#" id="inventoryLink" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-archive"></use>
+                        </svg>
+                        Inventory
+                    </a>
+                    <a href="#" id="logoutBtn" class="nav-link">
+                        <svg class="nav-icon" width="16" height="16">
+                            <use href="#icon-logout"></use>
+                        </svg>
+                        Logout
+                    </a>
                 </nav>
             </div>
-        </div>
+        </header>
 
-        <div class="container">
-            <!-- Dashboard View -->
-            <div id="dashboardView">
-                <h1 class="dashboard-title">Warehouse Dashboard</h1>
-                
-                <!-- Main Widgets -->
-                <div class="widgets-grid">
-                    <!-- Picking Orders Widget -->
-                    <div class="widget picking">
-                        <div class="widget-header">
-                            <div class="widget-title">Today's Picking</div>
-                            <div class="widget-icon">📦</div>
-                        </div>
-                        <div class="widget-stats">
-                            <div class="stat-item">
-                                <div class="stat-value" id="waitingOrders">-</div>
-                                <div class="stat-label">Waiting</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="inProgressOrders">-</div>
-                                <div class="stat-label">In Progress</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="doneOrders">-</div>
-                                <div class="stat-label">Done</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="shortPicks">-</div>
-                                <div class="stat-label">Short Picks</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Order Queues Widget -->
-                    <div class="widget queues">
-                        <div class="widget-header">
-                            <div class="widget-title">Order Queues</div>
-                            <div class="widget-icon">🏗️</div>
-                        </div>
-                        <div class="queue-grid" id="queueGrid">
-                            <!-- Queues will be populated here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Orders -->
-                <div class="orders-section">
-                    <h2 style="margin-bottom: 20px;">Recent Orders</h2>
-                    <div id="recentOrdersList">
-                        <!-- Recent orders will be populated here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Orders List View -->
-            <div id="ordersView" class="hidden">
-                <div class="page-header">
-                    <h1 class="page-title" id="ordersTitle">All Orders</h1>
-                </div>
-
-                <div class="filters">
-                    <div class="filters-grid">
-                        <div class="form-group">
-                            <label for="statusFilter">Filter by Status</label>
-                            <select id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="waiting">Waiting</option>
-                                <option value="picking">Picking</option>
-                                <option value="packing">Packing</option>
-                                <option value="despatching">Despatching</option>
-                                <option value="despatched">Despatched</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="dateFilter">Filter by Date</label>
-                            <select id="dateFilter">
-                                <option value="">All Dates</option>
-                                <option value="today">Today</option>
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="order-list" id="ordersList">
-                    <!-- Orders will be populated here -->
-                </div>
-
-                <a href="#" class="back-link" id="backToDashboard">← Back to Dashboard</a>
-            </div>
-
-            <!-- Picking View -->
-            <div id="pickingView" class="hidden">
-                <div class="picking-interface">
-                    <div class="picking-header">
-                        <h1 class="picking-title" id="pickingTitle">Pick Order</h1>
-                        <div class="order-id" id="pickingOrderId">#12345</div>
+        <div class="main-container">
+            <main class="main-content">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="view">
+                    <div class="welcome-section">
+                        <h1>Warehouse Dashboard</h1>
+                        <p>Real-time overview of your warehouse operations and fulfillment metrics</p>
                     </div>
                     
-                    <div class="picking-items" id="pickingItems">
-                        <!-- Picking items will be populated here -->
+                    <div class="dashboard-widgets">
+                        <!-- Picking Orders Widget -->
+                        <div class="widget">
+                            <h3>Today's Picking</h3>
+                            <div class="widget-stats" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-lg); margin-top: var(--spacing-lg);">
+                                <div class="stat-item" style="text-align: center; padding: var(--spacing-md);">
+                                    <div class="stat-value" id="waitingOrders" style="font-size: 2rem; font-weight: 700; color: var(--primary);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Waiting</div>
+                                </div>
+                                <div class="stat-item" style="text-align: center; padding: var(--spacing-md);">
+                                    <div class="stat-value" id="inProgressOrders" style="font-size: 2rem; font-weight: 700; color: var(--primary);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">In Progress</div>
+                                </div>
+                                <div class="stat-item" style="text-align: center; padding: var(--spacing-md);">
+                                    <div class="stat-value" id="doneOrders" style="font-size: 2rem; font-weight: 700; color: var(--primary);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Done</div>
+                                </div>
+                                <div class="stat-item" style="text-align: center; padding: var(--spacing-md);">
+                                    <div class="stat-value" id="shortPicks" style="font-size: 2rem; font-weight: 700; color: var(--destructive);">-</div>
+                                    <div class="stat-label" style="color: var(--muted-foreground); font-size: 0.875rem;">Short Picks</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Queues Widget -->
+                        <div class="widget">
+                            <h3>Order Queues</h3>
+                            <div class="queue-grid" id="queueGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-sm); margin-top: var(--spacing-lg);">
+                                <!-- Queues will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Orders Widget -->
+                        <div class="widget">
+                            <h3>Recent Orders</h3>
+                            <div id="recentOrdersList" class="widget-content">
+                                <!-- Recent orders will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders List View -->
+                <div id="ordersView" class="view hidden">
+                    <div class="view-header">
+                        <h1 id="ordersTitle">All Orders</h1>
                     </div>
 
-                    <div class="page-actions">
-                        <button class="btn btn-success" id="completePickBtn">Complete Pick</button>
-                        <button class="btn btn-warning" id="partialPickBtn">Partial Pick</button>
-                        <button class="btn btn-secondary" id="cancelPickBtn">Cancel</button>
+                    <div class="card" style="margin-bottom: var(--spacing-lg);">
+                        <div class="card-content">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-lg);">
+                                <div class="form-group">
+                                    <label for="statusFilter">Filter by Status</label>
+                                    <select id="statusFilter">
+                                        <option value="">All Status</option>
+                                        <option value="waiting">Waiting</option>
+                                        <option value="picking">Picking</option>
+                                        <option value="packing">Packing</option>
+                                        <option value="despatching">Despatching</option>
+                                        <option value="despatched">Despatched</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateFilter">Filter by Date</label>
+                                    <select id="dateFilter">
+                                        <option value="">All Dates</option>
+                                        <option value="today">Today</option>
+                                        <option value="week">This Week</option>
+                                        <option value="month">This Month</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-content">
+                            <div id="ordersList">
+                                <!-- Orders will be populated here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <a href="#" class="back-link" id="backToOrders">← Back to Orders</a>
-            </div>
-
-            <!-- Inventory View -->
-            <div id="inventoryView" class="hidden">
-                <div class="page-header">
-                    <h1 class="page-title">Inventory Management</h1>
-                    <button class="btn btn-success" id="addItemBtn">Add New Item</button>
+                <!-- Picking View -->
+                <div id="pickingView" class="view hidden">
+                    <div class="view-header">
+                        <h1 id="pickingTitle">Pick Order</h1>
+                        <div class="order-id" id="pickingOrderId" style="color: var(--muted-foreground); font-size: 1.125rem;">#12345</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-content">
+                            <div id="pickingItems">
+                                <!-- Picking items will be populated here -->
+                            </div>
+                            
+                            <div class="modal-actions" style="border-top: 1px solid var(--border); padding-top: var(--spacing-lg); margin-top: var(--spacing-lg);">
+                                <button class="btn btn-secondary" id="cancelPickBtn">Cancel</button>
+                                <button class="btn btn-secondary" id="partialPickBtn">Partial Pick</button>
+                                <button class="btn btn-primary" id="completePickBtn">
+                                    <svg width="16" height="16"><use href="#icon-check"></use></svg>
+                                    Complete Pick
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="inventory-grid" id="inventoryGrid">
-                    <!-- Inventory items will be populated here -->
-                </div>
+                <!-- Inventory View -->
+                <div id="inventoryView" class="view hidden">
+                    <div class="view-header">
+                        <h1>Inventory Management</h1>
+                        <button class="btn btn-primary" id="addItemBtn">
+                            <svg width="16" height="16"><use href="#icon-plus"></use></svg>
+                            Add New Item
+                        </button>
+                    </div>
 
-                <a href="#" class="back-link" id="backToDashboardFromInventory">← Back to Dashboard</a>
-            </div>
+                    <div class="card">
+                        <div class="card-content">
+                            <div id="inventoryGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-lg);">
+                                <!-- Inventory items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
     <!-- Add/Edit Item Modal -->
-    <div id="itemModal" class="modal">
+    <div id="itemModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="itemModalTitle">Add New Item</h2>
-                <button class="modal-close" id="closeItemModal">&times;</button>
+                <h2 id="itemModalTitle">Add New Item</h2>
+                <button class="modal-close" id="closeItemModal">
+                    <svg width="16" height="16"><use href="#icon-x"></use></svg>
+                </button>
             </div>
             <form id="itemForm">
                 <div class="form-group">
@@ -202,13 +295,15 @@
                     <label for="itemDescription">Description</label>
                     <textarea id="itemDescription" name="description" rows="3"></textarea>
                 </div>
-                <div class="page-actions">
-                    <button type="submit" class="btn btn-success">Save Item</button>
+                <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="cancelItemBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Item</button>
                 </div>
             </form>
         </div>
     </div>
+
+    <div id="overlay" class="overlay hidden"></div>
 
     <script src="js/app.js"></script>
 </body>

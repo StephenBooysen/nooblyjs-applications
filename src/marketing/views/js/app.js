@@ -233,6 +233,10 @@ class EmailMarketing {
         document.getElementById('dashboardView').classList.remove('hidden');
         this.currentView = 'dashboard';
         
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('dashboardLink').classList.add('active');
+        
         await this.loadDashboardData();
     }
 
@@ -275,28 +279,15 @@ class EmailMarketing {
         const recentCampaigns = this.data.campaigns.slice(0, 5);
 
         container.innerHTML = recentCampaigns.map(campaign => `
-            <div class="campaign-item" onclick="app.showCampaignDetail(${campaign.id})">
-                <div class="campaign-header">
-                    <div class="campaign-name">${campaign.name}</div>
-                    <div class="campaign-status ${campaign.status}">${campaign.status}</div>
+            <div class="widget-item" onclick="app.showCampaignDetail(${campaign.id})" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="widget-item-title">
+                        <a href="#" onclick="app.showCampaignDetail(${campaign.id}); return false;">${campaign.name}</a>
+                    </div>
+                    <span class="badge badge-secondary" style="font-size: 0.75rem;">${campaign.status}</span>
                 </div>
-                <div class="campaign-metrics">
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.sent}</div>
-                        <div class="stat-label">Sent</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.opens}</div>
-                        <div class="stat-label">Opens</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.clicks}</div>
-                        <div class="stat-label">Clicks</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.bounces}</div>
-                        <div class="stat-label">Bounces</div>
-                    </div>
+                <div class="widget-item-meta">
+                    Sent: ${campaign.sent} | Opens: ${campaign.opens} | Clicks: ${campaign.clicks} | ${this.formatDate(campaign.createdAt)}
                 </div>
             </div>
         `).join('');
@@ -306,34 +297,28 @@ class EmailMarketing {
         this.hideAllViews();
         document.getElementById('campaignsListView').classList.remove('hidden');
         this.currentView = 'campaignsList';
+        
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('campaignsLink').classList.add('active');
+        
         this.renderAllCampaigns();
     }
 
     renderAllCampaigns() {
         const container = document.getElementById('allCampaignsList');
         container.innerHTML = this.data.campaigns.map(campaign => `
-            <div class="campaign-item" onclick="app.showCampaignDetail(${campaign.id})">
-                <div class="campaign-header">
-                    <div class="campaign-name">${campaign.name}</div>
-                    <div class="campaign-status ${campaign.status}">${campaign.status}</div>
+            <div class="document-card" onclick="app.showCampaignDetail(${campaign.id})" style="margin-bottom: var(--spacing-md); cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                    <h4 style="color: var(--primary); margin: 0;">${campaign.name}</h4>
+                    <span class="badge badge-secondary">${campaign.status}</span>
                 </div>
-                <div class="campaign-metrics">
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.sent}</div>
-                        <div class="stat-label">Sent</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.opens}</div>
-                        <div class="stat-label">Opens</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.clicks}</div>
-                        <div class="stat-label">Clicks</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${campaign.bounces}</div>
-                        <div class="stat-label">Bounces</div>
-                    </div>
+                <p style="margin: 0 0 var(--spacing-sm) 0; color: var(--text-primary);">
+                    Sent: ${campaign.sent} | Opens: ${campaign.opens} | Clicks: ${campaign.clicks} | Bounces: ${campaign.bounces}
+                </p>
+                <div class="document-meta">
+                    <span>Created: ${this.formatDate(campaign.createdAt)}</span>
+                    <span>Subject: ${campaign.subject || 'No subject'}</span>
                 </div>
             </div>
         `).join('');
@@ -401,13 +386,13 @@ class EmailMarketing {
     renderRecipients(recipients) {
         const tbody = document.getElementById('recipientsTableBody');
         tbody.innerHTML = recipients.map(recipient => `
-            <tr>
-                <td>${recipient.email}</td>
-                <td>${recipient.name}</td>
-                <td><span class="status-badge ${recipient.status}">${recipient.status}</span></td>
-                <td>${recipient.sentAt || '-'}</td>
-                <td>${recipient.openedAt || '-'}</td>
-                <td>${recipient.clickedAt || '-'}</td>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: var(--spacing-md); color: var(--text-primary);">${recipient.email}</td>
+                <td style="padding: var(--spacing-md); color: var(--text-primary);">${recipient.name}</td>
+                <td style="padding: var(--spacing-md);"><span class="badge badge-secondary">${recipient.status}</span></td>
+                <td style="padding: var(--spacing-md); color: var(--muted-foreground);">${recipient.sentAt || '-'}</td>
+                <td style="padding: var(--spacing-md); color: var(--muted-foreground);">${recipient.openedAt || '-'}</td>
+                <td style="padding: var(--spacing-md); color: var(--muted-foreground);">${recipient.clickedAt || '-'}</td>
             </tr>
         `).join('');
     }
@@ -426,18 +411,28 @@ class EmailMarketing {
         this.hideAllViews();
         document.getElementById('segmentsListView').classList.remove('hidden');
         this.currentView = 'segmentsList';
+        
+        // Update navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('segmentsLink').classList.add('active');
+        
         this.renderSegments();
     }
 
     renderSegments() {
         const container = document.getElementById('segmentsList');
         container.innerHTML = this.data.segments.map(segment => `
-            <div class="segment-item" onclick="app.showSegmentDetail(${segment.id})">
-                <div class="segment-header">
-                    <div class="segment-name">${segment.name}</div>
-                    <div class="segment-count">${segment.customerCount}</div>
+            <div class="document-card" onclick="app.showSegmentDetail(${segment.id})" style="margin-bottom: var(--spacing-md); cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                    <h4 style="color: var(--primary); margin: 0;">${segment.name}</h4>
+                    <span class="badge badge-secondary">${segment.customerCount} customers</span>
                 </div>
-                <div class="segment-description">${segment.description}</div>
+                <p style="margin: 0; color: var(--text-primary);">
+                    ${segment.description || 'No description provided'}
+                </p>
+                <div class="document-meta" style="margin-top: var(--spacing-sm);">
+                    <span>Created: ${this.formatDate(segment.createdAt || new Date())}</span>
+                </div>
             </div>
         `).join('');
     }
@@ -468,13 +463,13 @@ class EmailMarketing {
     renderSegmentCustomers(customers) {
         const tbody = document.getElementById('segmentCustomersTableBody');
         tbody.innerHTML = customers.map(customer => `
-            <tr>
-                <td>${customer.email}</td>
-                <td>${customer.name}</td>
-                <td><span class="status-badge ${customer.status}">${customer.status}</span></td>
-                <td>${customer.addedDate}</td>
-                <td>
-                    <button class="btn btn-danger btn-small" onclick="app.removeCustomerFromSegment(${customer.id})">
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: var(--spacing-md); color: var(--text-primary);">${customer.email}</td>
+                <td style="padding: var(--spacing-md); color: var(--text-primary);">${customer.name}</td>
+                <td style="padding: var(--spacing-md);"><span class="badge badge-secondary">${customer.status}</span></td>
+                <td style="padding: var(--spacing-md); color: var(--muted-foreground);">${customer.addedDate}</td>
+                <td style="padding: var(--spacing-md);">
+                    <button class="btn btn-sm btn-secondary" onclick="app.removeCustomerFromSegment(${customer.id})">
                         Remove
                     </button>
                 </td>
@@ -607,11 +602,13 @@ class EmailMarketing {
     }
 
     showModal(modalId) {
-        document.getElementById(modalId).classList.add('show');
+        document.getElementById(modalId).classList.remove('hidden');
+        document.getElementById('overlay').classList.remove('hidden');
     }
 
     hideModal(modalId) {
-        document.getElementById(modalId).classList.remove('show');
+        document.getElementById(modalId).classList.add('hidden');
+        document.getElementById('overlay').classList.add('hidden');
     }
 
     handleAddCustomer() {
@@ -694,6 +691,10 @@ class EmailMarketing {
             const segmentIndex = this.data.segments.findIndex(s => s.id === this.currentSegment.id);
             this.data.segments[segmentIndex] = this.currentSegment;
         }
+    }
+
+    formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString();
     }
 
     hideAllViews() {
