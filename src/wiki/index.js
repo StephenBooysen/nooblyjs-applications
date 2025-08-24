@@ -20,7 +20,7 @@ const Views = require('./views');
  * @param {EventEmitter} eventEmitter - Global event emitter for inter-service communication
  * @return {logging|loggingFile} Logging service instance with specified provider
  */
-module.exports = (options, eventEmitter) => {
+module.exports = (options, eventEmitter, serviceRegistry) => {
   Routes(options, eventEmitter);
   Views(options, eventEmitter);
 }
