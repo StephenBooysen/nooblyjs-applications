@@ -22,7 +22,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
   
-  app.post('/customerservice/login', (req, res) => {
+  app.post('/applications/customerservice/api/login', (req, res) => {
     const { username, password } = req.body;
   
     if (username === 'admin' && password === 'password') {
@@ -33,16 +33,16 @@ module.exports = (options, eventEmitter) => {
     }
   });
   
-  app.post('/customerservice/logout', (req, res) => {
+  app.post('/applications/customerservice/api/logout', (req, res) => {
     req.session.serviceAuthenticated = false;
     res.json({ success: true });
   });
   
-  app.get('/api/customerservice/auth/check', (req, res) => {
+  app.get('/applications/customerservice/api/auth/check', (req, res) => {
     res.json({ authenticated: !!req.session.serviceAuthenticated });
   });
   
-  app.get('/api/customerservice/cases', (req, res) => {
+  app.get('/applications/customerservice/api/cases', (req, res) => {
     res.json([
       {
         id: 1,
@@ -215,7 +215,7 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
   
-  app.get('/api/customerservice/cases/:id', (req, res) => {
+  app.get('/applications/customerservice/api/cases/:id', (req, res) => {
     const caseId = parseInt(req.params.id);
   
     // Get all cases and find the specific one

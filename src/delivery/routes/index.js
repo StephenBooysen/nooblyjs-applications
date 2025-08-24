@@ -23,7 +23,7 @@ module.exports = (options, eventEmitter) => {
 
   const app = options['express-app'];
 
-  app.post('/delivery/login', (req, res) => {
+  app.post('/applications/delivery/login', (req, res) => {
     const { username, password } = req.body;
 
     if (username === 'admin' && password === 'password') {
@@ -34,16 +34,16 @@ module.exports = (options, eventEmitter) => {
     }
   });
 
-  app.post('/delivery/logout', (req, res) => {
+  app.post('/applications/delivery/logout', (req, res) => {
     req.session.deliveryAuthenticated = false;
     res.json({ success: true });
   });
 
-  app.get('/api/delivery/auth/check', (req, res) => {
+  app.get('/applications/delivery/api/auth/check', (req, res) => {
     res.json({ authenticated: !!req.session.deliveryAuthenticated });
   });
 
-  app.get('/api/delivery/orders', (req, res) => {
+  app.get('/applications/delivery/api/orders', (req, res) => {
     res.json([
       {
         id: 2001,

@@ -16,7 +16,7 @@ class DeliveryPlatform {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/delivery/auth/check');
+            const response = await fetch('/applications/delivery/api/auth/check');
             const data = await response.json();
             if (data.authenticated) {
                 this.showDashboard();
@@ -96,7 +96,7 @@ class DeliveryPlatform {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/delivery/login', {
+            const response = await fetch('/applications/delivery/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -120,7 +120,7 @@ class DeliveryPlatform {
 
     async handleLogout() {
         try {
-            await fetch('/delivery/logout', { method: 'POST' });
+            await fetch('/applications/delivery/logout', { method: 'POST' });
             this.showLogin();
         } catch (error) {
             console.error('Logout failed:', error);
@@ -146,7 +146,7 @@ class DeliveryPlatform {
 
     async loadDashboardData() {
         try {
-            const orders = await fetch('/api/delivery/orders').then(r => r.json());
+            const orders = await fetch('/applications/delivery/api/orders').then(r => r.json());
             this.data.orders = orders;
             
             this.updateDashboardStats();

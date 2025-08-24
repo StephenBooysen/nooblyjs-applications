@@ -18,7 +18,7 @@ class CustomerService {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/customerservice/auth/check');
+            const response = await fetch('/applications/customerservice/api/auth/check');
             const data = await response.json();
             if (data.authenticated) {
                 this.showDashboard();
@@ -99,7 +99,7 @@ class CustomerService {
         const errorDiv = document.getElementById('loginError');
 
         try {
-            const response = await fetch('/customerservice/login', {
+            const response = await fetch('/applications/customerservice/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -123,7 +123,7 @@ class CustomerService {
 
     async handleLogout() {
         try {
-            await fetch('/customerservice/logout', { method: 'POST' });
+            await fetch('/applications/customerservice/api/logout', { method: 'POST' });
             this.showLogin();
         } catch (error) {
             console.error('Logout failed:', error);
@@ -149,7 +149,7 @@ class CustomerService {
 
     async loadDashboardData() {
         try {
-            const cases = await fetch('/api/customerservice/cases').then(r => r.json());
+            const cases = await fetch('/applications/customerservice/api/cases').then(r => r.json());
             this.data.cases = cases;
             
             this.updateDashboardStats();
@@ -303,7 +303,7 @@ class CustomerService {
 
         // Load full case details with comments
         try {
-            const fullCase = await fetch(`/api/customerservice/cases/${caseId}`).then(r => r.json());
+            const fullCase = await fetch(`/applications/customerservice/api/cases/${caseId}`).then(r => r.json());
             this.currentCase = fullCase;
             this.renderCaseDetail();
         } catch (error) {
