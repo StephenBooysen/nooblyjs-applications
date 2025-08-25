@@ -210,5 +210,15 @@ module.exports = (options, eventEmitter) => {
 
     res.json(customers);
   });
+
+  // Application status endpoint
+  app.get('/applications/marketing/api/status', (req, res) => {
+    res.json({ 
+      status: 'running',
+      application: 'Marketing Management',
+      version: '1.0.0',
+      timestamp: new Date().toISOString()
+    });
+  });
   
 };

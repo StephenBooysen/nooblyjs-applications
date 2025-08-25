@@ -620,4 +620,14 @@ CREATE TABLE users (
     res.json({ success: true, document: updatedDocument });
   });
 
+  // Application status endpoint
+  app.get('/applications/wiki/api/status', (req, res) => {
+    res.json({ 
+      status: 'running',
+      application: 'Wiki Management',
+      version: '1.0.0',
+      timestamp: new Date().toISOString()
+    });
+  });
+
 };

@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noobly JS Service Registry</title>
+    <title>NooblyJS Applications Registry</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css">
     <style>
         /* Material Design Theme Variables */
@@ -114,35 +113,42 @@
             color: var(--text-secondary);
         }
 
-        .service-list {
+        .application-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 24px;
         }
 
-        .service-card {
+        .application-card {
             background: var(--surface-color);
             border-radius: 8px;
             box-shadow: var(--shadow-1);
             padding: 24px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
-        .service-card:hover {
+        .application-card:hover {
             box-shadow: var(--shadow-2);
             transform: translateY(-4px);
         }
 
-        .service-name {
+        .application-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .application-name {
             font-size: 18px;
             font-weight: 500;
             color: var(--text-primary);
         }
 
-        .service-status {
+        .application-status {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -164,6 +170,52 @@
             background-color: var(--error-color);
         }
 
+        .status-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: capitalize;
+        }
+
+        .application-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .application-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--surface-variant);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
         @keyframes pulse {
             0% {
                 box-shadow: 0 0 0 0 rgba(56, 142, 60, 0.7);
@@ -182,76 +234,131 @@
     <div class="app-container">
         <nav class="sidebar">
             <div class="logo">
-                <h1>Noobly JS</h1>
-                <div class="subtitle">Service Registry</div>
+                <h1>NooblyJS</h1>
+                <div class="subtitle">Applications Registry</div>
             </div>
-            <a href="/services/" class="nav-item active">Home</a>
-            <a href="/services/caching/" class="nav-item">Cache Management</a>
-            <a href="/services/dataserve/" class="nav-item">Data Serve</a>
-            <a href="/services/filing/" class="nav-item">File Management</a>
-            <a href="/services/logging/" class="nav-item">Logging</a>
-            <a href="/services/measuring/" class="nav-item">Measuring</a>
-            <a href="/services/notifying/" class="nav-item">Notifications</a>
-            <a href="/services/queueing/" class="nav-item">Queue Management</a>
-            <a href="/services/scheduling/" class="nav-item">Scheduling</a>
-            <a href="/services/searching/" class="nav-item">Search</a>
-            <a href="/services/working/" class="nav-item">Background Tasks</a>
-            <a href="/services/workflow/" class="nav-item">Workflows</a>
+            <a href="/applications/" class="nav-item active">Dashboard</a>
+            <a href="/applications/customerservice/" class="nav-item">Customer Service</a>
+            <a href="/applications/delivery/" class="nav-item">Delivery Management</a>
+            <a href="/applications/infrastructure/" class="nav-item">Infrastructure</a>
+            <a href="/applications/marketing/" class="nav-item">Marketing</a>
+            <a href="/applications/warehouse/" class="nav-item">Warehouse</a>
+            <a href="/applications/wiki/" class="nav-item">Wiki</a>
         </nav>
 
         <main class="main-content">
             <div class="page-header">
-                <h1 class="page-title">Service Registry</h1>
-                <p class="page-subtitle">A dashboard of all available services and their current status.</p>
+                <h1 class="page-title">Applications Registry</h1>
+                <p class="page-subtitle">A dashboard of all business applications and their current status.</p>
             </div>
 
-            <div class="service-list" id="service-list">
-                <!-- Services will be dynamically added here -->
+            <div class="application-list" id="application-list">
+                <!-- Applications will be dynamically added here -->
             </div>
         </main>
     </div>
 
     <script>
-        const services = [
-            'caching',
-            'dataserve',
-            'filing', 
-            'logging', 
-            'measuring', 
-            'notifying', 
-            'queueing', 
-            'scheduling', 
-            'searching', 
-            'workflow', 
-            'working'
+        const applications = [
+            {
+                id: 'customerservice',
+                name: 'Customer Service',
+                description: 'Comprehensive support case management with queue-based organization and collaborative resolution workflows.',
+                url: '/applications/customerservice/'
+            },
+            {
+                id: 'delivery',
+                name: 'Delivery Management', 
+                description: 'Order tracking and delivery coordination platform with real-time status updates and customer communication.',
+                url: '/applications/delivery/'
+            },
+            {
+                id: 'infrastructure',
+                name: 'Infrastructure Management',
+                description: 'IT operations dashboard for server, database, and storage monitoring with comprehensive health tracking.',
+                url: '/applications/infrastructure/'
+            },
+            {
+                id: 'marketing',
+                name: 'Marketing Management',
+                description: 'Complete email marketing platform with campaign management, customer segmentation, and analytics.',
+                url: '/applications/marketing/'
+            },
+            {
+                id: 'warehouse',
+                name: 'Warehouse Management',
+                description: 'Inventory management and order fulfillment system with comprehensive tracking and stock management.',
+                url: '/applications/warehouse/'
+            },
+            {
+                id: 'wiki',
+                name: 'Wiki Management',
+                description: 'Enterprise knowledge base with content management, collaboration features, and powerful search capabilities.',
+                url: '/applications/wiki/'
+            }
         ];
 
-        const serviceList = document.getElementById('service-list');
+        const applicationList = document.getElementById('application-list');
 
-        services.forEach(service => {
-            const serviceCard = document.createElement('div');
-            serviceCard.className = 'service-card';
+        applications.forEach(app => {
+            const applicationCard = document.createElement('div');
+            applicationCard.className = 'application-card';
+            
+            // Make card clickable
+            applicationCard.addEventListener('click', () => {
+                window.location.href = app.url;
+            });
 
-            const serviceName = document.createElement('div');
-            serviceName.className = 'service-name';
-            serviceName.textContent = service.charAt(0).toUpperCase() + service.slice(1);
+            const applicationHeader = document.createElement('div');
+            applicationHeader.className = 'application-header';
 
-            const serviceStatus = document.createElement('div');
-            serviceStatus.className = 'service-status';
+            const applicationName = document.createElement('div');
+            applicationName.className = 'application-name';
+            applicationName.textContent = app.name;
+
+            const applicationStatus = document.createElement('div');
+            applicationStatus.className = 'application-status';
 
             const statusIndicator = document.createElement('div');
             statusIndicator.className = 'status-indicator';
-            statusIndicator.id = `status-${service}`;
+            statusIndicator.id = `status-${app.id}`;
 
-            serviceStatus.appendChild(statusIndicator);
+            const statusText = document.createElement('div');
+            statusText.className = 'status-text';
+            statusText.id = `status-text-${app.id}`;
+            statusText.textContent = 'checking...';
 
-            serviceCard.appendChild(serviceName);
-            serviceCard.appendChild(serviceStatus);
+            applicationStatus.appendChild(statusIndicator);
+            applicationStatus.appendChild(statusText);
 
-            serviceList.appendChild(serviceCard);
+            applicationHeader.appendChild(applicationName);
+            applicationHeader.appendChild(applicationStatus);
+
+            const applicationDescription = document.createElement('div');
+            applicationDescription.className = 'application-description';
+            applicationDescription.textContent = app.description;
+
+            const applicationActions = document.createElement('div');
+            applicationActions.className = 'application-actions';
+
+            const openBtn = document.createElement('button');
+            openBtn.className = 'action-btn btn-primary';
+            openBtn.textContent = 'Open Application';
+            openBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.location.href = app.url;
+            });
+
+            applicationActions.appendChild(openBtn);
+
+            applicationCard.appendChild(applicationHeader);
+            applicationCard.appendChild(applicationDescription);
+            applicationCard.appendChild(applicationActions);
+
+            applicationList.appendChild(applicationCard);
 
             // Fetch status
-            fetch(`/services/${service}/api/status`)
+            fetch(`/applications/${app.id}/api/status`)
                 .then(response => {
                     if (response.ok) {
                         return response.json();
@@ -260,17 +367,23 @@
                     }
                 })
                 .then(data => {
-                    const indicator = document.getElementById(`status-${service}`);
-                    if (data) {
+                    const indicator = document.getElementById(`status-${app.id}`);
+                    const statusTextEl = document.getElementById(`status-text-${app.id}`);
+                    
+                    if (data && data.status === 'running') {
                         indicator.classList.add('running');
+                        statusTextEl.textContent = 'running';
                     } else {
                         indicator.classList.add('stopped');
+                        statusTextEl.textContent = 'stopped';
                     }
                 })
                 .catch(error => {
-                    const indicator = document.getElementById(`status-${service}`);
+                    const indicator = document.getElementById(`status-${app.id}`);
+                    const statusTextEl = document.getElementById(`status-text-${app.id}`);
                     indicator.classList.add('stopped');
-                    console.error(`Error fetching status for ${service}:`, error);
+                    statusTextEl.textContent = 'error';
+                    console.error(`Error fetching status for ${app.id}:`, error);
                 });
         });
     </script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation - Noobly JS</title>
+    <title>Documentation - Noobly Applications</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,15 +11,15 @@
     <header class="header" id="header">
         <div class="header-container">
             <a href="index.html" class="logo">
-                <div class="logo-icon">NJS</div>
-                <span>Noobly JS</span>
+                <div class="logo-icon">NA</div>
+                <span>Noobly Applications</span>
             </a>
             
             <nav class="nav-menu">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="documentation.html" class="nav-link active">Documentation</a>
                 <a href="contact.html" class="nav-link">Contact</a>
-                <a href="/services" class="nav-link">Service Registry</a>
+                <a href="/applications" class="nav-link">Live Demo</a>
             </nav>
             
             <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
@@ -30,7 +30,7 @@
                 <a href="index.html" class="mobile-nav-link">Home</a>
                 <a href="documentation.html" class="mobile-nav-link">Documentation</a>
                 <a href="contact.html" class="mobile-nav-link">Contact</a>
-                <a href="cache.html" class="btn btn-primary">Get Started</a>
+                <a href="/applications" class="btn btn-primary">Try Live Demo</a>
             </nav>
         </div>
     </header>
@@ -40,7 +40,7 @@
         <div class="service-content">
             <div class="badge badge-default" style="margin-bottom: 1rem;">📚 Documentation</div>
             <h1 class="service-title">Documentation</h1>
-            <p class="service-description">Comprehensive documentation and guides for getting started with Noobly JS framework and all its services.</p>
+            <p class="service-description">Comprehensive documentation and integration guides for Noobly Applications - ready-made business systems that accelerate development.</p>
             
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
                 <a href="#quick-start" class="btn btn-primary">Quick Start</a>
@@ -54,33 +54,33 @@
         <div class="container">
             <div style="text-align: center; margin-bottom: 3rem;">
                 <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Quick Start Guide</h2>
-                <p style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Get up and running with Noobly JS in minutes</p>
+                <p style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Integrate Noobly Applications into your project in minutes</p>
             </div>
 
             <div class="service-grid">
                 <div class="service-card card">
                     <div class="card-content">
                         <h3>1. Installation</h3>
-                        <p style="margin-bottom: 1rem;">Install Noobly JS using npm:</p>
-                        <div class="code-block">npm install noobly-core</div>
+                        <p style="margin-bottom: 1rem;">Clone the Noobly Applications repository:</p>
+                        <div class="code-block">git clone https://github.com/nooblyjs/applications.git</div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
-                        <h3>2. Basic Setup</h3>
-                        <p style="margin-bottom: 1rem;">Create your main application file:</p>
-                        <div class="code-block">const noobly = require('noobly-core');
-const app = noobly.create();</div>
+                        <h3>2. Configure Applications</h3>
+                        <p style="margin-bottom: 1rem;">Select and configure the applications you need:</p>
+                        <div class="code-block">npm install
+npm start</div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
                         <h3>3. Start Building</h3>
-                        <p style="margin-bottom: 1rem;">Add services and start your server:</p>
-                        <div class="code-block">app.addService('cache');
-app.listen(3000);</div>
+                        <p style="margin-bottom: 1rem;">Access applications at localhost:3001:</p>
+                        <div class="code-block">// Visit /applications/
+// Or integrate individual modules</div>
                     </div>
                 </div>
             </div>
@@ -91,86 +91,92 @@ app.listen(3000);</div>
     <section style="padding: 2rem 0; background-color: hsl(var(--muted) / 0.3);">
         <div class="container">
             <div style="text-align: center; margin-bottom: 3rem;">
-                <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Available Services</h2>
-                <p style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Explore our comprehensive service ecosystem</p>
+                <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Available Applications</h2>
+                <p style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Explore our comprehensive business application suite</p>
             </div>
 
             <div class="service-grid">
                 <div class="service-card card">
                     <div class="card-content">
-                        <div class="badge badge-default" style="margin-bottom: 1rem;">⚡ Performance</div>
-                        <h3><a href="cache.html" style="text-decoration: none; color: hsl(var(--foreground));">Caching Service</a></h3>
-                        <p>High-performance caching with Redis, Memcached, and in-memory providers.</p>
+                        <div class="badge badge-default" style="margin-bottom: 1rem;">🎯 Customer Service</div>
+                        <h3><a href="/applications/customerservice/" style="text-decoration: none; color: hsl(var(--foreground));">Customer Service</a></h3>
+                        <p>Complete support case management with ticket tracking, priority handling, and team collaboration tools.</p>
                         <div class="code-block" style="margin-top: 1rem; font-size: 0.75rem;">
-const cache = app.service('cache');
-await cache.set('key', 'value');
+// Integrated authentication & REST APIs
+// Real-time case updates
+// Priority & status management
                         </div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
-                        <div class="badge badge-secondary" style="margin-bottom: 1rem;">🗄️ Storage</div>
-                        <h3><a href="data.html" style="text-decoration: none; color: hsl(var(--foreground));">Data Service</a></h3>
-                        <p>Flexible data storage with SimpleDB and file-based providers.</p>
+                        <div class="badge badge-secondary" style="margin-bottom: 1rem;">🚚 Delivery</div>
+                        <h3><a href="/applications/delivery/" style="text-decoration: none; color: hsl(var(--foreground));">Delivery Management</a></h3>
+                        <p>End-to-end delivery tracking with real-time status updates, route optimization, and customer notifications.</p>
                         <div class="code-block" style="margin-top: 1rem; font-size: 0.75rem;">
-const data = app.service('data');
-await data.store('user:1', userData);
+// Real-time GPS tracking
+// Automated customer notifications
+// Driver assignment & routing
                         </div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
-                        <div class="badge badge-outline" style="margin-bottom: 1rem;">📝 Monitoring</div>
-                        <h3><a href="logging.html" style="text-decoration: none; color: hsl(var(--foreground));">Logging Service</a></h3>
-                        <p>Advanced logging with console and file outputs.</p>
+                        <div class="badge badge-outline" style="margin-bottom: 1rem;">📧 Marketing</div>
+                        <h3><a href="/applications/marketing/" style="text-decoration: none; color: hsl(var(--foreground));">Marketing Automation</a></h3>
+                        <p>Email campaign management with customer segmentation, automated workflows, and comprehensive analytics.</p>
                         <div class="code-block" style="margin-top: 1rem; font-size: 0.75rem;">
-const logger = app.service('logging');
-logger.info('Application started');
+// Email template builder
+// Customer segmentation
+// A/B testing & analytics
                         </div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
-                        <div class="badge badge-default" style="margin-bottom: 1rem;">📊 Analytics</div>
-                        <h3><a href="measuring.html" style="text-decoration: none; color: hsl(var(--foreground));">Measuring Service</a></h3>
-                        <p>Real-time metrics collection and analysis.</p>
+                        <div class="badge badge-default" style="margin-bottom: 1rem;">🏢 Warehouse</div>
+                        <h3><a href="/applications/warehouse/" style="text-decoration: none; color: hsl(var(--foreground));">Warehouse Management</a></h3>
+                        <p>Complete inventory control system with order fulfillment, stock tracking, and comprehensive reporting.</p>
                         <div class="code-block" style="margin-top: 1rem; font-size: 0.75rem;">
-const metrics = app.service('measuring');
-metrics.increment('api_calls');
+// Inventory management
+// Order fulfillment workflows
+// Stock level monitoring
                         </div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
-                        <div class="badge badge-secondary" style="margin-bottom: 1rem;">🔔 Communication</div>
-                        <h3><a href="notifying.html" style="text-decoration: none; color: hsl(var(--foreground));">Notifying Service</a></h3>
-                        <p>Pub/sub messaging for real-time communication.</p>
+                        <div class="badge badge-secondary" style="margin-bottom: 1rem;">📚 Wiki</div>
+                        <h3><a href="/applications/wiki/" style="text-decoration: none; color: hsl(var(--foreground));">Knowledge Base</a></h3>
+                        <p>Enterprise wiki system with document management, collaboration tools, and powerful search functionality.</p>
                         <div class="code-block" style="margin-top: 1rem; font-size: 0.75rem;">
-const notify = app.service('notifying');
-notify.publish('channel', message);
+// Full-text search
+// Markdown support
+// Permission-based access
                         </div>
                     </div>
                 </div>
 
                 <div class="service-card card">
                     <div class="card-content">
-                        <div class="badge badge-outline" style="margin-bottom: 1rem;">⏳ Processing</div>
-                        <h3><a href="queueing.html" style="text-decoration: none; color: hsl(var(--foreground));">Queueing Service</a></h3>
-                        <p>Efficient task queueing for background operations.</p>
+                        <div class="badge badge-outline" style="margin-bottom: 1rem;">🖥️ Infrastructure</div>
+                        <h3><a href="/applications/infrastructure/" style="text-decoration: none; color: hsl(var(--foreground));">Infrastructure Management</a></h3>
+                        <p>IT operations dashboard for server, database, and storage monitoring with comprehensive health tracking.</p>
                         <div class="code-block" style="margin-top: 1rem; font-size: 0.75rem;">
-const queue = app.service('queueing');
-queue.add('task', taskData);
+// Server health monitoring
+// Database performance tracking
+// Storage capacity management
                         </div>
                     </div>
                 </div>
             </div>
 
             <div style="text-align: center; margin-top: 2rem;">
-                <a href="cache.html" class="btn btn-primary">Explore All Services</a>
+                <a href="/applications/" class="btn btn-primary">Try All Applications</a>
             </div>
         </div>
     </section>
@@ -179,28 +185,26 @@ queue.add('task', taskData);
     <section id="api-reference" style="padding: 2rem 0;">
         <div class="container">
             <div style="text-align: center; margin-bottom: 3rem;">
-                <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">API Reference</h2>
-                <p style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Complete API documentation for all services</p>
+                <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Integration Guide</h2>
+                <p style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Complete integration guide for all applications</p>
             </div>
 
             <div class="card">
                 <div class="card-content">
-                    <h3>Core Framework Methods</h3>
+                    <h3>Integration Methods</h3>
                     <div class="code-block">
-// Initialize Noobly JS application
-const app = noobly.create(options);
+// Copy application modules to your project
+cp -r src/customerservice/ your-project/modules/
 
-// Add a service
-app.addService(serviceName, provider, options);
+// Include routes in your Express app
+const customerService = require('./modules/customerservice/routes');
+customerService({ 'express-app': app }, eventEmitter);
 
-// Get a service instance
-const service = app.service(serviceName);
+// Serve static files
+app.use('/applications/customerservice', 
+  express.static('./modules/customerservice/views'));
 
-// Start the server
-app.listen(port, callback);
-
-// Graceful shutdown
-app.shutdown();
+// Application is ready at /applications/customerservice/
                     </div>
                 </div>
             </div>
@@ -210,24 +214,24 @@ app.shutdown();
                     <div class="card">
                         <div class="card-content">
                             <h4>Configuration</h4>
-                            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 1rem;">Service configuration options and examples.</p>
-                            <a href="#" class="btn btn-outline btn-sm">View Config Docs</a>
+                            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 1rem;">Application configuration options and customization.</p>
+                            <a href="/applications/" class="btn btn-outline btn-sm">View Applications</a>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-content">
                             <h4>Examples</h4>
-                            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 1rem;">Real-world usage examples and tutorials.</p>
-                            <a href="#" class="btn btn-outline btn-sm">View Examples</a>
+                            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 1rem;">Real-world integration examples and tutorials.</p>
+                            <a href="/applications/" class="btn btn-outline btn-sm">Live Examples</a>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-content">
                             <h4>Best Practices</h4>
-                            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 1rem;">Recommended patterns and best practices.</p>
-                            <a href="#" class="btn btn-outline btn-sm">View Guide</a>
+                            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 1rem;">Recommended integration patterns and best practices.</p>
+                            <a href="/applications/" class="btn btn-outline btn-sm">View Guide</a>
                         </div>
                     </div>
                 </div>
@@ -241,7 +245,7 @@ app.shutdown();
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>Documentation</h3>
-                    <p>Comprehensive guides and API reference for building applications with Noobly JS framework.</p>
+                    <p>Comprehensive guides and integration reference for building applications with Noobly Applications.</p>
                 </div>
                 
                 <div class="footer-section">
@@ -250,7 +254,7 @@ app.shutdown();
                         <li><a href="index.html" class="footer-link">Home</a></li>
                         <li><a href="documentation.html" class="footer-link">Documentation</a></li>
                         <li><a href="contact.html" class="footer-link">Contact</a></li>
-                        <li><a href="cache.html" class="footer-link">Services</a></li>
+                        <li><a href="/applications/" class="footer-link">Applications</a></li>
                     </ul>
                 </div>
                 
@@ -258,7 +262,7 @@ app.shutdown();
                     <h3>Resources</h3>
                     <ul class="footer-links">
                         <li><a href="#quick-start" class="footer-link">Quick Start</a></li>
-                        <li><a href="#api-reference" class="footer-link">API Reference</a></li>
+                        <li><a href="#api-reference" class="footer-link">Integration Guide</a></li>
                         <li><a href="#" class="footer-link">Examples</a></li>
                         <li><a href="#" class="footer-link">Best Practices</a></li>
                     </ul>
@@ -268,10 +272,10 @@ app.shutdown();
             <div class="footer-bottom">
                 <div class="footer-bottom-left">
                     <a href="index.html" class="footer-logo">
-                        <div class="footer-logo-icon">NJS</div>
-                        <span>Noobly JS</span>
+                        <div class="footer-logo-icon">NA</div>
+                        <span>Noobly Applications</span>
                     </a>
-                    <span class="footer-copyright">© 2024 Noobly JS. All rights reserved.</span>
+                    <span class="footer-copyright">© 2024 Noobly Applications. All rights reserved.</span>
                 </div>
                 
                 <div class="footer-bottom-right">

@@ -144,4 +144,14 @@ module.exports = (options, eventEmitter) => {
     ]);
   });
 
+  // Application status endpoint
+  app.get('/applications/delivery/api/status', (req, res) => {
+    res.json({ 
+      status: 'running',
+      application: 'Delivery Management',
+      version: '1.0.0',
+      timestamp: new Date().toISOString()
+    });
+  });
+
 };

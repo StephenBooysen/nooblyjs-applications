@@ -64,5 +64,15 @@ module.exports = (options, eventEmitter) => {
       { id: 3, name: 'Archive Storage', status: 'healthy', type: 'Cloud', used: '2TB', total: '5TB', description: 'Long-term archive storage' }
     ]);
   });
+
+  // Application status endpoint
+  app.get('/applications/infrastructure/api/status', (req, res) => {
+    res.json({ 
+      status: 'running',
+      application: 'Infrastructure Management',
+      version: '1.0.0',
+      timestamp: new Date().toISOString()
+    });
+  });
   
 };

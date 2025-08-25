@@ -278,4 +278,14 @@ module.exports = (options, eventEmitter) => {
     }
   });
 
+  // Application status endpoint
+  app.get('/applications/customerservice/api/status', (req, res) => {
+    res.json({ 
+      status: 'running',
+      application: 'Customer Service',
+      version: '1.0.0',
+      timestamp: new Date().toISOString()
+    });
+  });
+
 };
