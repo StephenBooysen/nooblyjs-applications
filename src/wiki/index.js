@@ -13,6 +13,7 @@ const Routes = require('./routes');
 const Views = require('./views');
 const { initializeDocumentFiles } = require('./activities/documentContent');
 const { processTask } = require('./activities/taskProcessor');
+const DataManager = require('./components/dataManager');
 
 /**
  * Creates the wiki service
@@ -24,8 +25,10 @@ const { processTask } = require('./activities/taskProcessor');
  * @return {void}
  */
 module.exports = (options, eventEmitter, serviceRegistry) => {
+  // Initialize data manager for JSON file storage
+  const dataManager = new DataManager('./data');
+  
   // Initialize noobly-core services for the wiki
-  const dataServe = serviceRegistry.dataServe('memory');
   const filing = serviceRegistry.filing('local', { 
     baseDir: './wiki-files' 
   });
@@ -37,27 +40,31 @@ module.exports = (options, eventEmitter, serviceRegistry) => {
   // Initialize wiki data if not exists
   (async () => {
     try {
-      await initializeWikiData(dataServe, filing, cache, logger, queue, search);
+      await initializeWikiData(dataManager, filing, cache, logger, queue, search);
     } catch (error) {
       logger.error('Failed to initialize wiki data:', error);
     }
   })();
   
   // Start background queue worker
-  startQueueWorker({ dataServe, filing, cache, logger, queue, search });
+  startQueueWorker({ dataManager, filing, cache, logger, queue, search });
   
-  Routes(options, eventEmitter, { dataServe, filing, cache, logger, queue, search });
-  Views(options, eventEmitter, { dataServe, filing, cache, logger, queue, search });
+  Routes(options, eventEmitter, { dataManager, filing, cache, logger, queue, search });
+  Views(options, eventEmitter, { dataManager, filing, cache, logger, queue, search });
 }
 
 /**
  * Initialize default wiki data
  */
-async function initializeWikiData(dataServe, filing, cache, logger, queue, search) {
+async function initializeWikiData(dataManager, filing, cache, logger, queue, search) {
   try {
-    // Check if spaces already exist
-    const existingSpaces = await dataServe.get('wiki:spaces');
-    if (!existingSpaces) {
+    logger.info('Starting wiki data initialization with JSON file storage...');
+    
+    // Check if we already have stored wiki data
+    const existingSpaces = await dataManager.read('spaces');
+    const existingDocuments = await dataManager.read('documents');
+    
+    if (existingSpaces.length === 0 || existingDocuments.length === 0) {
       logger.info('Initializing default wiki data');
       
       // Initialize default spaces
@@ -119,8 +126,11 @@ async function initializeWikiData(dataServe, filing, cache, logger, queue, searc
         }
       ];
       
-      await dataServe.put('wiki:spaces', defaultSpaces);
-      await dataServe.put('wiki:nextSpaceId', 6);
+      logger.info(`Storing ${defaultSpaces.length} spaces with JSON file storage...`);
+      
+      // Store spaces
+      await dataManager.write('spaces', defaultSpaces);
+      logger.info('Stored all spaces to spaces.json');
       
       // Initialize default documents
       const defaultDocuments = [
@@ -186,8 +196,9 @@ async function initializeWikiData(dataServe, filing, cache, logger, queue, searc
         }
       ];
       
-      await dataServe.put('wiki:documents', defaultDocuments);
-      await dataServe.put('wiki:nextDocumentId', 6);
+      // Store documents
+      await dataManager.write('documents', defaultDocuments);
+      logger.info('Stored all documents to documents.json');
       
       // Initialize document content files
       await initializeDocumentFiles({ filing, logger });
@@ -206,15 +217,36 @@ async function initializeWikiData(dataServe, filing, cache, logger, queue, searc
       
       logger.info('Default wiki data initialized successfully');
     } else {
-      // Still initialize document files even if data exists
-      try {
-        await initializeDocumentFiles({ filing, logger });
-      } catch (error) {
-        logger.error('Error initializing document files:', error);
-      }
+      logger.info('Wiki data already exists, skipping initialization');
+    }
+    
+    // Always initialize document files
+    try {
+      await initializeDocumentFiles({ filing, logger });
+    } catch (error) {
+      logger.error('Error initializing document files:', error);
+    }
+    
+    // Always populate search index
+    try {
+      const documents = await dataManager.read('documents');
+      documents.forEach(doc => {
+        search.add(doc.id.toString(), {
+          id: doc.id,
+          title: doc.title,
+          content: '', // Will be filled when files are read
+          tags: doc.tags || [],
+          spaceName: doc.spaceName,
+          excerpt: doc.excerpt
+        });
+      });
+      logger.info(`Populated search index with ${documents.length} documents`);
+    } catch (error) {
+      logger.error('Error populating search index:', error);
     }
   } catch (error) {
-    logger.error('Error initializing wiki data:', error);
+    logger.error('Error initializing wiki data:', error.message);
+    logger.error('Stack trace:', error.stack);
   }
 }
 

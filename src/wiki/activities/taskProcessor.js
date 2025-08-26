@@ -15,7 +15,7 @@
  * @param {Object} task - Task to process
  */
 async function processTask(services, task) {
-  const { dataServe, filing, cache, logger, search } = services;
+  const { dataManager, filing, cache, logger, search } = services;
   
   try {
     switch (task.type) {
@@ -73,17 +73,17 @@ async function handleCreateDocumentFile(services, task) {
  * Update document metadata (views, last viewed, etc.)
  */
 async function handleUpdateDocumentMetadata(services, task) {
-  const { dataServe, cache, logger } = services;
+  const { dataManager, cache, logger } = services;
   const { documentId, updates } = task;
   
   try {
-    const documents = await dataServe.get('wiki:documents') || [];
+    const documents = await dataManager.read('documents');
     const docIndex = documents.findIndex(doc => doc.id === documentId);
     
     if (docIndex !== -1) {
       // Update the document
       documents[docIndex] = { ...documents[docIndex], ...updates };
-      await dataServe.put('wiki:documents', documents);
+      await dataManager.write('documents', documents);
       
       // Clear related caches
       await cache.delete('wiki:documents:list');
@@ -102,12 +102,12 @@ async function handleUpdateDocumentMetadata(services, task) {
  * Update space document count
  */
 async function handleUpdateSpaceDocumentCount(services, task) {
-  const { dataServe, cache, logger } = services;
+  const { dataManager, cache, logger } = services;
   const { spaceId } = task;
   
   try {
-    const spaces = await dataServe.get('wiki:spaces') || [];
-    const documents = await dataServe.get('wiki:documents') || [];
+    const spaces = await dataManager.read('spaces');
+    const documents = await dataManager.read('documents');
     
     const spaceIndex = spaces.findIndex(space => space.id === spaceId);
     if (spaceIndex !== -1) {
@@ -117,7 +117,7 @@ async function handleUpdateSpaceDocumentCount(services, task) {
       spaces[spaceIndex].documentCount = documentCount;
       spaces[spaceIndex].updatedAt = new Date().toISOString();
       
-      await dataServe.put('wiki:spaces', spaces);
+      await dataManager.write('spaces', spaces);
       
       // Clear related caches
       await cache.delete('wiki:spaces:list');

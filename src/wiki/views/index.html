@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Design Artifacts Wiki</title>
     <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="css/new-layout.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     
@@ -183,73 +184,168 @@
         </header>
 
         <div class="main-container">
-            <!-- Sidebar -->
-            <aside id="sidebar" class="sidebar">
+            <!-- Left Sidebar -->
+            <aside id="leftSidebar" class="left-sidebar">
+                <!-- Collapsible Shortcuts Section -->
                 <div class="sidebar-section">
-                    <h3>Spaces</h3>
-                    <div id="spacesList" class="spaces-list">
-                        <!-- Dynamic content -->
+                    <div class="section-header" id="shortcutsHeader">
+                        <svg class="collapse-icon" width="16" height="16">
+                            <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                        <span>Shortcuts</span>
                     </div>
-                    <button id="createSpaceBtn" class="btn btn-secondary btn-sm">+ New Space</button>
+                    <div id="shortcutsContent" class="section-content">
+                        <nav class="shortcuts-nav">
+                            <a href="#" id="shortcutHome" class="shortcut-item">
+                                <svg class="shortcut-icon" width="16" height="16">
+                                    <use href="#icon-home"></use>
+                                </svg>
+                                <span>Home</span>
+                            </a>
+                            <a href="#" id="shortcutRecent" class="shortcut-item">
+                                <svg class="shortcut-icon" width="16" height="16">
+                                    <use href="#icon-history"></use>
+                                </svg>
+                                <span>Recent</span>
+                            </a>
+                            <a href="#" id="shortcutStarred" class="shortcut-item">
+                                <svg class="shortcut-icon" width="16" height="16">
+                                    <path d="m12,2 3.09,6.26L22,9.27l-5,4.87 1.18,6.88L12,17.77l-6.18,3.25L7,14.14 2,9.27l6.91-1.01L12,2z"/>
+                                </svg>
+                                <span>Starred</span>
+                            </a>
+                            <a href="#" id="shortcutTemplates" class="shortcut-item">
+                                <svg class="shortcut-icon" width="16" height="16">
+                                    <use href="#icon-clipboard"></use>
+                                </svg>
+                                <span>Templates</span>
+                            </a>
+                        </nav>
+                    </div>
                 </div>
-                
-                <div class="sidebar-section">
-                    <h3>Recent</h3>
-                    <div id="recentList" class="recent-list">
-                        <!-- Dynamic content -->
+
+                <!-- Files Section -->
+                <div class="sidebar-section files-section">
+                    <div class="section-header">
+                        <span>Files</span>
+                        <div class="file-actions">
+                            <button id="publishBtn" class="action-btn" title="Publish">
+                                <svg width="12" height="12">
+                                    <use href="#icon-share"></use>
+                                </svg>
+                            </button>
+                            <button id="createFolderBtn" class="action-btn" title="New Folder">
+                                <svg width="12" height="12">
+                                    <use href="#icon-folder"></use>
+                                </svg>
+                            </button>
+                            <button id="createFileBtn" class="action-btn" title="New File">
+                                <svg width="12" height="12">
+                                    <use href="#icon-plus"></use>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="fileTree" class="file-tree">
+                        <!-- Dynamic file tree content -->
+                    </div>
+                </div>
+
+                <!-- Collapsible Spaces Section at Bottom -->
+                <div class="sidebar-section spaces-section">
+                    <div class="section-header" id="spacesHeader">
+                        <svg class="collapse-icon" width="16" height="16">
+                            <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                        <span>Spaces</span>
+                        <div class="spaces-count">3</div>
+                    </div>
+                    <div id="spacesContent" class="section-content">
+                        <div id="spacesList" class="spaces-list">
+                            <!-- Dynamic spaces content -->
+                        </div>
+                        <button id="createSpaceBtn" class="create-space-btn">
+                            <svg width="16" height="16">
+                                <use href="#icon-plus"></use>
+                            </svg>
+                            <span>Create new space</span>
+                        </button>
                     </div>
                 </div>
             </aside>
 
-            <!-- Main Content -->
+            <!-- Main Content Area -->
             <main id="mainContent" class="main-content">
                 <!-- Home View -->
                 <div id="homeView" class="view">
-                    <div class="welcome-section">
-                        <h1>Welcome to Design Artifacts Wiki</h1>
-                        <p>Your comprehensive enterprise knowledge management platform</p>
-                        
-                        <div class="quick-actions">
-                            <button id="quickCreateDoc" class="action-card">
-                                <svg class="action-icon" width="32" height="32">
-                                    <use href="#icon-edit"></use>
-                                </svg>
-                                <h3>Create Document</h3>
-                                <p>Start writing with Markdown</p>
-                            </button>
-                            
-                            <button id="quickCreateSpace" class="action-card">
-                                <svg class="action-icon" width="32" height="32">
-                                    <use href="#icon-folder"></use>
-                                </svg>
-                                <h3>New Space</h3>
-                                <p>Organize your content</p>
-                            </button>
-                            
-                            <button id="quickBrowse" class="action-card">
-                                <svg class="action-icon" width="32" height="32">
-                                    <use href="#icon-eye"></use>
-                                </svg>
-                                <h3>Browse Knowledge</h3>
-                                <p>Explore existing content</p>
-                            </button>
+                    <div class="workspace-header">
+                        <div class="workspace-title">
+                            <h1 id="workspaceTitle">Welcome to Architecture Artifacts</h1>
+                            <p id="workspaceSubtitle">Your documentation workspace dashboard</p>
                         </div>
+                        <button id="createNewMarkdownBtn" class="btn btn-primary">
+                            <svg width="16" height="16">
+                                <use href="#icon-plus"></use>
+                            </svg>
+                            Create New Markdown File
+                        </button>
                     </div>
-                    
-                    <div class="dashboard-widgets">
-                        <div class="widget">
-                            <h3>Recently Modified</h3>
-                            <div id="recentlyModified" class="widget-content">
-                                <!-- Dynamic content -->
+
+                    <!-- Content Sections -->
+                    <div class="content-sections">
+                        <!-- Recent Files Section -->
+                        <section class="content-section">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <svg width="20" height="20">
+                                        <use href="#icon-history"></use>
+                                    </svg>
+                                    <h2>Recent Files</h2>
+                                </div>
+                                <button id="refreshRecentBtn" class="refresh-btn">
+                                    <span>Refresh</span>
+                                </button>
                             </div>
-                        </div>
-                        
-                        <div class="widget">
-                            <h3>Popular Content</h3>
-                            <div id="popularContent" class="widget-content">
-                                <!-- Dynamic content -->
+                            <div id="recentFilesContent" class="files-content">
+                                <div class="no-content-message">
+                                    <svg width="48" height="48" class="no-content-icon">
+                                        <use href="#icon-history"></use>
+                                    </svg>
+                                    <p>No recent markdown files found</p>
+                                </div>
                             </div>
-                        </div>
+                        </section>
+
+                        <!-- Starred Files Section -->
+                        <section class="content-section">
+                            <div class="section-title">
+                                <svg width="20" height="20">
+                                    <path d="m12,2 3.09,6.26L22,9.27l-5,4.87 1.18,6.88L12,17.77l-6.18,3.25L7,14.14 2,9.27l6.91-1.01L12,2z"/>
+                                </svg>
+                                <h2>Starred Files</h2>
+                            </div>
+                            <div id="starredFilesContent" class="files-content">
+                                <div class="no-content-message">
+                                    <svg width="48" height="48" class="no-content-icon">
+                                        <path d="m12,2 3.09,6.26L22,9.27l-5,4.87 1.18,6.88L12,17.77l-6.18,3.25L7,14.14 2,9.27l6.91-1.01L12,2z"/>
+                                    </svg>
+                                    <p>No starred markdown files found</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Templates Section -->
+                        <section class="content-section">
+                            <div class="section-title">
+                                <svg width="20" height="20">
+                                    <use href="#icon-clipboard"></use>
+                                </svg>
+                                <h2>Templates</h2>
+                            </div>
+                            <div id="templatesContent" class="templates-content">
+                                <!-- Templates will be loaded here -->
+                            </div>
+                        </section>
                     </div>
                 </div>
 
@@ -391,12 +487,84 @@
         </div>
     </div>
 
+    <!-- Create Folder Modal -->
+    <div id="createFolderModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Folder</h2>
+                <button id="closeCreateFolderModal" class="modal-close">
+                    <svg width="16" height="16">
+                        <use href="#icon-x"></use>
+                    </svg>
+                </button>
+            </div>
+            <form id="createFolderForm">
+                <div class="form-group">
+                    <label for="folderName">Folder Name</label>
+                    <input type="text" id="folderName" name="folderName" required>
+                </div>
+                <div class="form-group">
+                    <label for="folderLocation">Location</label>
+                    <select id="folderLocation" name="folderLocation">
+                        <option value="">Root</option>
+                        <!-- Dynamic options will be added here -->
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="cancelCreateFolder" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create File Modal -->
+    <div id="createFileModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New File</h2>
+                <button id="closeCreateFileModal" class="modal-close">
+                    <svg width="16" height="16">
+                        <use href="#icon-x"></use>
+                    </svg>
+                </button>
+            </div>
+            <form id="createFileForm">
+                <div class="form-group">
+                    <label for="fileName">File Name</label>
+                    <input type="text" id="fileName" name="fileName" placeholder="filename.md" required>
+                </div>
+                <div class="form-group">
+                    <label for="fileLocation">Location</label>
+                    <select id="fileLocation" name="fileLocation">
+                        <option value="">Root</option>
+                        <!-- Dynamic options will be added here -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fileTemplate">Template (Optional)</label>
+                    <select id="fileTemplate" name="fileTemplate">
+                        <option value="">Blank Document</option>
+                        <option value="basic">Basic Article</option>
+                        <option value="api">API Documentation</option>
+                        <option value="meeting">Meeting Notes</option>
+                        <option value="requirements">Requirements Doc</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="cancelCreateFile" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="overlay" class="overlay hidden"></div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/new-app.js"></script>
 </body>
 </html>

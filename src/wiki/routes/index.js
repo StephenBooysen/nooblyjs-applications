@@ -23,7 +23,7 @@ const path = require('path')
 module.exports = (options, eventEmitter, services) => {
 
   const app = options['express-app'];
-  const { dataServe, filing, cache, logger, queue, search } = services;
+  const { dataManager, filing, cache, logger, queue, search } = services;
  
   app.post('/applications/wiki/login', (req, res) => {
     const { username, password } = req.body;
@@ -53,12 +53,24 @@ module.exports = (options, eventEmitter, services) => {
       let spaces = await cache.get(cacheKey);
       
       if (!spaces) {
-        // Load from dataServe if not cached
-        spaces = await dataServe.get('wiki:spaces') || [];
-        
-        // Cache for 5 minutes
-        await cache.put(cacheKey, spaces, 300);
-        logger.info('Loaded spaces from dataServe and cached');
+        // Load from dataServe using the new container-based approach
+        try {
+          logger.info('Attempting to find spaces in wiki container...');
+          spaces = await dataManager.read('spaces');
+          logger.info(`Find result: ${spaces ? JSON.stringify(spaces).substring(0, 100) : 'null'}`);
+          
+          if (!spaces || !Array.isArray(spaces)) {
+            logger.warn('No spaces found or invalid result, initializing empty array');
+            spaces = [];
+          }
+          
+          // Cache for 5 minutes
+          await cache.put(cacheKey, spaces, 300);
+          logger.info(`Loaded ${spaces.length} spaces from dataServe and cached`);
+        } catch (error) {
+          logger.error('Error loading spaces from dataServe:', error.message, error.stack);
+          spaces = [];
+        }
       } else {
         logger.info('Loaded spaces from cache');
       }
@@ -77,12 +89,18 @@ module.exports = (options, eventEmitter, services) => {
       let documents = await cache.get(cacheKey);
       
       if (!documents) {
-        // Load from dataServe if not cached
-        documents = await dataServe.get('wiki:documents') || [];
-        
-        // Cache for 5 minutes
-        await cache.put(cacheKey, documents, 300);
-        logger.info('Loaded documents from dataServe and cached');
+        // Load from dataServe using the new container-based approach
+        try {
+          documents = await dataManager.read('documents');
+          if (!documents) documents = [];
+          
+          // Cache for 5 minutes
+          await cache.put(cacheKey, documents, 300);
+          logger.info(`Loaded ${documents.length} documents from dataServe and cached`);
+        } catch (error) {
+          logger.warn('Could not load documents from dataServe:', error.message);
+          documents = [];
+        }
       } else {
         logger.info('Loaded documents from cache');
       }
@@ -100,8 +118,8 @@ module.exports = (options, eventEmitter, services) => {
       let recent = await cache.get(cacheKey);
       
       if (!recent) {
-        const documents = await dataServe.get('wiki:documents') || [];
-        const spaces = await dataServe.get('wiki:spaces') || [];
+        const documents = await dataManager.read('documents');
+        const spaces = await dataManager.read('spaces');
         
         // Combine and sort by modification date
         const recentItems = [
@@ -128,7 +146,7 @@ module.exports = (options, eventEmitter, services) => {
       let recentDocs = await cache.get(cacheKey);
       
       if (!recentDocs) {
-        const documents = await dataServe.get('wiki:documents') || [];
+        const documents = await dataManager.read('documents');
         recentDocs = documents
           .sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt))
           .slice(0, 10);
@@ -150,7 +168,7 @@ module.exports = (options, eventEmitter, services) => {
       let popularDocs = await cache.get(cacheKey);
       
       if (!popularDocs) {
-        const documents = await dataServe.get('wiki:documents') || [];
+        const documents = await dataManager.read('documents');
         popularDocs = documents
           .sort((a, b) => (b.views || 0) - (a.views || 0))
           .slice(0, 10);
@@ -174,7 +192,7 @@ module.exports = (options, eventEmitter, services) => {
       let spaceDocuments = await cache.get(cacheKey);
       
       if (!spaceDocuments) {
-        const allDocuments = await dataServe.get('wiki:documents') || [];
+        const allDocuments = await dataManager.read('documents');
         spaceDocuments = allDocuments.filter(doc => doc.spaceId === spaceId);
         
         await cache.put(cacheKey, spaceDocuments, 300); // 5 minutes
@@ -197,7 +215,7 @@ module.exports = (options, eventEmitter, services) => {
       
       if (!document) {
         // Get document metadata from dataServe
-        const allDocuments = await dataServe.get('wiki:documents') || [];
+        const allDocuments = await dataManager.read('documents');
         const docMeta = allDocuments.find(doc => doc.id === docId);
         
         if (!docMeta) {
@@ -209,7 +227,8 @@ module.exports = (options, eventEmitter, services) => {
         let content = '';
         
         try {
-          content = await filing.read(filePath);
+          const rawContent = await filing.read(filePath);
+          content = Buffer.isBuffer(rawContent) ? rawContent.toString('utf8') : rawContent;
           logger.info(`Loaded document content for ${docId} from filing service`);
         } catch (error) {
           logger.warn(`No content file found for document ${docId}, using default content`);
@@ -273,11 +292,12 @@ module.exports = (options, eventEmitter, services) => {
       
       // Use the search service to find documents
       let searchResults = search.search(query);
+      logger.info(`Search service returned: ${typeof searchResults}, value: ${JSON.stringify(searchResults)}`);
       
       // If no results from search service, fall back to basic text matching
-      if (!searchResults || searchResults.length === 0) {
+      if (!searchResults || !Array.isArray(searchResults) || searchResults.length === 0) {
         logger.info('No search service results, falling back to basic search');
-        const allDocuments = await dataServe.get('wiki:documents') || [];
+        const allDocuments = await dataManager.read('documents');
         const queryLower = query.toLowerCase();
         
         searchResults = allDocuments
@@ -304,8 +324,9 @@ module.exports = (options, eventEmitter, services) => {
       logger.info(`Found ${formattedResults.length} search results`);
       res.json(formattedResults);
     } catch (error) {
-      logger.error('Error performing search:', error);
-      res.status(500).json({ error: 'Failed to perform search' });
+      logger.error('Error performing search:', error.message);
+      logger.error('Search error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to perform search: ' + error.message });
     }
   });
   
@@ -332,7 +353,8 @@ module.exports = (options, eventEmitter, services) => {
       }
 
       // Get next space ID
-      let nextId = await dataServe.get('wiki:nextSpaceId') || 1;
+      const spaces = await dataManager.read('spaces');
+      let nextId = spaces.length > 0 ? Math.max(...spaces.map(s => s.id)) + 1 : 1;
       
       const newSpace = {
         id: nextId,
@@ -347,12 +369,11 @@ module.exports = (options, eventEmitter, services) => {
       };
 
       // Add to spaces list
-      const spaces = await dataServe.get('wiki:spaces') || [];
       spaces.push(newSpace);
-      await dataServe.put('wiki:spaces', spaces);
+      await dataManager.write('spaces', spaces);
       
       // Update next ID
-      await dataServe.put('wiki:nextSpaceId', nextId + 1);
+      // Next ID is calculated dynamically
       
       // Clear relevant caches
       await cache.delete('wiki:spaces:list');
@@ -376,12 +397,13 @@ module.exports = (options, eventEmitter, services) => {
       }
 
       // Get next document ID
-      let nextId = await dataServe.get('wiki:nextDocumentId') || 1;
+      const allDocuments = await dataManager.read('documents');
+      let nextId = allDocuments.length > 0 ? Math.max(...allDocuments.map(d => d.id)) + 1 : 1;
       
       // Find space name if spaceId provided
       let spaceName = 'Personal';
       if (spaceId) {
-        const spaces = await dataServe.get('wiki:spaces') || [];
+        const spaces = await dataManager.read('spaces');
         const space = spaces.find(s => s.id === parseInt(spaceId));
         spaceName = space ? space.name : 'Unknown Space';
       }
@@ -407,12 +429,11 @@ module.exports = (options, eventEmitter, services) => {
       }
       
       // Add to documents list
-      const documents = await dataServe.get('wiki:documents') || [];
-      documents.push(newDocument);
-      await dataServe.put('wiki:documents', documents);
+      allDocuments.push(newDocument);
+      await dataManager.write('documents', allDocuments);
       
       // Update next ID
-      await dataServe.put('wiki:nextDocumentId', nextId + 1);
+      // Next ID is calculated dynamically
       
       // Update space document count
       if (spaceId) {
@@ -470,7 +491,7 @@ module.exports = (options, eventEmitter, services) => {
       // Find space name if spaceId provided
       let spaceName = documents[docIndex].spaceName;
       if (spaceId && spaceId !== documents[docIndex].spaceId) {
-        const spaces = await dataServe.get('wiki:spaces') || [];
+        const spaces = await dataManager.read('spaces');
         const space = spaces.find(s => s.id === parseInt(spaceId));
         spaceName = space ? space.name : 'Unknown Space';
       }
@@ -489,7 +510,7 @@ module.exports = (options, eventEmitter, services) => {
       documents[docIndex] = updatedDocument;
       
       // Save updated documents list
-      await dataServe.put('wiki:documents', documents);
+      await dataManager.write('documents', documents);
       
       // Update document content in filing service
       if (content !== undefined) {
@@ -523,6 +544,77 @@ module.exports = (options, eventEmitter, services) => {
     } catch (error) {
       logger.error('Error updating document:', error);
       res.status(500).json({ success: false, message: 'Failed to update document' });
+    }
+  });
+
+  // Folder management routes
+  
+  // Get folder tree for a space
+  app.get('/applications/wiki/api/spaces/:spaceId/folders', async (req, res) => {
+    try {
+      const spaceId = parseInt(req.params.spaceId);
+      logger.info(`Fetching folder tree for space ${spaceId}`);
+      
+      const tree = await dataManager.getFolderTree(spaceId);
+      res.json(tree);
+    } catch (error) {
+      logger.error('Error fetching folder tree:', error);
+      res.status(500).json({ error: 'Failed to fetch folder tree' });
+    }
+  });
+
+  // Create a new folder
+  app.post('/applications/wiki/api/folders', async (req, res) => {
+    try {
+      const { name, spaceId, parentPath } = req.body;
+      
+      if (!name || !spaceId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Folder name and space ID are required' 
+        });
+      }
+
+      logger.info(`Creating folder: ${name} in space ${spaceId}`);
+      
+      const folder = await dataManager.createFolder(spaceId, name, parentPath);
+      
+      // Clear folder tree cache
+      await cache.delete(`wiki:folders:${spaceId}`);
+      
+      logger.info(`Created folder: ${name} (ID: ${folder.id})`);
+      
+      res.json({ success: true, folder });
+    } catch (error) {
+      logger.error('Error creating folder:', error);
+      res.status(500).json({ success: false, message: 'Failed to create folder' });
+    }
+  });
+
+  // Move document to folder
+  app.put('/applications/wiki/api/documents/:id/move', async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const { folderPath } = req.body;
+      
+      logger.info(`Moving document ${documentId} to folder: ${folderPath || 'root'}`);
+      
+      const updatedDoc = await dataManager.updateDocumentFolder(documentId, folderPath);
+      
+      if (!updatedDoc) {
+        return res.status(404).json({ success: false, message: 'Document not found' });
+      }
+      
+      // Clear relevant caches
+      await cache.delete(`wiki:document:${documentId}:full`);
+      await cache.delete('wiki:documents:list');
+      
+      logger.info(`Moved document ${documentId} to folder: ${folderPath || 'root'}`);
+      
+      res.json({ success: true, document: updatedDoc });
+    } catch (error) {
+      logger.error('Error moving document:', error);
+      res.status(500).json({ success: false, message: 'Failed to move document' });
     }
   });
 
