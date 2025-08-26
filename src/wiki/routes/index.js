@@ -12,15 +12,18 @@ const path = require('path')
 
 /**
  * Configures and registers wiki routes with the Express application.
+ * Integrates with noobly-core services for data persistence, caching, file storage, etc.
  *
  * @param {Object} options - Configuration options object
  * @param {Object} options.express-app - The Express application instance
  * @param {Object} eventEmitter - Event emitter for logging and notifications
+ * @param {Object} services - NooblyJS Core services (dataServe, filing, cache, logger, queue, search)
  * @return {void}
  */
-module.exports = (options, eventEmitter) => {
+module.exports = (options, eventEmitter, services) => {
 
   const app = options['express-app'];
+  const { dataServe, filing, cache, logger, queue, search } = services;
  
   app.post('/applications/wiki/login', (req, res) => {
     const { username, password } = req.body;
@@ -42,582 +45,485 @@ module.exports = (options, eventEmitter) => {
     res.json({ authenticated: !!req.session.wikiAuthenticated });
   });
 
-  // Wiki API endpoints
-  app.get('/applications/wiki/api/spaces', (req, res) => {
-    res.json([
-      {
-        id: 1,
-        name: 'Architecture Documentation',
-        description: 'Enterprise architecture patterns, decisions, and guidelines',
-        icon: '🏗️',
-        visibility: 'team',
-        documentCount: 24,
-        createdAt: '2024-01-15T10:00:00Z',
-        updatedAt: '2024-08-20T14:30:00Z',
-        author: 'Solution Architect'
-      },
-      {
-        id: 2,
-        name: 'Business Requirements',
-        description: 'Product requirements, user stories, and business logic documentation',
-        icon: '💼',
-        visibility: 'public',
-        documentCount: 18,
-        createdAt: '2024-02-01T09:00:00Z',
-        updatedAt: '2024-08-19T16:45:00Z',
-        author: 'Business Analyst'
-      },
-      {
-        id: 3,
-        name: 'Development Guidelines',
-        description: 'Coding standards, best practices, and technical guides',
-        icon: '👨‍💻',
-        visibility: 'team',
-        documentCount: 32,
-        createdAt: '2024-01-20T11:30:00Z',
-        updatedAt: '2024-08-21T09:15:00Z',
-        author: 'Tech Lead'
-      },
-      {
-        id: 4,
-        name: 'API Documentation',
-        description: 'REST API specifications, endpoints, and integration guides',
-        icon: '🔌',
-        visibility: 'public',
-        documentCount: 15,
-        createdAt: '2024-03-10T08:00:00Z',
-        updatedAt: '2024-08-18T13:20:00Z',
-        author: 'Backend Developer'
-      },
-      {
-        id: 5,
-        name: 'Meeting Notes',
-        description: 'Project meetings, architecture reviews, and decision records',
-        icon: '📝',
-        visibility: 'private',
-        documentCount: 67,
-        createdAt: '2024-01-05T14:00:00Z',
-        updatedAt: '2024-08-23T10:30:00Z',
-        author: 'Project Manager'
+  // Wiki API endpoints with caching
+  app.get('/applications/wiki/api/spaces', async (req, res) => {
+    try {
+      // Check cache first
+      const cacheKey = 'wiki:spaces:list';
+      let spaces = await cache.get(cacheKey);
+      
+      if (!spaces) {
+        // Load from dataServe if not cached
+        spaces = await dataServe.get('wiki:spaces') || [];
+        
+        // Cache for 5 minutes
+        await cache.put(cacheKey, spaces, 300);
+        logger.info('Loaded spaces from dataServe and cached');
+      } else {
+        logger.info('Loaded spaces from cache');
       }
-    ]);
+      
+      res.json(spaces);
+    } catch (error) {
+      logger.error('Error fetching spaces:', error.message, error.stack);
+      res.status(500).json({ error: 'Failed to fetch spaces', details: error.message });
+    }
   });
 
-  app.get('/applications/wiki/api/documents', (req, res) => {
-    res.json([
-      {
-        id: 1,
-        title: 'Microservices Architecture Overview',
-        spaceId: 1,
-        spaceName: 'Architecture Documentation',
-        excerpt: 'Comprehensive guide to our microservices architecture, including service boundaries and communication patterns.',
-        author: 'Solution Architect',
-        createdAt: '2024-08-15T10:00:00Z',
-        modifiedAt: '2024-08-20T14:30:00Z',
-        views: 45,
-        tags: ['microservices', 'architecture', 'patterns']
-      },
-      {
-        id: 2,
-        title: 'User Authentication Requirements',
-        spaceId: 2,
-        spaceName: 'Business Requirements',
-        excerpt: 'Detailed requirements for multi-factor authentication implementation across all client applications.',
-        author: 'Business Analyst',
-        createdAt: '2024-08-10T09:30:00Z',
-        modifiedAt: '2024-08-19T16:45:00Z',
-        views: 32,
-        tags: ['authentication', 'security', 'requirements']
-      },
-      {
-        id: 3,
-        title: 'React Component Library Standards',
-        spaceId: 3,
-        spaceName: 'Development Guidelines',
-        excerpt: 'Guidelines for creating reusable React components with TypeScript and consistent styling patterns.',
-        author: 'Frontend Lead',
-        createdAt: '2024-08-12T11:00:00Z',
-        modifiedAt: '2024-08-21T09:15:00Z',
-        views: 58,
-        tags: ['react', 'components', 'standards']
-      },
-      {
-        id: 4,
-        title: 'Wiki API Specification',
-        spaceId: 4,
-        spaceName: 'API Documentation',
-        excerpt: 'REST API endpoints for the wiki system including authentication, spaces, and document management.',
-        author: 'Backend Developer',
-        createdAt: '2024-08-14T13:00:00Z',
-        modifiedAt: '2024-08-18T13:20:00Z',
-        views: 28,
-        tags: ['api', 'wiki', 'documentation']
-      },
-      {
-        id: 5,
-        title: 'Architecture Review - August 2024',
-        spaceId: 5,
-        spaceName: 'Meeting Notes',
-        excerpt: 'Monthly architecture review covering system performance, scalability improvements, and technical debt.',
-        author: 'Enterprise Architect',
-        createdAt: '2024-08-23T10:00:00Z',
-        modifiedAt: '2024-08-23T10:30:00Z',
-        views: 12,
-        tags: ['meeting', 'architecture', 'review']
+  app.get('/applications/wiki/api/documents', async (req, res) => {
+    try {
+      // Check cache first
+      const cacheKey = 'wiki:documents:list';
+      let documents = await cache.get(cacheKey);
+      
+      if (!documents) {
+        // Load from dataServe if not cached
+        documents = await dataServe.get('wiki:documents') || [];
+        
+        // Cache for 5 minutes
+        await cache.put(cacheKey, documents, 300);
+        logger.info('Loaded documents from dataServe and cached');
+      } else {
+        logger.info('Loaded documents from cache');
       }
-    ]);
+      
+      res.json(documents);
+    } catch (error) {
+      logger.error('Error fetching documents:', error);
+      res.status(500).json({ error: 'Failed to fetch documents' });
+    }
   });
 
-  app.get('/applications/wiki/api/recent', (req, res) => {
-    res.json([
-      {
-        id: 5,
-        title: 'Architecture Review - August 2024',
-        type: 'document',
-        modifiedAt: '2024-08-23T10:30:00Z'
-      },
-      {
-        id: 3,
-        title: 'React Component Library Standards',
-        type: 'document',
-        modifiedAt: '2024-08-21T09:15:00Z'
-      },
-      {
-        id: 1,
-        title: 'Microservices Architecture Overview',
-        type: 'document',
-        modifiedAt: '2024-08-20T14:30:00Z'
-      },
-      {
-        id: 2,
-        title: 'User Authentication Requirements',
-        type: 'document',
-        modifiedAt: '2024-08-19T16:45:00Z'
-      },
-      {
-        id: 1,
-        name: 'Architecture Documentation',
-        type: 'space',
-        modifiedAt: '2024-08-20T14:30:00Z'
+  app.get('/applications/wiki/api/recent', async (req, res) => {
+    try {
+      const cacheKey = 'wiki:recent:activity';
+      let recent = await cache.get(cacheKey);
+      
+      if (!recent) {
+        const documents = await dataServe.get('wiki:documents') || [];
+        const spaces = await dataServe.get('wiki:spaces') || [];
+        
+        // Combine and sort by modification date
+        const recentItems = [
+          ...documents.map(doc => ({ ...doc, type: 'document' })),
+          ...spaces.map(space => ({ ...space, type: 'space' }))
+        ].sort((a, b) => new Date(b.modifiedAt || b.updatedAt) - new Date(a.modifiedAt || a.updatedAt))
+         .slice(0, 10);
+        
+        recent = recentItems;
+        await cache.put(cacheKey, recent, 300); // 5 minutes
+        logger.info('Generated recent activity list');
       }
-    ]);
+      
+      res.json(recent);
+    } catch (error) {
+      logger.error('Error fetching recent activity:', error);
+      res.status(500).json({ error: 'Failed to fetch recent activity' });
+    }
   });
 
-  app.get('/applications/wiki/api/documents/recent', (req, res) => {
-    res.json([
-      {
-        id: 5,
-        title: 'Architecture Review - August 2024',
-        spaceName: 'Meeting Notes',
-        modifiedAt: '2024-08-23T10:30:00Z'
-      },
-      {
-        id: 3,
-        title: 'React Component Library Standards',
-        spaceName: 'Development Guidelines',
-        modifiedAt: '2024-08-21T09:15:00Z'
-      },
-      {
-        id: 1,
-        title: 'Microservices Architecture Overview',
-        spaceName: 'Architecture Documentation',
-        modifiedAt: '2024-08-20T14:30:00Z'
-      },
-      {
-        id: 2,
-        title: 'User Authentication Requirements',
-        spaceName: 'Business Requirements',
-        modifiedAt: '2024-08-19T16:45:00Z'
-      },
-      {
-        id: 4,
-        title: 'Wiki API Specification',
-        spaceName: 'API Documentation',
-        modifiedAt: '2024-08-18T13:20:00Z'
+  app.get('/applications/wiki/api/documents/recent', async (req, res) => {
+    try {
+      const cacheKey = 'wiki:documents:recent';
+      let recentDocs = await cache.get(cacheKey);
+      
+      if (!recentDocs) {
+        const documents = await dataServe.get('wiki:documents') || [];
+        recentDocs = documents
+          .sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt))
+          .slice(0, 10);
+        
+        await cache.put(cacheKey, recentDocs, 300); // 5 minutes
+        logger.info('Generated recent documents list');
       }
-    ]);
+      
+      res.json(recentDocs);
+    } catch (error) {
+      logger.error('Error fetching recent documents:', error);
+      res.status(500).json({ error: 'Failed to fetch recent documents' });
+    }
   });
 
-  app.get('/applications/wiki/api/documents/popular', (req, res) => {
-    res.json([
-      {
-        id: 3,
-        title: 'React Component Library Standards',
-        spaceName: 'Development Guidelines',
-        views: 58
-      },
-      {
-        id: 1,
-        title: 'Microservices Architecture Overview',
-        spaceName: 'Architecture Documentation',
-        views: 45
-      },
-      {
-        id: 2,
-        title: 'User Authentication Requirements',
-        spaceName: 'Business Requirements',
-        views: 32
-      },
-      {
-        id: 4,
-        title: 'Wiki API Specification',
-        spaceName: 'API Documentation',
-        views: 28
-      },
-      {
-        id: 5,
-        title: 'Architecture Review - August 2024',
-        spaceName: 'Meeting Notes',
-        views: 12
+  app.get('/applications/wiki/api/documents/popular', async (req, res) => {
+    try {
+      const cacheKey = 'wiki:documents:popular';
+      let popularDocs = await cache.get(cacheKey);
+      
+      if (!popularDocs) {
+        const documents = await dataServe.get('wiki:documents') || [];
+        popularDocs = documents
+          .sort((a, b) => (b.views || 0) - (a.views || 0))
+          .slice(0, 10);
+        
+        await cache.put(cacheKey, popularDocs, 600); // 10 minutes - less frequent updates
+        logger.info('Generated popular documents list');
       }
-    ]);
+      
+      res.json(popularDocs);
+    } catch (error) {
+      logger.error('Error fetching popular documents:', error);
+      res.status(500).json({ error: 'Failed to fetch popular documents' });
+    }
   });
 
-  app.get('/applications/wiki/api/spaces/:id/documents', (req, res) => {
-    const spaceId = parseInt(req.params.id);
+  app.get('/applications/wiki/api/spaces/:id/documents', async (req, res) => {
+    try {
+      const spaceId = parseInt(req.params.id);
+      const cacheKey = `wiki:space:${spaceId}:documents`;
+      
+      let spaceDocuments = await cache.get(cacheKey);
+      
+      if (!spaceDocuments) {
+        const allDocuments = await dataServe.get('wiki:documents') || [];
+        spaceDocuments = allDocuments.filter(doc => doc.spaceId === spaceId);
+        
+        await cache.put(cacheKey, spaceDocuments, 300); // 5 minutes
+        logger.info(`Loaded documents for space ${spaceId}`);
+      }
+      
+      res.json(spaceDocuments);
+    } catch (error) {
+      logger.error('Error fetching space documents:', error);
+      res.status(500).json({ error: 'Failed to fetch space documents' });
+    }
+  });
 
-    const documentsData = {
-      1: [
-        {
-          id: 1,
-          title: 'Microservices Architecture Overview',
-          excerpt: 'Comprehensive guide to our microservices architecture, including service boundaries and communication patterns.',
-          author: 'Solution Architect',
-          modifiedAt: '2024-08-20T14:30:00Z'
-        },
-        {
-          id: 6,
-          title: 'Database Design Patterns',
-          excerpt: 'Best practices for database design in distributed systems, including data consistency and transaction management.',
-          author: 'Data Architect',
-          modifiedAt: '2024-08-17T11:20:00Z'
-        },
-        {
-          id: 7,
-          title: 'Event-Driven Architecture',
-          excerpt: 'Implementation guide for event-driven patterns using message queues and event sourcing.',
-          author: 'Solution Architect',
-          modifiedAt: '2024-08-16T15:45:00Z'
+  app.get('/applications/wiki/api/documents/:id', async (req, res) => {
+    try {
+      const docId = parseInt(req.params.id);
+      const cacheKey = `wiki:document:${docId}:full`;
+      
+      let document = await cache.get(cacheKey);
+      
+      if (!document) {
+        // Get document metadata from dataServe
+        const allDocuments = await dataServe.get('wiki:documents') || [];
+        const docMeta = allDocuments.find(doc => doc.id === docId);
+        
+        if (!docMeta) {
+          return res.status(404).json({ error: 'Document not found' });
         }
-      ],
-      2: [
-        {
-          id: 2,
-          title: 'User Authentication Requirements',
-          excerpt: 'Detailed requirements for multi-factor authentication implementation across all client applications.',
-          author: 'Business Analyst',
-          modifiedAt: '2024-08-19T16:45:00Z'
-        },
-        {
-          id: 8,
-          title: 'User Story Template',
-          excerpt: 'Standard template for writing effective user stories with acceptance criteria.',
-          author: 'Product Manager',
-          modifiedAt: '2024-08-15T09:30:00Z'
+        
+        // Get document content from filing service
+        const filePath = `documents/${docId}.md`;
+        let content = '';
+        
+        try {
+          content = await filing.read(filePath);
+          logger.info(`Loaded document content for ${docId} from filing service`);
+        } catch (error) {
+          logger.warn(`No content file found for document ${docId}, using default content`);
+          // Default content for documents without files
+          content = `# ${docMeta.title}\n\n${docMeta.excerpt || 'No content available yet.'}\n\nThis document is ready for editing.`;
+          
+          // Create the file with default content
+          queue.enqueue({
+            type: 'createDocumentFile',
+            documentId: docId,
+            content: content
+          });
         }
-      ],
-      3: [
-        {
-          id: 3,
-          title: 'React Component Library Standards',
-          excerpt: 'Guidelines for creating reusable React components with TypeScript and consistent styling patterns.',
-          author: 'Frontend Lead',
-          modifiedAt: '2024-08-21T09:15:00Z'
-        },
-        {
-          id: 9,
-          title: 'Code Review Guidelines',
-          excerpt: 'Best practices for conducting effective code reviews and maintaining code quality.',
-          author: 'Tech Lead',
-          modifiedAt: '2024-08-14T14:20:00Z'
-        }
-      ]
-    };
-
-    const documents = documentsData[spaceId] || [];
-    res.json(documents);
-  });
-
-  app.get('/applications/wiki/api/documents/:id', (req, res) => {
-    const docId = parseInt(req.params.id);
-
-    const documents = {
-      1: {
-        id: 1,
-        title: 'Microservices Architecture Overview',
-        content: `# Microservices Architecture Overview
-
-## Introduction
-
-This document provides a comprehensive overview of our microservices architecture, including design principles, service boundaries, and communication patterns.
-
-## Core Principles
-
-### 1. Single Responsibility
-Each microservice should have a single, well-defined responsibility that aligns with business capabilities.
-
-### 2. Autonomy
-Services should be independently deployable and maintainable, with minimal external dependencies.
-
-### 3. Decentralization
-Avoid centralized data management and governance. Each service manages its own data.
-
-## Service Architecture
-
-\`\`\`javascript
-// Example service structure
-class UserService {
-  constructor() {
-    this.database = new UserDatabase();
-    this.eventBus = new EventBus();
-  }
-
-  async createUser(userData) {
-    const user = await this.database.create(userData);
-    await this.eventBus.publish('user.created', user);
-    return user;
-  }
-}
-\`\`\`
-
-## Communication Patterns
-
-### Synchronous Communication
-- REST APIs for request-response patterns
-- GraphQL for flexible data fetching
-
-### Asynchronous Communication
-- Event-driven messaging for loose coupling
-- Message queues for reliable processing
-
-## Best Practices
-
-1. **API Versioning**: Always version your APIs to maintain backward compatibility
-2. **Circuit Breakers**: Implement circuit breakers to handle service failures gracefully
-3. **Monitoring**: Comprehensive logging and metrics collection
-4. **Security**: Implement proper authentication and authorization at the service level
-
-## Conclusion
-
-Following these architectural principles ensures our microservices are scalable, maintainable, and resilient.`,
-        spaceId: 1,
-        spaceName: 'Architecture Documentation',
-        author: 'Solution Architect',
-        createdAt: '2024-08-15T10:00:00Z',
-        modifiedAt: '2024-08-20T14:30:00Z'
-      },
-      2: {
-        id: 2,
-        title: 'User Authentication Requirements',
-        content: `# User Authentication Requirements
-
-## Overview
-
-This document outlines the requirements for implementing multi-factor authentication (MFA) across all client applications in our ecosystem.
-
-## Functional Requirements
-
-### Primary Authentication
-- Username/email and password combination
-- Password strength requirements (minimum 12 characters, mixed case, numbers, symbols)
-- Account lockout after 5 failed attempts
-
-### Multi-Factor Authentication
-- Support for TOTP (Time-based One-Time Password)
-- SMS-based verification codes
-- Hardware security keys (FIDO2/WebAuthn)
-- Backup codes for account recovery
-
-### Session Management
-- JWT tokens with 15-minute expiration
-- Refresh token rotation
-- Secure session storage
-- Single sign-on (SSO) across applications
-
-## Security Requirements
-
-### Data Protection
-- All passwords must be hashed using bcrypt with salt
-- Personal information encrypted at rest
-- Secure transmission over HTTPS only
-
-### Compliance
-- GDPR compliance for European users
-- SOC 2 Type II requirements
-- Regular security audits
-
-## User Experience Requirements
-
-### Login Flow
-1. User enters credentials
-2. System validates and prompts for MFA
-3. User provides second factor
-4. System grants access with appropriate session
-
-### Error Handling
-- Clear, user-friendly error messages
-- No information disclosure about account existence
-- Progressive delays for repeated failures
-
-## Technical Implementation
-
-### Database Schema
-\`\`\`sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  mfa_enabled BOOLEAN DEFAULT false,
-  mfa_secret VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-\`\`\`
-
-### API Endpoints
-- POST /auth/login - Primary authentication
-- POST /auth/mfa/verify - MFA verification
-- POST /auth/refresh - Token refresh
-- POST /auth/logout - Session termination
-
-## Acceptance Criteria
-
-- [ ] Users can log in with email/password
-- [ ] MFA can be enabled/disabled by users
-- [ ] Account lockout prevents brute force attacks
-- [ ] Sessions expire appropriately
-- [ ] All authentication events are logged`,
-        spaceId: 2,
-        spaceName: 'Business Requirements',
-        author: 'Business Analyst',
-        createdAt: '2024-08-10T09:30:00Z',
-        modifiedAt: '2024-08-19T16:45:00Z'
+        
+        document = {
+          ...docMeta,
+          content: content
+        };
+        
+        // Increment view count
+        docMeta.views = (docMeta.views || 0) + 1;
+        docMeta.lastViewed = new Date().toISOString();
+        
+        // Update document metadata in background
+        queue.enqueue({
+          type: 'updateDocumentMetadata',
+          documentId: docId,
+          updates: { views: docMeta.views, lastViewed: docMeta.lastViewed }
+        });
+        
+        // Cache the full document for 10 minutes
+        await cache.put(cacheKey, document, 600);
+        
+        // Index document for search
+        search.add(docId.toString(), {
+          id: docId,
+          title: docMeta.title,
+          content: content,
+          tags: docMeta.tags || [],
+          spaceName: docMeta.spaceName,
+          excerpt: docMeta.excerpt
+        });
       }
-    };
-
-    const document = documents[docId];
-    if (document) {
+      
       res.json(document);
-    } else {
-      res.status(404).json({ error: 'Document not found' });
+    } catch (error) {
+      logger.error('Error fetching document:', error);
+      res.status(500).json({ error: 'Failed to fetch document' });
     }
   });
 
-  app.get('/applications/wiki/api/search', (req, res) => {
-    const query = req.query.q?.toLowerCase() || '';
+  app.get('/applications/wiki/api/search', async (req, res) => {
+    try {
+      const query = req.query.q?.trim() || '';
 
-    if (!query) {
-      res.json([]);
-      return;
-    }
-
-    const searchResults = [
-      {
-        id: 1,
-        title: 'Microservices Architecture Overview',
-        excerpt: 'Comprehensive guide to our microservices architecture, including service boundaries and communication patterns.',
-        spaceName: 'Architecture Documentation',
-        modifiedAt: '2024-08-20T14:30:00Z',
-        relevance: query.includes('microservice') || query.includes('architecture') ? 0.9 : 0.3
-      },
-      {
-        id: 2,
-        title: 'User Authentication Requirements',
-        excerpt: 'Detailed requirements for multi-factor authentication implementation across all client applications.',
-        spaceName: 'Business Requirements',
-        modifiedAt: '2024-08-19T16:45:00Z',
-        relevance: query.includes('auth') || query.includes('user') || query.includes('login') ? 0.8 : 0.2
-      },
-      {
-        id: 3,
-        title: 'React Component Library Standards',
-        excerpt: 'Guidelines for creating reusable React components with TypeScript and consistent styling patterns.',
-        spaceName: 'Development Guidelines',
-        modifiedAt: '2024-08-21T09:15:00Z',
-        relevance: query.includes('react') || query.includes('component') ? 0.9 : 0.1
-      },
-      {
-        id: 4,
-        title: 'Wiki API Specification',
-        excerpt: 'REST API endpoints for the wiki system including authentication, spaces, and document management.',
-        spaceName: 'API Documentation',
-        modifiedAt: '2024-08-18T13:20:00Z',
-        relevance: query.includes('api') || query.includes('wiki') ? 0.8 : 0.2
+      if (!query) {
+        return res.json([]);
       }
-    ].filter(item => item.relevance > 0.15).sort((a, b) => b.relevance - a.relevance);
 
-    res.json(searchResults);
+      logger.info(`Searching for: ${query}`);
+      
+      // Use the search service to find documents
+      let searchResults = search.search(query);
+      
+      // If no results from search service, fall back to basic text matching
+      if (!searchResults || searchResults.length === 0) {
+        logger.info('No search service results, falling back to basic search');
+        const allDocuments = await dataServe.get('wiki:documents') || [];
+        const queryLower = query.toLowerCase();
+        
+        searchResults = allDocuments
+          .filter(doc => 
+            doc.title.toLowerCase().includes(queryLower) ||
+            doc.excerpt.toLowerCase().includes(queryLower) ||
+            (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(queryLower)))
+          )
+          .map(doc => ({ ...doc, score: calculateRelevanceScore(doc, queryLower) }))
+          .sort((a, b) => b.score - a.score);
+      }
+      
+      // Format results for frontend
+      const formattedResults = searchResults.slice(0, 20).map(result => ({
+        id: result.id,
+        title: result.title,
+        excerpt: result.excerpt,
+        spaceName: result.spaceName,
+        modifiedAt: result.modifiedAt,
+        tags: result.tags || [],
+        relevance: result.score || 0.5
+      }));
+      
+      logger.info(`Found ${formattedResults.length} search results`);
+      res.json(formattedResults);
+    } catch (error) {
+      logger.error('Error performing search:', error);
+      res.status(500).json({ error: 'Failed to perform search' });
+    }
+  });
+  
+  // Helper function to calculate relevance score
+  function calculateRelevanceScore(doc, query) {
+    let score = 0;
+    const queryWords = query.split(' ');
+    
+    queryWords.forEach(word => {
+      if (doc.title.toLowerCase().includes(word)) score += 3;
+      if (doc.excerpt.toLowerCase().includes(word)) score += 2;
+      if (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(word))) score += 2;
+    });
+    
+    return score / queryWords.length;
+  }
+
+  app.post('/applications/wiki/api/spaces', async (req, res) => {
+    try {
+      const { name, description, visibility } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ success: false, message: 'Space name is required' });
+      }
+
+      // Get next space ID
+      let nextId = await dataServe.get('wiki:nextSpaceId') || 1;
+      
+      const newSpace = {
+        id: nextId,
+        name,
+        description: description || '',
+        icon: '📁',
+        visibility: visibility || 'private',
+        documentCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        author: 'Current User'
+      };
+
+      // Add to spaces list
+      const spaces = await dataServe.get('wiki:spaces') || [];
+      spaces.push(newSpace);
+      await dataServe.put('wiki:spaces', spaces);
+      
+      // Update next ID
+      await dataServe.put('wiki:nextSpaceId', nextId + 1);
+      
+      // Clear relevant caches
+      await cache.delete('wiki:spaces:list');
+      await cache.delete('wiki:recent:activity');
+      
+      logger.info(`Created new space: ${name} (ID: ${nextId})`);
+      
+      res.json({ success: true, space: newSpace });
+    } catch (error) {
+      logger.error('Error creating space:', error);
+      res.status(500).json({ success: false, message: 'Failed to create space' });
+    }
   });
 
-  app.post('/applications/wiki/api/spaces', (req, res) => {
-    const { name, description, visibility } = req.body;
+  app.post('/applications/wiki/api/documents', async (req, res) => {
+    try {
+      const { title, content, spaceId, tags } = req.body;
 
-    if (!name) {
-      res.status(400).json({ success: false, message: 'Space name is required' });
-      return;
+      if (!title) {
+        return res.status(400).json({ success: false, message: 'Document title is required' });
+      }
+
+      // Get next document ID
+      let nextId = await dataServe.get('wiki:nextDocumentId') || 1;
+      
+      // Find space name if spaceId provided
+      let spaceName = 'Personal';
+      if (spaceId) {
+        const spaces = await dataServe.get('wiki:spaces') || [];
+        const space = spaces.find(s => s.id === parseInt(spaceId));
+        spaceName = space ? space.name : 'Unknown Space';
+      }
+      
+      const newDocument = {
+        id: nextId,
+        title,
+        spaceId: spaceId ? parseInt(spaceId) : null,
+        spaceName,
+        excerpt: content ? content.substring(0, 150).replace(/[#*`]/g, '') + (content.length > 150 ? '...' : '') : 'No content yet',
+        author: 'Current User',
+        createdAt: new Date().toISOString(),
+        modifiedAt: new Date().toISOString(),
+        views: 0,
+        tags: tags || []
+      };
+
+      // Save document content to filing service
+      if (content) {
+        const filePath = `documents/${nextId}.md`;
+        await filing.create(filePath, content);
+        logger.info(`Saved document content to ${filePath}`);
+      }
+      
+      // Add to documents list
+      const documents = await dataServe.get('wiki:documents') || [];
+      documents.push(newDocument);
+      await dataServe.put('wiki:documents', documents);
+      
+      // Update next ID
+      await dataServe.put('wiki:nextDocumentId', nextId + 1);
+      
+      // Update space document count
+      if (spaceId) {
+        queue.enqueue({
+          type: 'updateSpaceDocumentCount',
+          spaceId: parseInt(spaceId)
+        });
+      }
+      
+      // Index for search
+      search.add(nextId.toString(), {
+        id: nextId,
+        title,
+        content: content || '',
+        tags: tags || [],
+        spaceName,
+        excerpt: newDocument.excerpt
+      });
+      
+      // Clear relevant caches
+      await cache.delete('wiki:documents:list');
+      await cache.delete('wiki:documents:recent');
+      await cache.delete('wiki:recent:activity');
+      if (spaceId) {
+        await cache.delete(`wiki:space:${spaceId}:documents`);
+      }
+      
+      logger.info(`Created new document: ${title} (ID: ${nextId})`);
+      
+      res.json({ success: true, document: newDocument });
+    } catch (error) {
+      logger.error('Error creating document:', error);
+      res.status(500).json({ success: false, message: 'Failed to create document' });
     }
-
-    const newSpace = {
-      id: Date.now(),
-      name,
-      description: description || '',
-      visibility: visibility || 'private',
-      documentCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      author: 'Current User'
-    };
-
-    res.json({ success: true, space: newSpace });
   });
 
-  app.post('/applications/wiki/api/documents', (req, res) => {
-    const { title, content, spaceId } = req.body;
+  app.put('/applications/wiki/api/documents', async (req, res) => {
+    try {
+      const { id, title, content, spaceId, tags } = req.body;
 
-    if (!title) {
-      res.status(400).json({ success: false, message: 'Document title is required' });
-      return;
+      if (!id || !title) {
+        return res.status(400).json({ success: false, message: 'Document ID and title are required' });
+      }
+
+      const docId = parseInt(id);
+      
+      // Get current documents
+      const documents = await dataServe.get('wiki:documents') || [];
+      const docIndex = documents.findIndex(doc => doc.id === docId);
+      
+      if (docIndex === -1) {
+        return res.status(404).json({ success: false, message: 'Document not found' });
+      }
+      
+      // Find space name if spaceId provided
+      let spaceName = documents[docIndex].spaceName;
+      if (spaceId && spaceId !== documents[docIndex].spaceId) {
+        const spaces = await dataServe.get('wiki:spaces') || [];
+        const space = spaces.find(s => s.id === parseInt(spaceId));
+        spaceName = space ? space.name : 'Unknown Space';
+      }
+      
+      // Update document metadata
+      const updatedDocument = {
+        ...documents[docIndex],
+        title,
+        spaceId: spaceId ? parseInt(spaceId) : documents[docIndex].spaceId,
+        spaceName,
+        excerpt: content ? content.substring(0, 150).replace(/[#*`]/g, '') + (content.length > 150 ? '...' : '') : documents[docIndex].excerpt,
+        modifiedAt: new Date().toISOString(),
+        tags: tags || documents[docIndex].tags || []
+      };
+      
+      documents[docIndex] = updatedDocument;
+      
+      // Save updated documents list
+      await dataServe.put('wiki:documents', documents);
+      
+      // Update document content in filing service
+      if (content !== undefined) {
+        const filePath = `documents/${docId}.md`;
+        await filing.create(filePath, content);
+        logger.info(`Updated document content in ${filePath}`);
+      }
+      
+      // Update search index
+      search.add(docId.toString(), {
+        id: docId,
+        title,
+        content: content || '',
+        tags: tags || [],
+        spaceName,
+        excerpt: updatedDocument.excerpt
+      });
+      
+      // Clear relevant caches
+      await cache.delete('wiki:documents:list');
+      await cache.delete('wiki:documents:recent');
+      await cache.delete('wiki:recent:activity');
+      await cache.delete(`wiki:document:${docId}:full`);
+      if (updatedDocument.spaceId) {
+        await cache.delete(`wiki:space:${updatedDocument.spaceId}:documents`);
+      }
+      
+      logger.info(`Updated document: ${title} (ID: ${docId})`);
+      
+      res.json({ success: true, document: updatedDocument });
+    } catch (error) {
+      logger.error('Error updating document:', error);
+      res.status(500).json({ success: false, message: 'Failed to update document' });
     }
-
-    const newDocument = {
-      id: Date.now(),
-      title,
-      content: content || '',
-      spaceId: spaceId || null,
-      spaceName: spaceId ? 'Selected Space' : 'Personal',
-      excerpt: content ? content.substring(0, 150) + '...' : 'No content yet',
-      author: 'Current User',
-      createdAt: new Date().toISOString(),
-      modifiedAt: new Date().toISOString(),
-      views: 0,
-      tags: []
-    };
-
-    res.json({ success: true, document: newDocument });
-  });
-
-  app.put('/applications/wiki/api/documents', (req, res) => {
-    const { id, title, content, spaceId } = req.body;
-
-    if (!id || !title) {
-      res.status(400).json({ success: false, message: 'Document ID and title are required' });
-      return;
-    }
-
-    const updatedDocument = {
-      id,
-      title,
-      content: content || '',
-      spaceId: spaceId || null,
-      spaceName: spaceId ? 'Selected Space' : 'Personal',
-      excerpt: content ? content.substring(0, 150) + '...' : 'No content yet',
-      author: 'Current User',
-      modifiedAt: new Date().toISOString(),
-      views: Math.floor(Math.random() * 50),
-      tags: []
-    };
-
-    res.json({ success: true, document: updatedDocument });
   });
 
   // Application status endpoint
