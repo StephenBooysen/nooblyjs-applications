@@ -65,6 +65,8 @@
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+    flex-shrink: 0;
+    min-width: 16px;
 }
 
 .section-header.collapsed .collapse-icon {
@@ -193,6 +195,45 @@
 
 .folder-item {
     font-weight: 500;
+    position: relative;
+}
+
+.folder-item .folder-toggle {
+    position: absolute;
+    left: 4px;
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.folder-item .folder-toggle svg {
+    width: 10px;
+    height: 10px;
+    stroke: var(--text-secondary);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.folder-item.expanded .folder-toggle {
+    transform: rotate(90deg);
+}
+
+.folder-children {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    max-height: 0;
+    opacity: 0;
+}
+
+.folder-children.expanded {
+    max-height: 1000px;
+    opacity: 1;
 }
 
 .file-item {
@@ -225,7 +266,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    gap: 8px;
+    gap: 10px;
     transition: background-color 0.2s ease;
 }
 
@@ -238,23 +279,25 @@
     color: var(--accent-color);
 }
 
-.space-icon {
-    font-size: 14px;
+.space-item i {
+    font-size: 16px;
+    width: 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
-.space-info {
-    flex: 1;
-    min-width: 0;
+.space-item.selected i {
+    color: var(--accent-color);
 }
 
 .space-name {
     font-weight: 500;
-    margin-bottom: 2px;
-}
-
-.space-meta {
-    font-size: 11px;
-    color: var(--text-muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .create-space-btn {
@@ -474,6 +517,179 @@
     background: #f9f9f9;
     border-color: var(--accent-color);
     color: var(--accent-color);
+}
+
+/* Folder View */
+.folder-header {
+    padding: 24px 32px;
+    background: white;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.breadcrumb a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+    color: var(--accent-hover);
+}
+
+.breadcrumb-separator {
+    color: var(--text-muted);
+}
+
+.folder-title-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.folder-main-icon {
+    width: 48px;
+    height: 48px;
+    color: #2563eb;
+}
+
+.folder-title-info h1 {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.folder-stats {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: #e5e7eb;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.folder-content {
+    padding: 0 32px 32px 32px;
+    background: #fafafa;
+    min-height: calc(100vh - 200px);
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 24px 0;
+}
+
+.item-card {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 12px;
+    position: relative;
+}
+
+.item-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.folder-card {
+    /* Inherits item-card styles */
+}
+
+.folder-card::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid #9ca3af;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+.file-card {
+    /* Inherits item-card styles */
+}
+
+.item-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+}
+
+.folder-icon {
+    color: #fbbf24;
+}
+
+.file-icon {
+    color: #3b82f6;
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item-meta {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.empty-folder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-folder-icon {
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.5;
+    margin-bottom: 16px;
 }
 
 /* Modal Updates */

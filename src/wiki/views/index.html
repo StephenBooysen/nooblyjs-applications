@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/new-layout.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <!-- SVG Icons Sprite -->
     <svg style="display: none;">
@@ -97,6 +98,11 @@
             <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
+            </symbol>
+            
+            <!-- Star Icon -->
+            <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26 12,2"/>
             </symbol>
         </defs>
     </svg>
@@ -210,7 +216,7 @@
                             </a>
                             <a href="#" id="shortcutStarred" class="shortcut-item">
                                 <svg class="shortcut-icon" width="16" height="16">
-                                    <path d="m12,2 3.09,6.26L22,9.27l-5,4.87 1.18,6.88L12,17.77l-6.18,3.25L7,14.14 2,9.27l6.91-1.01L12,2z"/>
+                                    <use href="#icon-star"></use>
                                 </svg>
                                 <span>Starred</span>
                             </a>
@@ -320,14 +326,14 @@
                         <section class="content-section">
                             <div class="section-title">
                                 <svg width="20" height="20">
-                                    <path d="m12,2 3.09,6.26L22,9.27l-5,4.87 1.18,6.88L12,17.77l-6.18,3.25L7,14.14 2,9.27l6.91-1.01L12,2z"/>
+                                    <use href="#icon-star"></use>
                                 </svg>
                                 <h2>Starred Files</h2>
                             </div>
                             <div id="starredFilesContent" class="files-content">
                                 <div class="no-content-message">
                                     <svg width="48" height="48" class="no-content-icon">
-                                        <path d="m12,2 3.09,6.26L22,9.27l-5,4.87 1.18,6.88L12,17.77l-6.18,3.25L7,14.14 2,9.27l6.91-1.01L12,2z"/>
+                                        <use href="#icon-star"></use>
                                     </svg>
                                     <p>No starred markdown files found</p>
                                 </div>

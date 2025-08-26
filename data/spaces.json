@@ -22,28 +22,6 @@
     "author": "Business Analyst"
   },
   {
-    "id": 3,
-    "name": "Development Guidelines",
-    "description": "Coding standards, best practices, and technical guides",
-    "icon": "👨‍💻",
-    "visibility": "team",
-    "documentCount": 2,
-    "createdAt": "2024-01-20T11:30:00Z",
-    "updatedAt": "2024-08-21T09:15:00Z",
-    "author": "Tech Lead"
-  },
-  {
-    "id": 4,
-    "name": "API Documentation",
-    "description": "REST API specifications, endpoints, and integration guides",
-    "icon": "🔌",
-    "visibility": "public",
-    "documentCount": 1,
-    "createdAt": "2024-03-10T08:00:00Z",
-    "updatedAt": "2024-08-18T13:20:00Z",
-    "author": "Backend Developer"
-  },
-  {
     "id": 5,
     "name": "Meeting Notes",
     "description": "Project meetings, architecture reviews, and decision records",
@@ -53,16 +31,5 @@
     "createdAt": "2024-01-05T14:00:00Z",
     "updatedAt": "2024-08-23T10:30:00Z",
     "author": "Project Manager"
-  },
-  {
-    "id": 6,
-    "name": "My Cool Space",
-    "description": "",
-    "icon": "📁",
-    "visibility": "private",
-    "documentCount": 0,
-    "createdAt": "2025-08-26T17:51:07.072Z",
-    "updatedAt": "2025-08-26T17:51:07.072Z",
-    "author": "Current User"
   }
 ]

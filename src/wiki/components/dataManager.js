@@ -115,11 +115,81 @@ class DataManager {
   }
 
   async getFolderTree(spaceId) {
-    const folders = await this.find('folders', { spaceId });
-    const documents = await this.find('documents', { spaceId });
+    // Get space name from spaces data
+    const spaces = await this.read('spaces');
+    const space = spaces.find(s => s.id === spaceId);
+    if (!space) {
+      return [];
+    }
+
+    // Read from physical file system
+    return this.getFolderTreeFromFileSystem(space.name);
+  }
+
+  async getFolderTreeFromFileSystem(spaceName) {
+    try {
+      const documentsDir = path.join(process.cwd(), 'documents');
+      const spaceDir = path.join(documentsDir, spaceName);
+      
+      // Check if space directory exists
+      try {
+        await fs.access(spaceDir);
+      } catch (error) {
+        // Directory doesn't exist, return empty tree
+        return [];
+      }
+
+      return await this.buildFileSystemTree(spaceDir, spaceName);
+    } catch (error) {
+      console.error('Error reading folder tree from file system:', error);
+      return [];
+    }
+  }
+
+  async buildFileSystemTree(dirPath, spaceName, relativePath = '') {
+    const tree = [];
     
-    // Build tree structure
-    const tree = this.buildFolderTree(folders, documents);
+    try {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        const relativeEntryPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+        
+        if (entry.isDirectory()) {
+          // It's a folder
+          const children = await this.buildFileSystemTree(fullPath, spaceName, relativeEntryPath);
+          tree.push({
+            type: 'folder',
+            name: entry.name,
+            path: relativeEntryPath,
+            children: children
+          });
+        } else if (entry.name.endsWith('.md')) {
+          // It's a markdown file
+          tree.push({
+            type: 'document',
+            name: entry.name.replace('.md', ''),
+            title: entry.name.replace('.md', ''),
+            path: relativeEntryPath,
+            fileName: entry.name,
+            spaceName: spaceName
+          });
+        }
+      }
+      
+      // Sort: folders first, then files, both alphabetically
+      tree.sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type === 'folder' ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      
+    } catch (error) {
+      console.error('Error reading directory:', dirPath, error);
+    }
+    
     return tree;
   }
 

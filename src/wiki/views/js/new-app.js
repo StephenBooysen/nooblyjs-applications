@@ -211,7 +211,7 @@ class WikiApp {
         if (isExpanded) {
             header.classList.remove('collapsed');
             content.classList.remove('collapsed');
-            content.style.maxHeight = content.scrollHeight + 'px';
+            content.style.maxHeight = 'none'; // Allow natural height when expanded
         } else {
             header.classList.add('collapsed');
             content.classList.add('collapsed');
@@ -265,7 +265,7 @@ class WikiApp {
         spacesList.innerHTML = this.data.spaces.map(space => `
             <div class="space-item ${this.currentSpace?.id === space.id ? 'selected' : ''}" 
                  data-space-id="${space.id}">
-                <i class="flaticon-${this.getSpaceIcon(space.name)}"></i>
+                <i class="fas fa-${this.getSpaceIcon(space.name)}"></i>
                 <span class="space-name">${space.name}</span>
             </div>
         `).join('');
@@ -283,6 +283,11 @@ class WikiApp {
                 this.selectSpace(spaceId);
             });
         });
+
+        // Auto-select first space if none selected
+        if (!this.currentSpace && this.data.spaces.length > 0) {
+            this.selectSpace(this.data.spaces[0].id);
+        }
     }
 
     renderFileTree(tree) {
@@ -294,7 +299,11 @@ class WikiApp {
             return;
         }
 
-        fileTree.innerHTML = this.renderTreeNodes(tree);
+        // Store the full tree data for later use
+        this.fullFileTree = tree;
+        
+        // Render only root level items initially (folders collapsed)
+        fileTree.innerHTML = this.renderTreeNodes(tree, 0, true);
         this.bindFileTreeEvents();
     }
 
@@ -311,29 +320,46 @@ class WikiApp {
         `;
     }
 
-    renderTreeNodes(nodes, level = 0) {
+    renderTreeNodes(nodes, level = 0, isRoot = false) {
         return nodes.map(node => {
             if (node.type === 'folder') {
+                const hasChildren = node.children && node.children.length > 0;
+                const folderId = `folder-${node.path.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                
                 return `
-                    <div class="folder-item" data-folder-path="${node.path}" style="padding-left: ${16 + level * 16}px">
+                    <div class="folder-item" data-folder-path="${node.path}" data-folder-id="${folderId}" style="padding-left: ${16 + level * 16}px">
+                        ${hasChildren ? `
+                            <div class="folder-toggle" data-folder-id="${folderId}">
+                                <svg viewBox="0 0 24 24">
+                                    <polyline points="9,18 15,12 9,6"></polyline>
+                                </svg>
+                            </div>
+                        ` : ''}
                         <svg class="folder-icon" width="16" height="16">
                             <use href="#icon-folder"></use>
                         </svg>
                         <span>${node.name}</span>
                     </div>
-                    ${node.children ? this.renderTreeNodes(node.children, level + 1) : ''}
-                    ${node.documents ? this.renderTreeNodes(node.documents, level + 1) : ''}
+                    ${hasChildren ? `
+                        <div class="folder-children" data-folder-children="${folderId}">
+                            ${this.renderTreeNodes(node.children, level + 1, false)}
+                        </div>
+                    ` : ''}
                 `;
-            } else {
-                return `
-                    <div class="file-item" data-document-id="${node.id}" style="padding-left: ${16 + level * 16}px">
-                        <svg class="file-icon" width="16" height="16">
-                            <use href="#icon-file"></use>
-                        </svg>
-                        <span>${node.title}</span>
-                    </div>
-                `;
+            } else if (node.type === 'document') {
+                // Only show root-level documents initially
+                if (isRoot || level > 0) {
+                    return `
+                        <div class="file-item" data-document-path="${node.path}" data-space-name="${node.spaceName}" style="padding-left: ${16 + level * 16}px">
+                            <svg class="file-icon" width="16" height="16">
+                                <use href="#icon-file"></use>
+                            </svg>
+                            <span>${node.title || node.name}</span>
+                        </div>
+                    `;
+                }
             }
+            return '';
         }).join('');
     }
 
@@ -341,17 +367,33 @@ class WikiApp {
         const fileTree = document.getElementById('fileTree');
         if (!fileTree) return;
 
-        fileTree.querySelectorAll('.folder-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const folderPath = item.dataset.folderPath;
-                this.selectFolder(folderPath);
+        // Handle folder toggle clicks
+        fileTree.querySelectorAll('.folder-toggle').forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const folderId = toggle.dataset.folderId;
+                this.toggleFolder(folderId);
             });
         });
 
+        // Handle folder item clicks (for content loading)
+        fileTree.querySelectorAll('.folder-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Don't trigger if clicking the toggle
+                if (e.target.closest('.folder-toggle')) return;
+                
+                const folderPath = item.dataset.folderPath;
+                this.selectFolder(folderPath);
+                this.loadFolderContent(folderPath);
+            });
+        });
+
+        // Handle file item clicks
         fileTree.querySelectorAll('.file-item').forEach(item => {
             item.addEventListener('click', () => {
-                const documentId = parseInt(item.dataset.documentId);
-                this.openDocument(documentId);
+                const documentPath = item.dataset.documentPath;
+                const spaceName = item.dataset.spaceName;
+                this.openDocumentByPath(documentPath, spaceName);
             });
         });
     }
@@ -371,6 +413,186 @@ class WikiApp {
         // Update file tree selection
         document.querySelectorAll('.folder-item').forEach(item => {
             item.classList.toggle('selected', item.dataset.folderPath === folderPath);
+        });
+    }
+
+    toggleFolder(folderId) {
+        const folderItem = document.querySelector(`[data-folder-id="${folderId}"]`);
+        const folderChildren = document.querySelector(`[data-folder-children="${folderId}"]`);
+        
+        if (!folderItem || !folderChildren) return;
+
+        const isExpanded = folderItem.classList.contains('expanded');
+        
+        if (isExpanded) {
+            // Collapse
+            folderItem.classList.remove('expanded');
+            folderChildren.classList.remove('expanded');
+        } else {
+            // Expand
+            folderItem.classList.add('expanded');
+            folderChildren.classList.add('expanded');
+        }
+    }
+
+    async loadFolderContent(folderPath) {
+        // Find the folder data from the full tree
+        const folder = this.findFolderInTree(this.fullFileTree, folderPath);
+        if (!folder) return;
+
+        // Create a folder overview view
+        const folderContent = this.createFolderOverview(folder);
+        this.showFolderView(folderContent);
+    }
+
+    findFolderInTree(nodes, targetPath) {
+        for (const node of nodes) {
+            if (node.type === 'folder' && node.path === targetPath) {
+                return node;
+            }
+            if (node.children) {
+                const found = this.findFolderInTree(node.children, targetPath);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    createFolderOverview(folder) {
+        const childFiles = folder.children ? folder.children.filter(c => c.type === 'document') : [];
+        const childFolders = folder.children ? folder.children.filter(c => c.type === 'folder') : [];
+
+        // Add child count to each folder for display
+        const foldersWithCounts = childFolders.map(childFolder => ({
+            ...childFolder,
+            childCount: childFolder.children ? childFolder.children.length : 0
+        }));
+
+        return {
+            title: folder.name,
+            path: folder.path,
+            spaceName: this.currentSpace?.name || 'Unknown Space',
+            stats: {
+                files: childFiles.length,
+                folders: childFolders.length
+            },
+            files: childFiles,
+            folders: foldersWithCounts
+        };
+    }
+
+    showFolderView(folderContent) {
+        // Switch to a custom folder view
+        this.setActiveView('folder');
+        
+        // Update the main content to show folder overview
+        const mainContent = document.getElementById('mainContent');
+        if (!mainContent) return;
+
+        // Calculate total items for each type
+        const totalFiles = folderContent.stats.files;
+        const totalFolders = folderContent.stats.folders;
+        
+        // Create folder view HTML matching the reference design
+        const folderViewHtml = `
+            <div id="folderView" class="view">
+                <div class="folder-header">
+                    <nav class="breadcrumb">
+                        <a href="#" id="backToSpace">${folderContent.spaceName}</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span>${folderContent.title}</span>
+                    </nav>
+                    
+                    <div class="folder-title-section">
+                        <svg class="folder-main-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                        </svg>
+                        <div class="folder-title-info">
+                            <h1>${folderContent.title}</h1>
+                            <div class="folder-stats">
+                                ${totalFiles > 0 ? `<span class="stat-badge">${totalFiles} file${totalFiles !== 1 ? 's' : ''}</span>` : ''}
+                                ${totalFolders > 0 ? `<span class="stat-badge">${totalFolders} folder${totalFolders !== 1 ? 's' : ''}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="folder-content">
+                    ${folderContent.folders.length === 0 && folderContent.files.length === 0 ? `
+                        <div class="empty-folder">
+                            <svg width="48" height="48" class="empty-folder-icon">
+                                <use href="#icon-folder"></use>
+                            </svg>
+                            <p>This folder is empty</p>
+                        </div>
+                    ` : `
+                        <div class="items-grid">
+                            ${folderContent.folders.map(folder => {
+                                const childCount = folder.childCount || 0;
+                                return `
+                                    <div class="item-card folder-card" data-folder-path="${folder.path}">
+                                        <svg class="item-icon folder-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                                        </svg>
+                                        <div class="item-info">
+                                            <div class="item-name">${folder.name}</div>
+                                            <div class="item-meta">Folder • ${childCount} item${childCount !== 1 ? 's' : ''}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                            ${folderContent.files.map(file => `
+                                <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.spaceName}">
+                                    <svg class="item-icon file-icon" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                    <div class="item-info">
+                                        <div class="item-name">${file.title || file.name}</div>
+                                        <div class="item-meta">File • markdown</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+
+        // Remove existing folder view if any
+        const existingFolderView = document.getElementById('folderView');
+        if (existingFolderView) {
+            existingFolderView.remove();
+        }
+
+        // Add the new folder view
+        mainContent.insertAdjacentHTML('beforeend', folderViewHtml);
+        
+        // Bind events for the folder view
+        this.bindFolderViewEvents();
+    }
+
+    bindFolderViewEvents() {
+        // Back to space button
+        document.getElementById('backToSpace')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showHome();
+        });
+
+        // Folder cards click events
+        document.querySelectorAll('#folderView .folder-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const folderPath = card.dataset.folderPath;
+                this.loadFolderContent(folderPath);
+            });
+        });
+
+        // File cards click events
+        document.querySelectorAll('#folderView .file-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const documentPath = card.dataset.documentPath;
+                const spaceName = card.dataset.spaceName;
+                this.openDocumentByPath(documentPath, spaceName);
+            });
         });
     }
 
@@ -537,6 +759,36 @@ class WikiApp {
         return templates[template] || '';
     }
 
+    getSpaceIcon(spaceName) {
+        // Map space names to appropriate Font Awesome icon names
+        const iconMappings = {
+            'Architecture Documentation': 'sitemap',
+            'Business Requirements': 'briefcase',
+            'Development Guidelines': 'code',
+            'API Documentation': 'plug',
+            'Meeting Notes': 'sticky-note',
+            'My Cool Space': 'folder'
+        };
+
+        // Look for keywords in space name if exact match not found
+        const name = spaceName.toLowerCase();
+        if (iconMappings[spaceName]) {
+            return iconMappings[spaceName];
+        } else if (name.includes('architecture')) {
+            return 'sitemap';
+        } else if (name.includes('business') || name.includes('requirement')) {
+            return 'briefcase';
+        } else if (name.includes('development') || name.includes('code')) {
+            return 'code';
+        } else if (name.includes('api')) {
+            return 'plug';
+        } else if (name.includes('meeting') || name.includes('notes')) {
+            return 'sticky-note';
+        } else {
+            return 'folder';
+        }
+    }
+
     // View methods
     showHome() {
         this.setActiveView('home');
@@ -593,6 +845,25 @@ class WikiApp {
             this.showDocumentView(document);
         } catch (error) {
             console.error('Error loading document:', error);
+            this.showNotification('Failed to load document', 'error');
+        }
+    }
+
+    async openDocumentByPath(documentPath, spaceName) {
+        try {
+            // For now, we'll create a simple document object
+            // TODO: Create API endpoint to read document content from file system
+            const document = {
+                title: documentPath.split('/').pop().replace('.md', ''),
+                path: documentPath,
+                spaceName: spaceName,
+                content: `# ${documentPath.split('/').pop().replace('.md', '')}\n\nLoading content from ${documentPath}...`
+            };
+            
+            this.currentDocument = document;
+            this.showDocumentView(document);
+        } catch (error) {
+            console.error('Error loading document by path:', error);
             this.showNotification('Failed to load document', 'error');
         }
     }
