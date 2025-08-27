@@ -78,17 +78,5 @@
       "architecture",
       "review"
     ]
-  },
-  {
-    "id": 6,
-    "title": "Test Queue Document",
-    "spaceId": 1,
-    "spaceName": "Architecture Documentation",
-    "excerpt": "This is a test document to verify queue processing works.",
-    "author": "Current User",
-    "createdAt": "2025-08-26T17:17:00.892Z",
-    "modifiedAt": "2025-08-26T17:17:00.892Z",
-    "views": 0,
-    "tags": []
   }
 ]

@@ -1,35 +1,35 @@
 [
   {
     "id": 1,
-    "name": "Architecture Documentation",
-    "description": "Enterprise architecture patterns, decisions, and guidelines",
+    "name": "Personal Space",
+    "description": "This space is for you personal data",
     "icon": "🏗️",
-    "visibility": "team",
-    "documentCount": 3,
+    "visibility": "private",
+    "documentCount": 0,
     "createdAt": "2024-01-15T10:00:00Z",
     "updatedAt": "2024-08-20T14:30:00Z",
-    "author": "Solution Architect"
+    "author": "System"
   },
   {
     "id": 2,
-    "name": "Business Requirements",
-    "description": "Product requirements, user stories, and business logic documentation",
-    "icon": "💼",
-    "visibility": "public",
-    "documentCount": 2,
-    "createdAt": "2024-02-01T09:00:00Z",
-    "updatedAt": "2024-08-19T16:45:00Z",
-    "author": "Business Analyst"
+    "name": "Team Space",
+    "description": "This space is for your team to contribiute to",
+    "icon": "🏗️",
+    "visibility": "team",
+    "documentCount": 0,
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-08-20T14:30:00Z",
+    "author": "System"
   },
   {
-    "id": 5,
-    "name": "Meeting Notes",
-    "description": "Project meetings, architecture reviews, and decision records",
-    "icon": "📝",
-    "visibility": "private",
-    "documentCount": 1,
-    "createdAt": "2024-01-05T14:00:00Z",
-    "updatedAt": "2024-08-23T10:30:00Z",
-    "author": "Project Manager"
+    "id": 3,
+    "name": "Knowledge Space",
+    "description": "This is a formated compilaton of data",
+    "icon": "🏗️",
+    "visibility": "readonly",
+    "documentCount": 0,
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-08-20T14:30:00Z",
+    "author": "System"
   }
 ]

@@ -71,59 +71,37 @@ async function initializeWikiData(dataManager, filing, cache, logger, queue, sea
       const defaultSpaces = [
         {
           id: 1,
-          name: 'Architecture Documentation',
-          description: 'Enterprise architecture patterns, decisions, and guidelines',
+          name: 'Personal Space',
+          description: 'This space is for you personal data',
           icon: '🏗️',
-          visibility: 'team',
-          documentCount: 3,
+          visibility: 'private',
+          documentCount: 0,
           createdAt: '2024-01-15T10:00:00Z',
           updatedAt: '2024-08-20T14:30:00Z',
-          author: 'Solution Architect'
+          author: 'System'
         },
-        {
-          id: 2,
-          name: 'Business Requirements',
-          description: 'Product requirements, user stories, and business logic documentation',
-          icon: '💼',
-          visibility: 'public',
-          documentCount: 2,
-          createdAt: '2024-02-01T09:00:00Z',
-          updatedAt: '2024-08-19T16:45:00Z',
-          author: 'Business Analyst'
-        },
-        {
-          id: 3,
-          name: 'Development Guidelines',
-          description: 'Coding standards, best practices, and technical guides',
-          icon: '👨‍💻',
+                {
+          id: 1,
+          name: 'Team Space',
+          description: 'This space is for your team to contribiute to',
+          icon: '🏗️',
           visibility: 'team',
-          documentCount: 2,
-          createdAt: '2024-01-20T11:30:00Z',
-          updatedAt: '2024-08-21T09:15:00Z',
-          author: 'Tech Lead'
-        },
+          documentCount: 0,
+          createdAt: '2024-01-15T10:00:00Z',
+          updatedAt: '2024-08-20T14:30:00Z',
+          author: 'System'
+        }, 
         {
-          id: 4,
-          name: 'API Documentation',
-          description: 'REST API specifications, endpoints, and integration guides',
-          icon: '🔌',
-          visibility: 'public',
-          documentCount: 1,
-          createdAt: '2024-03-10T08:00:00Z',
-          updatedAt: '2024-08-18T13:20:00Z',
-          author: 'Backend Developer'
-        },
-        {
-          id: 5,
-          name: 'Meeting Notes',
-          description: 'Project meetings, architecture reviews, and decision records',
-          icon: '📝',
-          visibility: 'private',
-          documentCount: 1,
-          createdAt: '2024-01-05T14:00:00Z',
-          updatedAt: '2024-08-23T10:30:00Z',
-          author: 'Project Manager'
-        }
+          id: 1,
+          name: 'Knowledge Space',
+          description: 'This is a formated compilaton of data',
+          icon: '🏗️',
+          visibility: 'readonly',
+          documentCount: 0,
+          createdAt: '2024-01-15T10:00:00Z',
+          updatedAt: '2024-08-20T14:30:00Z',
+          author: 'System'
+        },        
       ];
       
       logger.info(`Storing ${defaultSpaces.length} spaces with JSON file storage...`);

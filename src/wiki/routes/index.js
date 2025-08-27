@@ -140,6 +140,51 @@ module.exports = (options, eventEmitter, services) => {
     }
   });
 
+  // Read document content by file path (must be before :id route)
+  app.get('/applications/wiki/api/documents/content', async (req, res) => {
+    try {
+      const documentPath = req.query.path;
+      
+      if (!documentPath) {
+        return res.status(400).json({ error: 'Document path is required' });
+      }
+
+      logger.info(`Reading document content from path: ${documentPath}`);
+      
+      // Resolve the absolute path to the documents folder
+      const documentsDir = path.resolve(__dirname, '../../../documents');
+      const absolutePath = path.resolve(documentsDir, documentPath);
+      
+      // Security check: ensure the path is within the documents directory
+      if (!absolutePath.startsWith(documentsDir)) {
+        logger.warn(`Blocked attempt to access file outside documents directory: ${documentPath}`);
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      try {
+        // Read the file directly from the file system
+        const fs = require('fs').promises;
+        const content = await fs.readFile(absolutePath, 'utf8');
+        
+        logger.info(`Successfully read document from ${documentPath}`);
+        
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.send(content);
+      } catch (fileError) {
+        logger.warn(`Failed to read file ${documentPath}: ${fileError.message}`);
+        
+        // Return a friendly error message as markdown content
+        const errorContent = `# File Not Found\n\nThe requested document \`${documentPath}\` could not be found or read.\n\n**Possible reasons:**\n- File has been moved or deleted\n- Permission issues\n- File path is incorrect\n\nPlease check the file location and try again.`;
+        
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.status(404).send(errorContent);
+      }
+    } catch (error) {
+      logger.error('Error in document content endpoint:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   app.get('/applications/wiki/api/documents/recent', async (req, res) => {
     try {
       const cacheKey = 'wiki:documents:recent';

@@ -851,20 +851,38 @@ class WikiApp {
 
     async openDocumentByPath(documentPath, spaceName) {
         try {
-            // For now, we'll create a simple document object
-            // TODO: Create API endpoint to read document content from file system
+            // Load actual document content from file system
+            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(documentPath)}`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load document: ${response.statusText}`);
+            }
+            
+            const content = await response.text();
+            
             const document = {
                 title: documentPath.split('/').pop().replace('.md', ''),
                 path: documentPath,
                 spaceName: spaceName,
-                content: `# ${documentPath.split('/').pop().replace('.md', '')}\n\nLoading content from ${documentPath}...`
+                content: content
             };
             
             this.currentDocument = document;
             this.showDocumentView(document);
         } catch (error) {
             console.error('Error loading document by path:', error);
-            this.showNotification('Failed to load document', 'error');
+            
+            // Fallback: create a basic document structure
+            const document = {
+                title: documentPath.split('/').pop().replace('.md', ''),
+                path: documentPath,
+                spaceName: spaceName,
+                content: `# ${documentPath.split('/').pop().replace('.md', '')}\n\nFailed to load content from ${documentPath}`
+            };
+            
+            this.currentDocument = document;
+            this.showDocumentView(document);
+            this.showNotification('Failed to load document content', 'error');
         }
     }
 
@@ -990,8 +1008,82 @@ class WikiApp {
         console.log('Loading templates...');
     }
 
-    showDocumentView(document) {
-        console.log('Showing document:', document);
+    showDocumentView(doc) {
+        // Switch to document view
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        // Update document header
+        const docTitle = document.getElementById('currentDocTitle');
+        if (docTitle) {
+            docTitle.textContent = doc.title;
+        }
+        
+        // Update breadcrumb to show space
+        const backToSpace = document.getElementById('docBackToSpace');
+        if (backToSpace) {
+            backToSpace.textContent = doc.spaceName || 'Space';
+        }
+        
+        // Render document content
+        const contentElement = document.getElementById('documentContent');
+        if (contentElement && doc.content) {
+            if (typeof marked !== 'undefined') {
+                // Render markdown content
+                contentElement.innerHTML = marked.parse(doc.content);
+                
+                // Apply syntax highlighting if Prism is available
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAllUnder(contentElement);
+                }
+            } else {
+                // Fallback: display as preformatted text
+                contentElement.innerHTML = `<pre>${this.escapeHtml(doc.content)}</pre>`;
+            }
+        } else {
+            contentElement.innerHTML = '<div class="error-message">Failed to load document content</div>';
+        }
+        
+        // Bind document action events
+        this.bindDocumentViewEvents();
+    }
+    
+    bindDocumentViewEvents() {
+        // Edit document button
+        const editBtn = document.getElementById('editDocBtn');
+        if (editBtn) {
+            editBtn.onclick = () => {
+                this.editCurrentDocument();
+            };
+        }
+        
+        // Back to space button
+        const backBtn = document.getElementById('docBackToSpace');
+        if (backBtn) {
+            backBtn.onclick = (e) => {
+                e.preventDefault();
+                this.showHome();
+            };
+        }
+    }
+    
+    editCurrentDocument() {
+        if (this.currentDocument) {
+            // Switch to editor view with current document loaded
+            this.showEditorView(this.currentDocument);
+        }
+    }
+    
+    showEditorView(doc) {
+        // Implementation for showing editor with document content
+        console.log('Opening editor for document:', doc);
+        // TODO: Implement editor view
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 
