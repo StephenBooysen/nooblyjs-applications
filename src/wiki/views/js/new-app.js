@@ -874,10 +874,12 @@ class WikiApp {
             
             // Fallback: create a basic document structure
             const document = {
-                title: documentPath.split('/').pop().replace('.md', ''),
+                title: documentPath.split('/').pop(),
                 path: documentPath,
                 spaceName: spaceName,
-                content: `# ${documentPath.split('/').pop().replace('.md', '')}\n\nFailed to load content from ${documentPath}`
+                content: `# ${documentPath.split('/').pop()}
+
+Failed to load content from ${documentPath}`
             };
             
             this.currentDocument = document;

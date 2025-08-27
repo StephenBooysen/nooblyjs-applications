@@ -165,12 +165,12 @@ class DataManager {
             path: relativeEntryPath,
             children: children
           });
-        } else if (entry.name.endsWith('.md')) {
-          // It's a markdown file
+        } else {
+          // It's a file
           tree.push({
             type: 'document',
-            name: entry.name.replace('.md', ''),
-            title: entry.name.replace('.md', ''),
+            name: entry.name,
+            title: entry.name,
             path: relativeEntryPath,
             fileName: entry.name,
             spaceName: spaceName
