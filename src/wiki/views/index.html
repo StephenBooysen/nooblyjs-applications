@@ -146,11 +146,6 @@
                 <!-- Search Bar -->
                 <div class="search-container">
                     <input type="text" id="globalSearch" placeholder="Search knowledge base..." class="search-input">
-                    <button id="searchBtn" class="search-btn">
-                        <svg width="16" height="16">
-                            <use href="#icon-search"></use>
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- Navigation -->
@@ -344,19 +339,63 @@
 
                 <!-- Space Detail View -->
                 <div id="spaceView" class="view hidden">
-                    <div class="view-header">
+                    <div class="space-header">
                         <nav class="breadcrumb">
-                            <a href="#" id="backToSpaces">Spaces</a>
+                            <a href="#" id="backToHome">Home</a>
                             <span class="breadcrumb-separator">/</span>
                             <span id="currentSpaceName"></span>
                         </nav>
                         <div class="space-actions">
                             <button id="createDocInSpace" class="btn btn-primary">+ New Document</button>
-                            <button id="spaceSettings" class="btn btn-secondary">Settings</button>
+                            <button id="createFolderInSpace" class="btn btn-secondary">+ New Folder</button>
                         </div>
                     </div>
-                    <div id="spaceContent" class="space-content">
-                        <!-- Dynamic content -->
+                    
+                    <div class="space-content-sections">
+                        <!-- Recent Files in Space -->
+                        <section class="space-section">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <svg width="20" height="20" class="section-icon">
+                                        <use href="#icon-history"></use>
+                                    </svg>
+                                    <h2>Recent Files</h2>
+                                </div>
+                            </div>
+                            <div id="spaceRecentFiles" class="files-grid">
+                                <!-- Recent files will be loaded here -->
+                            </div>
+                        </section>
+
+                        <!-- Starred Files in Space -->
+                        <section class="space-section">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <svg width="20" height="20" class="section-icon">
+                                        <use href="#icon-star"></use>
+                                    </svg>
+                                    <h2>Starred Files</h2>
+                                </div>
+                            </div>
+                            <div id="spaceStarredFiles" class="files-grid">
+                                <!-- Starred files will be loaded here -->
+                            </div>
+                        </section>
+
+                        <!-- Root Files and Folders -->
+                        <section class="space-section">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <svg width="20" height="20" class="section-icon">
+                                        <use href="#icon-folder"></use>
+                                    </svg>
+                                    <h2>Files & Folders</h2>
+                                </div>
+                            </div>
+                            <div id="spaceRootItems" class="items-grid">
+                                <!-- Root level files and folders will be loaded here -->
+                            </div>
+                        </section>
                     </div>
                 </div>
 

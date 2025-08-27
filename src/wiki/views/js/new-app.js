@@ -125,6 +125,11 @@ class WikiApp {
         document.getElementById('searchBtn')?.addEventListener('click', () => {
             this.performSearch();
         });
+
+        // Refresh recent files button
+        document.getElementById('refreshRecentBtn')?.addEventListener('click', async () => {
+            await this.loadRecentFiles();
+        });
     }
 
     bindModalEvents() {
@@ -408,6 +413,9 @@ class WikiApp {
         this.renderSpacesList(); // Re-render to show selection
         await this.loadFileTree();
         this.updateWorkspaceHeader();
+        
+        // Show the space view with space content
+        this.showSpaceView(space);
     }
 
     selectFolder(folderPath) {
@@ -600,6 +608,197 @@ class WikiApp {
                 this.openDocumentByPath(documentPath, spaceName);
             });
         });
+    }
+
+    // Space View Implementation
+    async showSpaceView(space) {
+        this.setActiveView('space');
+        this.currentView = 'space';
+        
+        // Update space header
+        const spaceNameElement = document.getElementById('currentSpaceName');
+        if (spaceNameElement) {
+            spaceNameElement.textContent = space.name;
+        }
+        
+        // Bind back to home button
+        document.getElementById('backToHome')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showHome();
+        });
+        
+        // Load space content
+        await this.loadSpaceContent(space);
+    }
+
+    async loadSpaceContent(space) {
+        try {
+            // Load recent files for this space
+            await this.loadSpaceRecentFiles(space);
+            
+            // Load starred files for this space (placeholder for now)
+            this.loadSpaceStarredFiles(space);
+            
+            // Load root files and folders
+            await this.loadSpaceRootItems(space);
+            
+        } catch (error) {
+            console.error('Error loading space content:', error);
+        }
+    }
+
+    async loadSpaceRecentFiles(space) {
+        const container = document.getElementById('spaceRecentFiles');
+        if (!container) return;
+        
+        // Filter documents that belong to this space and sort by modification date
+        const recentFiles = this.data.documents
+            .filter(doc => doc.spaceId === space.id)
+            .sort((a, b) => new Date(b.modifiedAt || b.createdAt) - new Date(a.modifiedAt || a.createdAt))
+            .slice(0, 6); // Show only 6 most recent
+        
+        if (recentFiles.length === 0) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-history"></use>
+                    </svg>
+                    <p>No recent files in this space</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = recentFiles.map(file => {
+            const fileTypeInfo = this.getFileTypeInfo(file.path || file.title);
+            const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+            const iconColor = fileTypeInfo.color;
+            
+            return `
+                <div class="file-card" data-document-path="${file.path || file.title}" data-space-name="${file.spaceName}">
+                    <i class="fas ${iconClass} file-card-icon" style="color: ${iconColor};"></i>
+                    <div class="file-card-info">
+                        <div class="file-card-name">${file.title}</div>
+                        <div class="file-card-meta">Modified ${this.formatDate(file.modifiedAt || file.createdAt)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Bind click events
+        container.querySelectorAll('.file-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const documentPath = card.dataset.documentPath;
+                const spaceName = card.dataset.spaceName;
+                this.openDocumentByPath(documentPath, spaceName);
+            });
+        });
+    }
+
+    loadSpaceStarredFiles(space) {
+        const container = document.getElementById('spaceStarredFiles');
+        if (!container) return;
+        
+        // Placeholder for starred files (would need to implement starring functionality)
+        container.innerHTML = `
+            <div class="no-content-message">
+                <svg width="48" height="48" class="no-content-icon">
+                    <use href="#icon-star"></use>
+                </svg>
+                <p>No starred files in this space</p>
+                <small>Star files to see them here</small>
+            </div>
+        `;
+    }
+
+    async loadSpaceRootItems(space) {
+        const container = document.getElementById('spaceRootItems');
+        if (!container) return;
+        
+        try {
+            // Get the folder tree for this space
+            const response = await fetch(`/applications/wiki/api/spaces/${space.id}/folders`);
+            const tree = await response.json();
+            
+            if (tree.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content-message">
+                        <svg width="48" height="48" class="no-content-icon">
+                            <use href="#icon-folder"></use>
+                        </svg>
+                        <p>No files or folders in this space</p>
+                        <button id="createFirstFile" class="btn btn-primary" style="margin-top: 12px;">Create First File</button>
+                    </div>
+                `;
+                
+                // Bind create first file button
+                document.getElementById('createFirstFile')?.addEventListener('click', () => {
+                    this.showCreateFileModal();
+                });
+                return;
+            }
+            
+            // Render root level items only
+            const rootItems = tree.filter(item => !item.path.includes('/') || item.path.split('/').length === 1);
+            
+            container.innerHTML = `
+                <div class="items-grid">
+                    ${rootItems.map(item => {
+                        if (item.type === 'folder') {
+                            const childCount = item.children ? item.children.length : 0;
+                            return `
+                                <div class="item-card folder-card" data-folder-path="${item.path}">
+                                    <i class="fas fa-folder item-icon" style="color: var(--text-secondary); font-size: 24px;"></i>
+                                    <div class="item-info">
+                                        <div class="item-name">${item.name}</div>
+                                        <div class="item-meta">Folder • ${childCount} item${childCount !== 1 ? 's' : ''}</div>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (item.type === 'document') {
+                            const fileTypeInfo = this.getFileTypeInfo(item.path || item.name);
+                            const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                            const iconColor = fileTypeInfo.color;
+                            
+                            return `
+                                <div class="item-card file-card" data-document-path="${item.path}" data-space-name="${item.spaceName}">
+                                    <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                    <div class="item-info">
+                                        <div class="item-name">${item.title || item.name}</div>
+                                        <div class="item-meta">File • ${fileTypeInfo.category}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        return '';
+                    }).join('')}
+                </div>
+            `;
+            
+            // Bind click events for folders and files
+            container.querySelectorAll('.folder-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const folderPath = card.dataset.folderPath;
+                    this.loadFolderContent(folderPath);
+                });
+            });
+            
+            container.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const documentPath = card.dataset.documentPath;
+                    const spaceName = card.dataset.spaceName;
+                    this.openDocumentByPath(documentPath, spaceName);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading space root items:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <p>Error loading space content</p>
+                </div>
+            `;
+        }
     }
 
     updateWorkspaceHeader() {
@@ -796,10 +995,14 @@ class WikiApp {
     }
 
     // View methods
-    showHome() {
+    async showHome() {
         this.setActiveView('home');
         this.setActiveShortcut('shortcutHome');
         this.currentView = 'home';
+        
+        // Load recent files for the homepage
+        await this.loadRecentFiles();
+        this.loadStarredFiles();
     }
 
     showRecent() {
@@ -1289,12 +1492,82 @@ class WikiApp {
     }
 
     // Placeholder methods for not-yet-implemented features
-    loadRecentFiles() {
-        console.log('Loading recent files...');
+    async loadRecentFiles() {
+        const container = document.getElementById('recentFilesContent');
+        if (!container) return;
+        
+        try {
+            // Get recent files from all spaces, sorted by modification date
+            const recentFiles = this.data.documents
+                .sort((a, b) => new Date(b.modifiedAt || b.createdAt) - new Date(a.modifiedAt || a.createdAt))
+                .slice(0, 12); // Show up to 12 recent files
+            
+            if (recentFiles.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content-message">
+                        <svg width="48" height="48" class="no-content-icon">
+                            <use href="#icon-history"></use>
+                        </svg>
+                        <p>No recent files found</p>
+                        <small>Files you access will appear here</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="items-grid">
+                    ${recentFiles.map(file => {
+                        const fileTypeInfo = this.getFileTypeInfo(file.path || file.title);
+                        const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                        const iconColor = fileTypeInfo.color;
+                        
+                        return `
+                            <div class="item-card file-card" data-document-path="${file.path || file.title}" data-space-name="${file.spaceName}">
+                                <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">${file.title}</div>
+                                    <div class="item-meta">File • ${fileTypeInfo.category} • Modified ${this.formatDate(file.modifiedAt || file.createdAt)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // Bind click events
+            container.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const documentPath = card.dataset.documentPath;
+                    const spaceName = card.dataset.spaceName;
+                    this.openDocumentByPath(documentPath, spaceName);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading recent files:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <p>Error loading recent files</p>
+                </div>
+            `;
+        }
     }
 
     loadStarredFiles() {
-        console.log('Loading starred files...');
+        const container = document.getElementById('starredFilesContent');
+        if (!container) return;
+        
+        // Placeholder for starred files (would need to implement starring functionality)
+        container.innerHTML = `
+            <div class="no-content-message">
+                <svg width="48" height="48" class="no-content-icon">
+                    <use href="#icon-star"></use>
+                </svg>
+                <p>No starred files found</p>
+                <small>Star files to see them here</small>
+            </div>
+        `;
     }
 
     loadTemplates() {
@@ -1392,56 +1665,56 @@ class WikiApp {
         const ext = filePath.split('.').pop()?.toLowerCase() || '';
         const fileName = filePath.split('/').pop() || '';
         
-        // File category mappings matching backend
+        // File category mappings matching backend - all icons now use consistent gray color
         const categories = {
             pdf: { 
                 category: 'pdf', 
                 viewer: 'pdf',
                 extensions: ['pdf'],
                 icon: 'file-pdf',
-                color: '#dc3545'
+                color: '#666666'
             },
             image: {
                 category: 'image',
                 viewer: 'image', 
                 extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'],
                 icon: 'image',
-                color: '#17a2b8'
+                color: '#666666'
             },
             text: {
                 category: 'text',
                 viewer: 'text',
                 extensions: ['txt', 'csv', 'dat', 'log', 'ini', 'cfg', 'conf'],
-                icon: 'file-text',
-                color: '#6c757d'
+                icon: 'file-alt',
+                color: '#666666'
             },
             markdown: {
                 category: 'markdown',
                 viewer: 'markdown',
                 extensions: ['md', 'markdown'],
-                icon: 'markdown',
-                color: '#007bff'
+                icon: 'file-alt',
+                color: '#666666'
             },
             code: {
                 category: 'code',
                 viewer: 'code',
                 extensions: ['js', 'ts', 'jsx', 'tsx', 'vue', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'm', 'mm', 'pl', 'sh', 'bash', 'ps1', 'bat', 'cmd'],
                 icon: 'file-code',
-                color: '#28a745'
+                color: '#666666'
             },
             web: {
                 category: 'web',
                 viewer: 'code',
                 extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less'],
                 icon: 'code',
-                color: '#fd7e14'
+                color: '#666666'
             },
             data: {
                 category: 'data',
                 viewer: 'code',
                 extensions: ['json', 'xml', 'yaml', 'yml', 'toml', 'properties'],
-                icon: 'brackets-curly',
-                color: '#6f42c1'
+                icon: 'file-code',
+                color: '#666666'
             }
         };
         
@@ -1466,7 +1739,7 @@ class WikiApp {
             extension: ext,
             fileName: fileName,
             icon: 'file',
-            color: '#6c757d'
+            color: '#666666'
         };
     }
     
