@@ -10,6 +10,7 @@
 'use strict';
 const path = require('path')
 const mime = require('mime-types');
+const SearchIndexer = require('../activities/searchIndexer');
 
 /**
  * Configures and registers wiki routes with the Express application.
@@ -25,6 +26,16 @@ module.exports = (options, eventEmitter, services) => {
 
   const app = options['express-app'];
   const { dataManager, filing, cache, logger, queue, search } = services;
+  
+  // Initialize enhanced search indexer
+  const searchIndexer = new SearchIndexer(logger);
+  
+  // Build initial index (async, non-blocking)
+  setImmediate(() => {
+    searchIndexer.buildIndex().catch(error => {
+      logger.error('Failed to build initial search index:', error);
+    });
+  });
  
   app.post('/applications/wiki/login', (req, res) => {
     const { username, password } = req.body;
@@ -471,53 +482,118 @@ ${documentPath}\
     }
   });
 
+  // Enhanced search endpoint with comprehensive file indexing
   app.get('/applications/wiki/api/search', async (req, res) => {
     try {
       const query = req.query.q?.trim() || '';
+      const fileTypes = req.query.fileTypes ? req.query.fileTypes.split(',') : [];
+      const baseTypes = req.query.baseTypes ? req.query.baseTypes.split(',') : [];
+      const includeContent = req.query.includeContent === 'true';
 
       if (!query) {
         return res.json([]);
       }
 
-      logger.info(`Searching for: ${query}`);
+      logger.info(`Enhanced search for: ${query}, fileTypes: ${fileTypes}, baseTypes: ${baseTypes}`);
       
-      // Use the search service to find documents
-      let searchResults = search.search(query);
-      logger.info(`Search service returned: ${typeof searchResults}, value: ${JSON.stringify(searchResults)}`);
+      // Use the enhanced search indexer
+      let searchResults = searchIndexer.search(query, {
+        maxResults: 20,
+        includeContent: includeContent,
+        fileTypes: fileTypes,
+        baseTypes: baseTypes
+      });
       
-      // If no results from search service, fall back to basic text matching
-      if (!searchResults || !Array.isArray(searchResults) || searchResults.length === 0) {
-        logger.info('No search service results, falling back to basic search');
+      // Fall back to original search for wiki documents if no file results
+      if (searchResults.length === 0) {
+        logger.info('No file search results, falling back to document search');
         const allDocuments = await dataManager.read('documents');
         const queryLower = query.toLowerCase();
         
-        searchResults = allDocuments
+        const docResults = allDocuments
           .filter(doc => 
             doc.title.toLowerCase().includes(queryLower) ||
             doc.excerpt.toLowerCase().includes(queryLower) ||
             (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(queryLower)))
           )
-          .map(doc => ({ ...doc, score: calculateRelevanceScore(doc, queryLower) }))
+          .map(doc => ({ 
+            ...doc, 
+            score: calculateRelevanceScore(doc, queryLower),
+            type: 'wiki-document',
+            baseType: 'wiki'
+          }))
           .sort((a, b) => b.score - a.score);
+          
+        searchResults = docResults;
       }
       
       // Format results for frontend
       const formattedResults = searchResults.slice(0, 20).map(result => ({
-        id: result.id,
-        title: result.title,
-        excerpt: result.excerpt,
-        spaceName: result.spaceName,
-        modifiedAt: result.modifiedAt,
+        id: result.id || result.relativePath,
+        title: result.title || result.name,
+        excerpt: result.excerpt || result.excerpt,
+        path: result.relativePath || result.path,
+        spaceName: result.spaceName || result.baseType,
+        modifiedAt: result.modifiedAt || result.modifiedTime,
         tags: result.tags || [],
-        relevance: result.score || 0.5
+        type: result.type,
+        size: result.size,
+        relevance: result.score || 0.5,
+        content: result.content // Only included if requested
       }));
       
-      logger.info(`Found ${formattedResults.length} search results`);
+      logger.info(`Found ${formattedResults.length} enhanced search results`);
       res.json(formattedResults);
     } catch (error) {
-      logger.error('Error performing search:', error.message);
+      logger.error('Error performing enhanced search:', error.message);
       logger.error('Search error stack:', error.stack);
       res.status(500).json({ error: 'Failed to perform search: ' + error.message });
+    }
+  });
+
+  // Search suggestions endpoint for autocomplete
+  app.get('/applications/wiki/api/search/suggestions', async (req, res) => {
+    try {
+      const query = req.query.q?.trim() || '';
+      const maxSuggestions = parseInt(req.query.limit) || 10;
+
+      if (!query) {
+        return res.json([]);
+      }
+
+      const suggestions = searchIndexer.getSuggestions(query, maxSuggestions);
+      res.json(suggestions);
+    } catch (error) {
+      logger.error('Error getting search suggestions:', error);
+      res.status(500).json({ error: 'Failed to get search suggestions' });
+    }
+  });
+
+  // Search index statistics endpoint
+  app.get('/applications/wiki/api/search/stats', async (req, res) => {
+    try {
+      const stats = searchIndexer.getStats();
+      res.json(stats);
+    } catch (error) {
+      logger.error('Error getting search stats:', error);
+      res.status(500).json({ error: 'Failed to get search statistics' });
+    }
+  });
+
+  // Rebuild search index endpoint
+  app.post('/applications/wiki/api/search/rebuild', async (req, res) => {
+    try {
+      // Rebuild index in background
+      setImmediate(() => {
+        searchIndexer.buildIndex().catch(error => {
+          logger.error('Failed to rebuild search index:', error);
+        });
+      });
+      
+      res.json({ success: true, message: 'Index rebuild started' });
+    } catch (error) {
+      logger.error('Error starting index rebuild:', error);
+      res.status(500).json({ error: 'Failed to start index rebuild' });
     }
   });
   

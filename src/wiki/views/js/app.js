@@ -76,17 +76,47 @@ class WikiApp {
             this.showTemplates();
         });
 
-        // Search
-        document.getElementById('globalSearch').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.performSearch(e.target.value);
+        // Enhanced Search with suggestions
+        const globalSearch = document.getElementById('globalSearch');
+        let searchTimeout;
+        let suggestionsVisible = false;
+        
+        // Create search suggestions dropdown
+        this.createSearchSuggestions();
+        
+        globalSearch.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length >= 2) {
+                searchTimeout = setTimeout(() => {
+                    this.fetchSearchSuggestions(query);
+                }, 300); // Debounce for 300ms
+            } else {
+                this.hideSearchSuggestions();
             }
         });
 
-        document.getElementById('searchBtn').addEventListener('click', () => {
-            const query = document.getElementById('globalSearch').value;
-            if (query.trim()) {
-                this.performSearch(query);
+        globalSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.performSearch(e.target.value);
+                this.hideSearchSuggestions();
+            } else if (e.key === 'Escape') {
+                this.hideSearchSuggestions();
+            } else if (e.key === 'ArrowDown' && suggestionsVisible) {
+                e.preventDefault();
+                this.navigateSuggestions('down');
+            } else if (e.key === 'ArrowUp' && suggestionsVisible) {
+                e.preventDefault();
+                this.navigateSuggestions('up');
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                this.hideSearchSuggestions();
             }
         });
 
@@ -856,6 +886,294 @@ class WikiApp {
         } else {
             return date.toLocaleDateString();
         }
+    }
+
+    // Enhanced search functionality methods
+    createSearchSuggestions() {
+        const searchContainer = document.querySelector('.search-container');
+        if (!searchContainer) return;
+
+        const suggestionsDropdown = document.createElement('div');
+        suggestionsDropdown.id = 'searchSuggestions';
+        suggestionsDropdown.className = 'search-suggestions hidden';
+        suggestionsDropdown.innerHTML = '<div class="suggestions-loading hidden">Loading...</div>';
+        
+        searchContainer.appendChild(suggestionsDropdown);
+        this.suggestionsDropdown = suggestionsDropdown;
+        this.selectedSuggestionIndex = -1;
+    }
+
+    async fetchSearchSuggestions(query) {
+        if (!this.suggestionsDropdown) return;
+
+        try {
+            const response = await fetch(`/applications/wiki/api/search/suggestions?q=${encodeURIComponent(query)}&limit=8`);
+            const suggestions = await response.json();
+            
+            this.showSearchSuggestions(suggestions, query);
+        } catch (error) {
+            console.error('Failed to fetch search suggestions:', error);
+        }
+    }
+
+    showSearchSuggestions(suggestions, query) {
+        if (!this.suggestionsDropdown || suggestions.length === 0) {
+            this.hideSearchSuggestions();
+            return;
+        }
+
+        const queryLower = query.toLowerCase();
+        let html = '';
+
+        suggestions.forEach((suggestion, index) => {
+            // Highlight the matching part
+            const highlightedSuggestion = suggestion.replace(
+                new RegExp(`(${queryLower})`, 'gi'),
+                '<mark>$1</mark>'
+            );
+            
+            html += `
+                <div class="suggestion-item" data-index="${index}" data-suggestion="${suggestion}">
+                    <svg class="suggestion-icon" width="16" height="16">
+                        <use href="#icon-search"></use>
+                    </svg>
+                    <span class="suggestion-text">${highlightedSuggestion}</span>
+                </div>
+            `;
+        });
+
+        this.suggestionsDropdown.innerHTML = html;
+        this.suggestionsDropdown.classList.remove('hidden');
+        this.selectedSuggestionIndex = -1;
+
+        // Add click handlers for suggestions
+        this.suggestionsDropdown.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const suggestion = e.currentTarget.dataset.suggestion;
+                document.getElementById('globalSearch').value = suggestion;
+                this.performSearch(suggestion);
+                this.hideSearchSuggestions();
+            });
+        });
+
+        this.suggestionsVisible = true;
+    }
+
+    hideSearchSuggestions() {
+        if (this.suggestionsDropdown) {
+            this.suggestionsDropdown.classList.add('hidden');
+        }
+        this.suggestionsVisible = false;
+        this.selectedSuggestionIndex = -1;
+    }
+
+    navigateSuggestions(direction) {
+        const suggestions = this.suggestionsDropdown.querySelectorAll('.suggestion-item');
+        if (suggestions.length === 0) return;
+
+        // Remove previous selection
+        suggestions[this.selectedSuggestionIndex]?.classList.remove('selected');
+
+        if (direction === 'down') {
+            this.selectedSuggestionIndex = Math.min(this.selectedSuggestionIndex + 1, suggestions.length - 1);
+        } else {
+            this.selectedSuggestionIndex = Math.max(this.selectedSuggestionIndex - 1, -1);
+        }
+
+        if (this.selectedSuggestionIndex >= 0) {
+            suggestions[this.selectedSuggestionIndex].classList.add('selected');
+            const selectedSuggestion = suggestions[this.selectedSuggestionIndex].dataset.suggestion;
+            document.getElementById('globalSearch').value = selectedSuggestion;
+        }
+    }
+
+    async performSearch(query) {
+        if (!query.trim()) return;
+
+        // Enhanced search with file type and base type filters
+        const fileTypes = []; // Could be populated from UI filters
+        const baseTypes = []; // Could be populated from UI filters
+
+        document.getElementById('searchQuery').textContent = `"${query}"`;
+        this.showSearch(query);
+        
+        try {
+            const params = new URLSearchParams({
+                q: query,
+                includeContent: 'false'
+            });
+            
+            if (fileTypes.length > 0) {
+                params.set('fileTypes', fileTypes.join(','));
+            }
+            
+            if (baseTypes.length > 0) {
+                params.set('baseTypes', baseTypes.join(','));
+            }
+            
+            const response = await fetch(`/applications/wiki/api/search?${params}`);
+            const results = await response.json();
+            
+            this.renderEnhancedSearchResults(results);
+        } catch (error) {
+            console.error('Search failed:', error);
+            this.renderEnhancedSearchResults([]);
+        }
+    }
+
+    renderEnhancedSearchResults(results) {
+        const container = document.getElementById('searchResults');
+        container.innerHTML = '';
+
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state glassmorphism">
+                    <h3>No results found</h3>
+                    <p>Try different keywords or check your spelling.</p>
+                </div>
+            `;
+            return;
+        }
+
+        results.forEach(result => {
+            const resultCard = document.createElement('div');
+            resultCard.className = 'search-result enhanced-result';
+            
+            // Get appropriate icon based on file type
+            const iconName = this.getFileIcon(result.type);
+            
+            resultCard.innerHTML = `
+                <div class="result-header">
+                    <svg class="result-icon" width="20" height="20">
+                        <use href="#${iconName}"></use>
+                    </svg>
+                    <h3 class="result-title">${result.title}</h3>
+                    <span class="result-type">${result.type}</span>
+                </div>
+                <p class="result-excerpt">${result.excerpt || 'No preview available'}</p>
+                <div class="result-meta">
+                    <span class="result-location">${result.spaceName}</span>
+                    ${result.path ? `<span class="result-path">${result.path}</span>` : ''}
+                    ${result.size ? `<span class="result-size">${this.formatFileSize(result.size)}</span>` : ''}
+                    ${result.modifiedAt ? `<span class="result-date">Modified ${this.formatDate(result.modifiedAt)}</span>` : ''}
+                    <span class="result-relevance">Relevance: ${Math.round(result.relevance * 100)}%</span>
+                </div>
+            `;
+            
+            resultCard.addEventListener('click', () => {
+                this.openSearchResult(result);
+            });
+            
+            container.appendChild(resultCard);
+        });
+    }
+
+    getFileIcon(fileType) {
+        const iconMap = {
+            'markdown': 'icon-file',
+            'text': 'icon-file',
+            'pdf': 'icon-file',
+            'image': 'icon-file',
+            'office': 'icon-file',
+            'data': 'icon-file',
+            'wiki-document': 'icon-book',
+            'other': 'icon-file'
+        };
+        return iconMap[fileType] || 'icon-file';
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    openSearchResult(result) {
+        if (result.type === 'wiki-document') {
+            // Open wiki document as before
+            this.showDocument(result);
+        } else {
+            // Open file in appropriate viewer
+            this.openFile(result);
+        }
+    }
+
+    async openFile(fileResult) {
+        try {
+            const path = fileResult.path || fileResult.relativePath;
+            const spaceName = fileResult.spaceName === 'documents' ? 'Personal Space' : fileResult.spaceName;
+            
+            // Request file content with metadata
+            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(path)}&spaceName=${encodeURIComponent(spaceName)}&enhanced=true`);
+            
+            if (response.ok) {
+                const fileData = await response.json();
+                this.showFileViewer(fileData, fileResult);
+            } else {
+                this.showNotification(`Could not open ${fileResult.title}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error opening file:', error);
+            this.showNotification('Failed to open file', 'error');
+        }
+    }
+
+    showFileViewer(fileData, fileResult) {
+        // Create a new view for displaying file content
+        this.hideAllViews();
+        document.getElementById('wikiApp').classList.remove('hidden');
+        
+        // For now, show in document view with enhanced metadata
+        const docView = document.getElementById('documentView');
+        docView.classList.remove('hidden');
+        
+        // Update breadcrumb and title
+        document.getElementById('currentDocTitle').textContent = fileResult.title;
+        
+        // Update content based on file type
+        const content = document.getElementById('documentContent');
+        
+        if (fileResult.type === 'markdown' || fileResult.type === 'text') {
+            if (typeof marked !== 'undefined' && fileResult.type === 'markdown') {
+                content.innerHTML = marked.parse(fileData.content || '');
+            } else {
+                content.innerHTML = `<pre class="file-content">${fileData.content || 'No content available'}</pre>`;
+            }
+        } else if (fileResult.type === 'image') {
+            const imagePath = `/applications/wiki/api/documents/content?path=${encodeURIComponent(fileResult.path)}&spaceName=${encodeURIComponent(fileResult.spaceName)}`;
+            content.innerHTML = `
+                <div class="image-viewer">
+                    <img src="${imagePath}" alt="${fileResult.title}" style="max-width: 100%; height: auto;">
+                    <div class="image-meta">
+                        <p>File size: ${this.formatFileSize(fileResult.size)}</p>
+                        <p>Type: ${fileResult.type}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="file-preview">
+                    <div class="file-icon-large">
+                        <svg width="64" height="64">
+                            <use href="#${this.getFileIcon(fileResult.type)}"></use>
+                        </svg>
+                    </div>
+                    <h3>${fileResult.title}</h3>
+                    <p>File type: ${fileResult.type}</p>
+                    <p>Size: ${this.formatFileSize(fileResult.size)}</p>
+                    <p>Location: ${fileResult.path}</p>
+                    <a href="/applications/wiki/api/documents/content?path=${encodeURIComponent(fileResult.path)}&spaceName=${encodeURIComponent(fileResult.spaceName)}&download=true" 
+                       class="btn btn-primary" download>
+                        Download File
+                    </a>
+                </div>
+            `;
+        }
+        
+        this.currentView = 'document';
+        this.updateNavigation();
     }
 }
 
