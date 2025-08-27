@@ -164,17 +164,20 @@ module.exports = (options, eventEmitter, services) => {
       try {
         // Read the file directly from the file system
         const fs = require('fs').promises;
-        const content = await fs.readFile(absolutePath, 'utf8');
+        const content = await fs.readFile(absolutePath);
         
         logger.info(`Successfully read document from ${documentPath}`);
         
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        const contentType = mime.lookup(documentPath) || 'application/octet-stream';
+        res.setHeader('Content-Type', contentType);
         res.send(content);
       } catch (fileError) {
         logger.warn(`Failed to read file ${documentPath}: ${fileError.message}`);
         
         // Return a friendly error message as markdown content
-        const errorContent = `# File Not Found\n\nThe requested document \`${documentPath}\` could not be found or read.\n\n**Possible reasons:**\n- File has been moved or deleted\n- Permission issues\n- File path is incorrect\n\nPlease check the file location and try again.`;
+        const errorContent = `# File Not Found\n\nThe requested document \
+${documentPath}\
+ could not be found or read.\n\n**Possible reasons:**\n- File has been moved or deleted\n- Permission issues\n- File path is incorrect\n\nPlease check the file location and try again.`;
         
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.status(404).send(errorContent);

@@ -858,10 +858,19 @@ class WikiApp {
                 throw new Error(`Failed to load document: ${response.statusText}`);
             }
             
-            const content = await response.text();
+            const contentType = response.headers.get('content-type');
+            let content;
+
+            if (contentType && contentType.startsWith('image')) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                content = `<img src="${url}" alt="${documentPath}">`;
+            } else {
+                content = await response.text();
+            }
             
             const document = {
-                title: documentPath.split('/').pop().replace('.md', ''),
+                title: documentPath.split('/').pop(),
                 path: documentPath,
                 spaceName: spaceName,
                 content: content
@@ -877,9 +886,7 @@ class WikiApp {
                 title: documentPath.split('/').pop(),
                 path: documentPath,
                 spaceName: spaceName,
-                content: `# ${documentPath.split('/').pop()}
-
-Failed to load content from ${documentPath}`
+                content: `# ${documentPath.split('/').pop()}\n\nFailed to load content from ${documentPath}`
             };
             
             this.currentDocument = document;
@@ -1030,7 +1037,9 @@ Failed to load content from ${documentPath}`
         // Render document content
         const contentElement = document.getElementById('documentContent');
         if (contentElement && doc.content) {
-            if (typeof marked !== 'undefined') {
+            if (doc.content.startsWith('<img')) {
+                contentElement.innerHTML = doc.content;
+            } else if (typeof marked !== 'undefined') {
                 // Render markdown content
                 contentElement.innerHTML = marked.parse(doc.content);
                 
