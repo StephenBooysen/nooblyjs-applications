@@ -1547,7 +1547,6 @@ body {
 
 /* Document View */
 .document-container {
-    max-width: 800px;
     margin: 0 auto;
     background-color: var(--card);
     border: 1px solid var(--border);
