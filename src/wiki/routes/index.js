@@ -9,6 +9,7 @@
 
 'use strict';
 const path = require('path')
+const mime = require('mime-types');
 
 /**
  * Configures and registers wiki routes with the Express application.
@@ -140,20 +141,107 @@ module.exports = (options, eventEmitter, services) => {
     }
   });
 
+  // Utility function to determine file category and viewer type
+  function getFileTypeInfo(filePath, mimeType) {
+    const ext = path.extname(filePath).toLowerCase();
+    const fileName = path.basename(filePath);
+    
+    // File category mappings
+    const categories = {
+      // PDF files
+      pdf: { 
+        category: 'pdf', 
+        viewer: 'pdf',
+        extensions: ['.pdf'],
+        mimes: ['application/pdf']
+      },
+      
+      // Images
+      image: {
+        category: 'image',
+        viewer: 'image', 
+        extensions: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico'],
+        mimes: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/svg+xml', 'image/webp', 'image/x-icon']
+      },
+      
+      // Text files
+      text: {
+        category: 'text',
+        viewer: 'text',
+        extensions: ['.txt', '.csv', '.dat', '.log', '.ini', '.cfg', '.conf'],
+        mimes: ['text/plain', 'text/csv']
+      },
+      
+      // Markdown
+      markdown: {
+        category: 'markdown',
+        viewer: 'markdown',
+        extensions: ['.md', '.markdown'],
+        mimes: ['text/markdown']
+      },
+      
+      // Code files
+      code: {
+        category: 'code',
+        viewer: 'code',
+        extensions: ['.js', '.ts', '.jsx', '.tsx', '.vue', '.py', '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala', '.r', '.m', '.mm', '.pl', '.sh', '.bash', '.ps1', '.bat', '.cmd'],
+        mimes: ['text/javascript', 'application/javascript', 'text/typescript', 'text/x-python', 'text/x-java-source', 'text/x-c', 'text/x-c++', 'text/x-csharp']
+      },
+      
+      // Web files (HTML, CSS)
+      web: {
+        category: 'web',
+        viewer: 'code',
+        extensions: ['.html', '.htm', '.css', '.scss', '.sass', '.less'],
+        mimes: ['text/html', 'text/css']
+      },
+      
+      // Data/Configuration files
+      data: {
+        category: 'data',
+        viewer: 'code',
+        extensions: ['.json', '.xml', '.yaml', '.yml', '.toml', '.properties'],
+        mimes: ['application/json', 'application/xml', 'text/xml', 'application/yaml', 'application/x-yaml']
+      }
+    };
+    
+    // Check by extension first, then MIME type
+    for (const [key, info] of Object.entries(categories)) {
+      if (info.extensions.includes(ext) || info.mimes.includes(mimeType)) {
+        return {
+          category: info.category,
+          viewer: info.viewer,
+          extension: ext,
+          mimeType: mimeType,
+          fileName: fileName
+        };
+      }
+    }
+    
+    // Default fallback
+    return {
+      category: 'other',
+      viewer: 'default',
+      extension: ext,
+      mimeType: mimeType,
+      fileName: fileName
+    };
+  }
+
   // Read document content by file path (must be before :id route)
   app.get('/applications/wiki/api/documents/content', async (req, res) => {
     try {
-      const documentPath = req.query.path;
+      const { path: documentPath, spaceName, metadata, download } = req.query;
       
-      if (!documentPath) {
-        return res.status(400).json({ error: 'Document path is required' });
+      if (!documentPath || !spaceName) {
+        return res.status(400).json({ error: 'Document path and space name are required' });
       }
 
-      logger.info(`Reading document content from path: ${documentPath}`);
+      logger.info(`Reading document content from path: ${documentPath} in space: ${spaceName}`);
       
       // Resolve the absolute path to the documents folder
       const documentsDir = path.resolve(__dirname, '../../../documents');
-      const absolutePath = path.resolve(documentsDir, documentPath);
+      const absolutePath = path.resolve(documentsDir, spaceName, documentPath);
       
       // Security check: ensure the path is within the documents directory
       if (!absolutePath.startsWith(documentsDir)) {
@@ -162,17 +250,72 @@ module.exports = (options, eventEmitter, services) => {
       }
       
       try {
-        // Read the file directly from the file system
         const fs = require('fs').promises;
-        const content = await fs.readFile(absolutePath);
+        const stats = await fs.stat(absolutePath);
+        const contentType = mime.lookup(absolutePath) || 'application/octet-stream';
+        const fileTypeInfo = getFileTypeInfo(documentPath, contentType);
+        
+        // If only metadata is requested, return file info without content
+        if (metadata === 'true') {
+          return res.json({
+            ...fileTypeInfo,
+            size: stats.size,
+            modified: stats.mtime,
+            created: stats.birthtime,
+            path: documentPath,
+            spaceName: spaceName
+          });
+        }
+        
+        // Determine encoding based on file category
+        let encoding = null;
+        if (['text', 'markdown', 'code', 'web', 'data'].includes(fileTypeInfo.category) || 
+            contentType.startsWith('text/') || 
+            contentType === 'application/json' ||
+            contentType === 'application/xml') {
+          encoding = 'utf8';
+        }
+
+        // Read the file content
+        const content = await fs.readFile(absolutePath, { encoding });
         
         logger.info(`Successfully read document from ${documentPath}`);
         
-        const contentType = mime.lookup(documentPath) || 'application/octet-stream';
-        res.setHeader('Content-Type', contentType);
-        res.send(content);
+        // Return enhanced response with metadata
+        if (req.query.enhanced === 'true') {
+          res.json({
+            content: encoding ? content : content.toString('base64'),
+            metadata: {
+              ...fileTypeInfo,
+              size: stats.size,
+              modified: stats.mtime,
+              created: stats.birthtime,
+              path: documentPath,
+              spaceName: spaceName,
+              encoding: encoding || 'base64'
+            }
+          });
+        } else {
+          // Legacy response for backward compatibility
+          res.setHeader('Content-Type', contentType);
+          
+          // Handle download functionality
+          if (download === 'true') {
+            res.setHeader('Content-Disposition', `attachment; filename="${fileTypeInfo.fileName}"`);
+          }
+          
+          res.send(content);
+        }
       } catch (fileError) {
         logger.warn(`Failed to read file ${documentPath}: ${fileError.message}`);
+        
+        if (metadata === 'true' || req.query.enhanced === 'true') {
+          return res.status(404).json({ 
+            error: 'File not found',
+            message: `The file ${documentPath} could not be found or read.`,
+            details: fileError.message 
+          });
+        }
         
         // Return a friendly error message as markdown content
         const errorContent = `# File Not Found\n\nThe requested document \

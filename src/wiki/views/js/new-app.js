@@ -349,11 +349,13 @@ class WikiApp {
             } else if (node.type === 'document') {
                 // Only show root-level documents initially
                 if (isRoot || level > 0) {
+                    const fileTypeInfo = this.getFileTypeInfo(node.path || node.name);
+                    const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                    const iconColor = fileTypeInfo.color;
+                    
                     return `
                         <div class="file-item" data-document-path="${node.path}" data-space-name="${node.spaceName}" style="padding-left: ${16 + level * 16}px">
-                            <svg class="file-icon" width="16" height="16">
-                                <use href="#icon-file"></use>
-                            </svg>
+                            <i class="fas ${iconClass}" style="color: ${iconColor}; width: 16px; text-align: center;"></i>
                             <span>${node.title || node.name}</span>
                         </div>
                     `;
@@ -541,17 +543,21 @@ class WikiApp {
                                     </div>
                                 `;
                             }).join('')}
-                            ${folderContent.files.map(file => `
+                            ${folderContent.files.map(file => {
+                                const fileTypeInfo = this.getFileTypeInfo(file.path || file.name);
+                                const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                                const iconColor = fileTypeInfo.color;
+                                
+                                return `
                                 <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.spaceName}">
-                                    <svg class="item-icon file-icon" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                                    </svg>
+                                    <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
                                     <div class="item-info">
                                         <div class="item-name">${file.title || file.name}</div>
-                                        <div class="item-meta">File • markdown</div>
+                                        <div class="item-meta">File • ${fileTypeInfo.category}</div>
                                     </div>
                                 </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     `}
                 </div>
@@ -851,33 +857,26 @@ class WikiApp {
 
     async openDocumentByPath(documentPath, spaceName) {
         try {
-            // Load actual document content from file system
-            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(documentPath)}`);
+            // Use enhanced API to get file content with metadata
+            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(documentPath)}&spaceName=${encodeURIComponent(spaceName)}&enhanced=true`);
             
             if (!response.ok) {
                 throw new Error(`Failed to load document: ${response.statusText}`);
             }
             
-            const contentType = response.headers.get('content-type');
-            let content;
-
-            if (contentType && contentType.startsWith('image')) {
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                content = `<img src="${url}" alt="${documentPath}">`;
-            } else {
-                content = await response.text();
-            }
+            const data = await response.json();
+            const { content, metadata } = data;
             
             const document = {
                 title: documentPath.split('/').pop(),
                 path: documentPath,
                 spaceName: spaceName,
-                content: content
+                content: content,
+                metadata: metadata
             };
             
             this.currentDocument = document;
-            this.showDocumentView(document);
+            this.showEnhancedDocumentView(document);
         } catch (error) {
             console.error('Error loading document by path:', error);
             
@@ -886,12 +885,297 @@ class WikiApp {
                 title: documentPath.split('/').pop(),
                 path: documentPath,
                 spaceName: spaceName,
-                content: `# ${documentPath.split('/').pop()}\n\nFailed to load content from ${documentPath}`
+                content: `# ${documentPath.split('/').pop()}\n\nFailed to load content from ${documentPath}`,
+                metadata: { category: 'markdown', viewer: 'markdown' }
             };
             
             this.currentDocument = document;
-            this.showDocumentView(document);
+            this.showEnhancedDocumentView(document);
             this.showNotification('Failed to load document content', 'error');
+        }
+    }
+
+    // Enhanced document viewer that routes to appropriate viewer based on file type
+    showEnhancedDocumentView(document) {
+        const viewer = document.metadata?.viewer || 'default';
+        
+        switch (viewer) {
+            case 'pdf':
+                this.showPdfViewer(document);
+                break;
+            case 'image':
+                this.showImageViewer(document);
+                break;
+            case 'text':
+                this.showTextViewer(document);
+                break;
+            case 'code':
+                this.showCodeViewer(document);
+                break;
+            case 'markdown':
+                this.showMarkdownViewer(document);
+                break;
+            default:
+                this.showDefaultViewer(document);
+                break;
+        }
+    }
+
+    // PDF Viewer Implementation
+    showPdfViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.getElementById('documentContent');
+        if (!contentElement) return;
+        
+        const pdfUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}`;
+        const downloadUrl = pdfUrl + '&download=true';
+        
+        contentElement.innerHTML = `
+            <div class="pdf-viewer">
+                <div class="pdf-toolbar">
+                    <div class="file-info">
+                        <i class="fas fa-file-pdf" style="color: #dc3545;"></i>
+                        <span class="file-name">${doc.metadata.fileName}</span>
+                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                    </div>
+                    <div class="pdf-actions">
+                        <a href="${downloadUrl}" download="${doc.metadata.fileName}" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+                <div class="pdf-container">
+                    <iframe src="${pdfUrl}" width="100%" height="600px" style="border: none; border-radius: 8px;"></iframe>
+                </div>
+            </div>
+        `;
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Image Viewer Implementation  
+    showImageViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.getElementById('documentContent');
+        if (!contentElement) return;
+        
+        const imageUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}`;
+        const downloadUrl = imageUrl + '&download=true';
+        
+        contentElement.innerHTML = `
+            <div class="image-viewer">
+                <div class="image-toolbar">
+                    <div class="file-info">
+                        <i class="fas fa-image" style="color: #17a2b8;"></i>
+                        <span class="file-name">${doc.metadata.fileName}</span>
+                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                    </div>
+                    <div class="image-actions">
+                        <a href="${downloadUrl}" download="${doc.metadata.fileName}" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Download Image
+                        </a>
+                    </div>
+                </div>
+                <div class="image-container">
+                    <img src="${imageUrl}" alt="${doc.metadata.fileName}" class="image-content" />
+                </div>
+            </div>
+        `;
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Text File Viewer Implementation
+    showTextViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.getElementById('documentContent');
+        if (!contentElement) return;
+        
+        const lines = doc.content.split('\n');
+        const numberedLines = lines.map((line, index) => `${(index + 1).toString().padStart(4, ' ')}: ${this.escapeHtml(line)}`).join('\n');
+        
+        contentElement.innerHTML = `
+            <div class="text-viewer">
+                <div class="text-toolbar">
+                    <div class="file-info">
+                        <i class="fas fa-file-text" style="color: #6c757d;"></i>
+                        <span class="file-name">${doc.metadata.fileName}</span>
+                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                        <span class="line-count">${lines.length} lines</span>
+                    </div>
+                    <div class="text-controls">
+                        <label class="control-label">
+                            <input type="checkbox" id="showLineNumbers" checked> Line Numbers
+                        </label>
+                        <label class="control-label">
+                            <input type="checkbox" id="wrapText"> Line Wrap
+                        </label>
+                    </div>
+                </div>
+                <div class="text-container">
+                    <pre id="textContent" class="text-content with-numbers">${numberedLines}</pre>
+                </div>
+            </div>
+        `;
+        
+        // Bind text viewer controls
+        const showLineNumbersCheckbox = document.getElementById('showLineNumbers');
+        const wrapTextCheckbox = document.getElementById('wrapText');
+        const textContent = document.getElementById('textContent');
+        
+        showLineNumbersCheckbox?.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                textContent.textContent = numberedLines;
+                textContent.className = 'text-content with-numbers';
+            } else {
+                textContent.textContent = doc.content;
+                textContent.className = 'text-content';
+            }
+        });
+        
+        wrapTextCheckbox?.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                textContent.style.whiteSpace = 'pre-wrap';
+            } else {
+                textContent.style.whiteSpace = 'pre';
+            }
+        });
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Code Viewer Implementation
+    showCodeViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.getElementById('documentContent');
+        if (!contentElement) return;
+        
+        const language = this.getLanguageFromExtension(doc.metadata.extension);
+        const lines = doc.content.split('\n').length;
+        
+        contentElement.innerHTML = `
+            <div class="code-viewer">
+                <div class="code-toolbar">
+                    <div class="file-info">
+                        <i class="fas fa-file-code" style="color: #28a745;"></i>
+                        <span class="file-name">${doc.metadata.fileName}</span>
+                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                        <span class="line-count">${lines} lines</span>
+                        <span class="language-badge">${language}</span>
+                    </div>
+                </div>
+                <div class="code-container">
+                    <pre class="line-numbers"><code class="language-${language}" id="codeContent">${this.escapeHtml(doc.content)}</code></pre>
+                </div>
+            </div>
+        `;
+        
+        // Apply syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            setTimeout(() => {
+                Prism.highlightAllUnder(contentElement);
+            }, 100);
+        }
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Markdown Viewer Implementation (enhanced version of existing)
+    showMarkdownViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.getElementById('documentContent');
+        if (!contentElement) return;
+        
+        if (typeof marked !== 'undefined') {
+            const renderedContent = marked.parse(doc.content);
+            contentElement.innerHTML = `
+                <div class="markdown-viewer">
+                    <div class="markdown-content">
+                        ${renderedContent}
+                    </div>
+                </div>
+            `;
+            
+            // Apply syntax highlighting to code blocks
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAllUnder(contentElement);
+            }
+        } else {
+            contentElement.innerHTML = `<pre class="markdown-fallback">${this.escapeHtml(doc.content)}</pre>`;
+        }
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Default/Fallback Viewer Implementation
+    showDefaultViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.getElementById('documentContent');
+        if (!contentElement) return;
+        
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        
+        contentElement.innerHTML = `
+            <div class="default-viewer">
+                <div class="default-content">
+                    <div class="file-icon-large">
+                        <i class="fas fa-file" style="font-size: 4rem; color: #6c757d;"></i>
+                    </div>
+                    <div class="file-details">
+                        <h3>${doc.metadata.fileName}</h3>
+                        <p class="file-meta">
+                            <span>Size: ${this.formatFileSize(doc.metadata.size)}</span><br>
+                            <span>Modified: ${this.formatDate(doc.metadata.modified)}</span><br>
+                            <span>Type: ${doc.metadata.extension || 'Unknown'}</span>
+                        </p>
+                        <p class="file-description">
+                            This file type is not supported for inline viewing. You can download it to view with an appropriate application.
+                        </p>
+                        <a href="${downloadUrl}" download="${doc.metadata.fileName}" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Download File
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Helper method to update document header
+    updateDocumentHeader(doc) {
+        const docTitle = document.getElementById('currentDocTitle');
+        if (docTitle) {
+            docTitle.textContent = doc.title;
+        }
+        
+        const backToSpace = document.getElementById('docBackToSpace');
+        if (backToSpace) {
+            backToSpace.textContent = doc.spaceName || 'Space';
         }
     }
 
@@ -1018,7 +1302,13 @@ class WikiApp {
     }
 
     showDocumentView(doc) {
-        // Switch to document view
+        // Legacy method for backward compatibility - delegate to enhanced viewer
+        if (doc.metadata) {
+            this.showEnhancedDocumentView(doc);
+            return;
+        }
+        
+        // Fallback to original implementation for documents without metadata
         this.setActiveView('document');
         this.currentView = 'document';
         
@@ -1095,6 +1385,166 @@ class WikiApp {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    // File type utilities
+    getFileTypeInfo(filePath) {
+        const ext = filePath.split('.').pop()?.toLowerCase() || '';
+        const fileName = filePath.split('/').pop() || '';
+        
+        // File category mappings matching backend
+        const categories = {
+            pdf: { 
+                category: 'pdf', 
+                viewer: 'pdf',
+                extensions: ['pdf'],
+                icon: 'file-pdf',
+                color: '#dc3545'
+            },
+            image: {
+                category: 'image',
+                viewer: 'image', 
+                extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'],
+                icon: 'image',
+                color: '#17a2b8'
+            },
+            text: {
+                category: 'text',
+                viewer: 'text',
+                extensions: ['txt', 'csv', 'dat', 'log', 'ini', 'cfg', 'conf'],
+                icon: 'file-text',
+                color: '#6c757d'
+            },
+            markdown: {
+                category: 'markdown',
+                viewer: 'markdown',
+                extensions: ['md', 'markdown'],
+                icon: 'markdown',
+                color: '#007bff'
+            },
+            code: {
+                category: 'code',
+                viewer: 'code',
+                extensions: ['js', 'ts', 'jsx', 'tsx', 'vue', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'm', 'mm', 'pl', 'sh', 'bash', 'ps1', 'bat', 'cmd'],
+                icon: 'file-code',
+                color: '#28a745'
+            },
+            web: {
+                category: 'web',
+                viewer: 'code',
+                extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less'],
+                icon: 'code',
+                color: '#fd7e14'
+            },
+            data: {
+                category: 'data',
+                viewer: 'code',
+                extensions: ['json', 'xml', 'yaml', 'yml', 'toml', 'properties'],
+                icon: 'brackets-curly',
+                color: '#6f42c1'
+            }
+        };
+        
+        // Check by extension
+        for (const [key, info] of Object.entries(categories)) {
+            if (info.extensions.includes(ext)) {
+                return {
+                    category: info.category,
+                    viewer: info.viewer,
+                    extension: ext,
+                    fileName: fileName,
+                    icon: info.icon,
+                    color: info.color
+                };
+            }
+        }
+        
+        // Default fallback
+        return {
+            category: 'other',
+            viewer: 'default',
+            extension: ext,
+            fileName: fileName,
+            icon: 'file',
+            color: '#6c757d'
+        };
+    }
+    
+    getLanguageFromExtension(extension) {
+        const languageMap = {
+            'js': 'javascript',
+            'jsx': 'jsx',
+            'ts': 'typescript', 
+            'tsx': 'tsx',
+            'vue': 'vue',
+            'py': 'python',
+            'java': 'java',
+            'c': 'c',
+            'cpp': 'cpp',
+            'cc': 'cpp',
+            'cxx': 'cpp',
+            'h': 'c',
+            'hpp': 'cpp',
+            'cs': 'csharp',
+            'php': 'php',
+            'rb': 'ruby',
+            'go': 'go',
+            'rs': 'rust',
+            'swift': 'swift',
+            'kt': 'kotlin',
+            'scala': 'scala',
+            'r': 'r',
+            'pl': 'perl',
+            'sh': 'bash',
+            'bash': 'bash',
+            'ps1': 'powershell',
+            'bat': 'batch',
+            'cmd': 'batch',
+            'html': 'html',
+            'htm': 'html',
+            'css': 'css',
+            'scss': 'scss',
+            'sass': 'sass',
+            'less': 'less',
+            'json': 'json',
+            'xml': 'xml',
+            'yaml': 'yaml',
+            'yml': 'yaml',
+            'toml': 'toml',
+            'sql': 'sql',
+            'md': 'markdown',
+            'markdown': 'markdown'
+        };
+        
+        return languageMap[extension.replace('.', '')] || extension.replace('.', '');
+    }
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+    
+    getFileTypeIconClass(category) {
+        const iconMap = {
+            'pdf': 'fa-file-pdf',
+            'image': 'fa-image', 
+            'text': 'fa-file-alt',
+            'markdown': 'fa-file-alt',
+            'code': 'fa-file-code',
+            'web': 'fa-code',
+            'data': 'fa-file-code', // Use file-code for data files since brackets-curly doesn't exist
+            'other': 'fa-file'
+        };
+        
+        return iconMap[category] || 'fa-file';
     }
 }
 

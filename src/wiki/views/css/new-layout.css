@@ -793,3 +793,357 @@
 .document-content {
     flex: 1;
 }
+
+/* Enhanced File Viewers Styles */
+
+/* Common viewer toolbar styles */
+.pdf-toolbar, .image-toolbar, .text-toolbar, .code-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.file-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.file-size, .line-count {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.language-badge {
+    background: var(--accent-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* PDF Viewer */
+.pdf-viewer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.pdf-container {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+.pdf-container iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+}
+
+/* Image Viewer */
+.image-viewer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-container {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: auto;
+}
+
+.image-content {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Text Viewer */
+.text-viewer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.text-controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.control-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.control-label input[type="checkbox"] {
+    margin: 0;
+}
+
+.text-container {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    overflow: auto;
+}
+
+.text-content {
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #ffffff;
+    margin: 0;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.text-content.with-numbers {
+    color: var(--text-primary);
+}
+
+/* Code Viewer */
+.code-viewer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.code-container {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    overflow: auto;
+}
+
+.code-container pre {
+    margin: 0;
+    padding: 16px;
+    background: #f8f9fa;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.code-container pre.line-numbers {
+    background: #f8f9fa;
+    border-radius: 0;
+}
+
+.code-container code {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+/* Markdown Viewer */
+.markdown-viewer {
+    height: 100%;
+    padding: 20px;
+}
+
+.markdown-content {
+    max-width: none;
+    line-height: 1.6;
+}
+
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+}
+
+.markdown-content h1:first-child, .markdown-content h2:first-child,
+.markdown-content h3:first-child {
+    margin-top: 0;
+}
+
+.markdown-content pre {
+    background: #f6f8fa;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #e1e4e8;
+    overflow-x: auto;
+}
+
+.markdown-content code {
+    background: #f6f8fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 85%;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+.markdown-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.markdown-content blockquote {
+    margin: 16px 0;
+    padding: 0 16px;
+    border-left: 4px solid #e1e4e8;
+    color: var(--text-secondary);
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+.markdown-content th, .markdown-content td {
+    padding: 8px 12px;
+    border: 1px solid #e1e4e8;
+    text-align: left;
+}
+
+.markdown-content th {
+    background: #f6f8fa;
+    font-weight: 600;
+}
+
+/* Default Viewer */
+.default-viewer {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.default-content {
+    text-align: center;
+    max-width: 400px;
+}
+
+.file-icon-large {
+    margin-bottom: 20px;
+}
+
+.file-details h3 {
+    margin: 0 0 16px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.file-meta {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.file-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Enhanced Prism.js styling for better code highlighting */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #6a737d;
+}
+
+.token.punctuation {
+    color: #586069;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+    color: #005cc5;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+    color: #032f62;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+    color: #d73a49;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+    color: #d73a49;
+}
+
+.token.function,
+.token.class-name {
+    color: #6f42c1;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+    color: #e36209;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .pdf-toolbar, .image-toolbar, .text-toolbar, .code-toolbar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .text-controls {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .pdf-container iframe {
+        min-height: 400px;
+    }
+    
+    .image-container {
+        padding: 10px;
+    }
+}
