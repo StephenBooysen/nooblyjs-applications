@@ -976,87 +976,6 @@ ${documentPath}\
     }
   });
 
-  app.post('/applications/wiki/api/documents', async (req, res) => {
-    try {
-      const { title, content, spaceId, tags } = req.body;
-
-      if (!title) {
-        return res.status(400).json({ success: false, message: 'Document title is required' });
-      }
-
-      // Get next document ID
-      const allDocuments = await dataManager.read('documents');
-      let nextId = allDocuments.length > 0 ? Math.max(...allDocuments.map(d => d.id)) + 1 : 1;
-      
-      // Find space name if spaceId provided
-      let spaceName = 'Personal';
-      if (spaceId) {
-        const spaces = await dataManager.read('spaces');
-        const space = spaces.find(s => s.id === parseInt(spaceId));
-        spaceName = space ? space.name : 'Unknown Space';
-      }
-      
-      const newDocument = {
-        id: nextId,
-        title,
-        spaceId: spaceId ? parseInt(spaceId) : null,
-        spaceName,
-        excerpt: content ? content.substring(0, 150).replace(/[#*`]/g, '') + (content.length > 150 ? '...' : '') : 'No content yet',
-        author: 'Current User',
-        createdAt: new Date().toISOString(),
-        modifiedAt: new Date().toISOString(),
-        views: 0,
-        tags: tags || []
-      };
-
-      // Save document content to filing service
-      if (content) {
-        const filePath = `documents/${nextId}.md`;
-        await filing.create(filePath, content);
-        logger.info(`Saved document content to ${filePath}`);
-      }
-      
-      // Add to documents list
-      allDocuments.push(newDocument);
-      await dataManager.write('documents', allDocuments);
-      
-      // Update next ID
-      // Next ID is calculated dynamically
-      
-      // Update space document count
-      if (spaceId) {
-        queue.enqueue({
-          type: 'updateSpaceDocumentCount',
-          spaceId: parseInt(spaceId)
-        });
-      }
-      
-      // Index for search
-      search.add(nextId.toString(), {
-        id: nextId,
-        title,
-        content: content || '',
-        tags: tags || [],
-        spaceName,
-        excerpt: newDocument.excerpt
-      });
-      
-      // Clear relevant caches
-      await cache.delete('wiki:documents:list');
-      await cache.delete('wiki:documents:recent');
-      await cache.delete('wiki:recent:activity');
-      if (spaceId) {
-        await cache.delete(`wiki:space:${spaceId}:documents`);
-      }
-      
-      logger.info(`Created new document: ${title} (ID: ${nextId})`);
-      
-      res.json({ success: true, document: newDocument });
-    } catch (error) {
-      logger.error('Error creating document:', error);
-      res.status(500).json({ success: false, message: 'Failed to create document' });
-    }
-  });
 
   app.put('/applications/wiki/api/documents', async (req, res) => {
     try {
@@ -1151,33 +1070,6 @@ ${documentPath}\
     }
   });
 
-  // Create a new folder
-  app.post('/applications/wiki/api/folders', async (req, res) => {
-    try {
-      const { name, spaceId, parentPath } = req.body;
-      
-      if (!name || !spaceId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Folder name and space ID are required' 
-        });
-      }
-
-      logger.info(`Creating folder: ${name} in space ${spaceId}`);
-      
-      const folder = await dataManager.createFolder(spaceId, name, parentPath);
-      
-      // Clear folder tree cache
-      await cache.delete(`wiki:folders:${spaceId}`);
-      
-      logger.info(`Created folder: ${name} (ID: ${folder.id})`);
-      
-      res.json({ success: true, folder });
-    } catch (error) {
-      logger.error('Error creating folder:', error);
-      res.status(500).json({ success: false, message: 'Failed to create folder' });
-    }
-  });
 
   // Save document content by file path
   app.put('/applications/wiki/api/documents/content', async (req, res) => {
@@ -1282,6 +1174,347 @@ ${documentPath}\
     } catch (error) {
       logger.error('Error moving document:', error);
       res.status(500).json({ success: false, message: 'Failed to move document' });
+    }
+  });
+
+  // Templates API endpoints
+  
+  // Get templates for a space (files in .templates folder)
+  app.get('/applications/wiki/api/spaces/:spaceId/templates', async (req, res) => {
+    try {
+      const spaceId = parseInt(req.params.spaceId);
+      logger.info(`Fetching templates for space ${spaceId}`);
+      
+      // Find the space name
+      const spaces = await dataManager.read('spaces');
+      const space = spaces.find(s => s.id === spaceId);
+      
+      if (!space) {
+        return res.status(404).json({ error: 'Space not found' });
+      }
+      
+      // Look for files in the .templates folder
+      const fs = require('fs').promises;
+      const path = require('path');
+      const documentsDir = path.resolve(__dirname, '../../../documents');
+      const templatesPath = path.resolve(documentsDir, space.name, '.templates');
+      
+      let templates = [];
+      
+      try {
+        // Check if .templates folder exists
+        const templatesStats = await fs.stat(templatesPath);
+        if (templatesStats.isDirectory()) {
+          // Read all files in .templates folder
+          const files = await fs.readdir(templatesPath, { withFileTypes: true });
+          
+          for (const file of files) {
+            if (file.isFile() && file.name.endsWith('.md')) {
+              const filePath = path.join(templatesPath, file.name);
+              const stats = await fs.stat(filePath);
+              
+              // Read first line as title if it starts with #
+              let title = file.name.replace('.md', '');
+              try {
+                const content = await fs.readFile(filePath, 'utf8');
+                const firstLine = content.split('\n')[0];
+                if (firstLine.startsWith('# ')) {
+                  title = firstLine.substring(2).trim();
+                }
+              } catch (readError) {
+                logger.warn(`Could not read template file ${file.name}:`, readError.message);
+              }
+              
+              templates.push({
+                name: file.name.replace('.md', ''),
+                title: title,
+                path: `.templates/${file.name}`,
+                size: stats.size,
+                lastModified: stats.mtime.toISOString(),
+                type: 'template'
+              });
+            }
+          }
+        }
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          // .templates folder doesn't exist, create it with sample template
+          logger.info(`Creating .templates folder for space ${space.name}`);
+          
+          try {
+            await fs.mkdir(templatesPath, { recursive: true });
+            
+            // Create sample.md template
+            const sampleContent = '# Sample Template';
+            const samplePath = path.join(templatesPath, 'sample.md');
+            await fs.writeFile(samplePath, sampleContent, 'utf8');
+            
+            const stats = await fs.stat(samplePath);
+            templates.push({
+              name: 'sample',
+              title: 'Sample Template',
+              path: '.templates/sample.md',
+              size: stats.size,
+              lastModified: stats.mtime.toISOString(),
+              type: 'template'
+            });
+            
+            logger.info(`Created .templates folder and sample.md for space ${space.name}`);
+          } catch (createError) {
+            logger.error('Error creating .templates folder:', createError);
+            // Return empty array if we can't create the folder
+          }
+        } else {
+          logger.error('Error checking .templates folder:', error);
+        }
+      }
+      
+      logger.info(`Found ${templates.length} templates for space ${spaceId}`);
+      res.json(templates);
+    } catch (error) {
+      logger.error('Error fetching templates:', error);
+      res.status(500).json({ error: 'Failed to fetch templates' });
+    }
+  });
+
+  // Enhanced document creation to support templates and folder paths
+  app.post('/applications/wiki/api/documents', async (req, res) => {
+    try {
+      const { title, content, spaceId, tags, folderPath, template, path: documentPath } = req.body;
+
+      if (!title) {
+        return res.status(400).json({ success: false, message: 'Document title is required' });
+      }
+
+      // Find space name if spaceId provided
+      let spaceName = 'Personal';
+      if (spaceId) {
+        const spaces = await dataManager.read('spaces');
+        const space = spaces.find(s => s.id === parseInt(spaceId));
+        spaceName = space ? space.name : 'Unknown Space';
+      }
+      
+      // Determine the file path - if it's a template, use the provided path
+      let finalPath = documentPath;
+      let finalContent = content;
+      
+      if (!finalPath) {
+        // Generate path from title and folder
+        const fileName = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '.md';
+        finalPath = folderPath ? `${folderPath}/${fileName}` : fileName;
+      }
+      
+      // If no content provided but has template, load template content
+      if (!finalContent && template) {
+        finalContent = '# ' + title + '\n\nYour content goes here...';
+      }
+      
+      // Create the file on disk
+      const fs = require('fs').promises;
+      const path = require('path');
+      const documentsDir = path.resolve(__dirname, '../../../documents');
+      const absolutePath = path.resolve(documentsDir, spaceName, finalPath);
+      
+      // Security check
+      if (!absolutePath.startsWith(documentsDir)) {
+        logger.warn(`Blocked attempt to create file outside documents directory: ${finalPath}`);
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+      
+      try {
+        // Ensure directory exists
+        const dir = path.dirname(absolutePath);
+        await fs.mkdir(dir, { recursive: true });
+        
+        // Write the file
+        await fs.writeFile(absolutePath, finalContent || `# ${title}\n\nYour content goes here...`, 'utf8');
+        
+        logger.info(`Created document file: ${finalPath} in space: ${spaceName}`);
+        
+        // For templates, we don't need to add to documents list
+        const isTemplate = finalPath.startsWith('.templates/');
+        
+        let newDocument = {
+          success: true,
+          message: isTemplate ? 'Template created successfully' : 'Document created successfully',
+          path: finalPath,
+          spaceName: spaceName
+        };
+        
+        if (!isTemplate) {
+          // Get next document ID and add to documents list
+          const allDocuments = await dataManager.read('documents');
+          let nextId = allDocuments.length > 0 ? Math.max(...allDocuments.map(d => d.id)) + 1 : 1;
+          
+          const docMetadata = {
+            id: nextId,
+            title,
+            spaceId: spaceId ? parseInt(spaceId) : null,
+            spaceName,
+            path: finalPath,
+            excerpt: finalContent ? finalContent.substring(0, 150).replace(/[#*`]/g, '') + (finalContent.length > 150 ? '...' : '') : 'No content yet',
+            author: 'Current User',
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+            views: 0,
+            tags: tags || []
+          };
+          
+          // Add to documents list
+          allDocuments.push(docMetadata);
+          await dataManager.write('documents', allDocuments);
+          
+          // Clear relevant caches
+          await cache.delete('wiki:documents:list');
+          await cache.delete('wiki:documents:recent');
+          await cache.delete('wiki:recent:activity');
+          if (spaceId) {
+            await cache.delete(`wiki:space:${spaceId}:documents`);
+          }
+          
+          newDocument.document = docMetadata;
+          
+          logger.info(`Created new document: ${title} (ID: ${nextId})`);
+        }
+        
+        res.json(newDocument);
+      } catch (fileError) {
+        logger.error(`Failed to create file ${finalPath}:`, fileError);
+        res.status(500).json({ 
+          success: false, 
+          message: 'Failed to create file: ' + fileError.message 
+        });
+      }
+    } catch (error) {
+      logger.error('Error creating document:', error);
+      res.status(500).json({ success: false, message: 'Failed to create document' });
+    }
+  });
+
+  // Enhanced folder creation to support system folders like .templates
+  app.post('/applications/wiki/api/folders', async (req, res) => {
+    try {
+      const { name, spaceId, parentPath } = req.body;
+      
+      if (!name || !spaceId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Folder name and space ID are required' 
+        });
+      }
+
+      logger.info(`Creating folder: ${name} in space ${spaceId}, parent: ${parentPath || 'root'}`);
+      
+      // Find the space
+      const spaces = await dataManager.read('spaces');
+      const space = spaces.find(s => s.id === parseInt(spaceId));
+      
+      if (!space) {
+        return res.status(404).json({ success: false, message: 'Space not found' });
+      }
+      
+      // Create the physical folder
+      const fs = require('fs').promises;
+      const path = require('path');
+      const documentsDir = path.resolve(__dirname, '../../../documents');
+      const folderPath = parentPath ? `${parentPath}/${name}` : name;
+      const absolutePath = path.resolve(documentsDir, space.name, folderPath);
+      
+      // Security check
+      if (!absolutePath.startsWith(documentsDir)) {
+        logger.warn(`Blocked attempt to create folder outside documents directory: ${folderPath}`);
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+      
+      try {
+        await fs.mkdir(absolutePath, { recursive: true });
+        
+        const folder = {
+          id: Date.now(), // Simple ID generation
+          name: name,
+          path: folderPath,
+          spaceId: parseInt(spaceId),
+          spaceName: space.name,
+          parentPath: parentPath || null,
+          createdAt: new Date().toISOString(),
+          type: 'folder'
+        };
+        
+        logger.info(`Created folder: ${name} at ${folderPath}`);
+        
+        res.json({ success: true, folder });
+      } catch (fileError) {
+        logger.error(`Failed to create folder ${folderPath}:`, fileError);
+        res.status(500).json({ 
+          success: false, 
+          message: 'Failed to create folder: ' + fileError.message 
+        });
+      }
+    } catch (error) {
+      logger.error('Error creating folder:', error);
+      res.status(500).json({ success: false, message: 'Failed to create folder' });
+    }
+  });
+
+  // Get document content with template support
+  app.post('/applications/wiki/api/documents/content', async (req, res) => {
+    try {
+      const { path: documentPath, spaceName } = req.body;
+      
+      if (!documentPath || !spaceName) {
+        return res.status(400).json({ error: 'Document path and space name are required' });
+      }
+
+      logger.info(`Reading document content from path: ${documentPath} in space: ${spaceName}`);
+      
+      const fs = require('fs').promises;
+      const path = require('path');
+      const documentsDir = path.resolve(__dirname, '../../../documents');
+      const absolutePath = path.resolve(documentsDir, spaceName, documentPath);
+      
+      // Security check
+      if (!absolutePath.startsWith(documentsDir)) {
+        logger.warn(`Blocked attempt to access file outside documents directory: ${documentPath}`);
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      try {
+        const content = await fs.readFile(absolutePath, 'utf8');
+        const stats = await fs.stat(absolutePath);
+        
+        // Extract title from first line if it's a markdown heading
+        let title = path.basename(documentPath, '.md');
+        const firstLine = content.split('\n')[0];
+        if (firstLine.startsWith('# ')) {
+          title = firstLine.substring(2).trim();
+        }
+        
+        const document = {
+          title: title,
+          content: content,
+          path: documentPath,
+          spaceName: spaceName,
+          size: stats.size,
+          lastModified: stats.mtime.toISOString(),
+          metadata: {
+            viewer: documentPath.endsWith('.md') ? 'markdown' : 'text'
+          }
+        };
+        
+        logger.info(`Successfully read document: ${documentPath}`);
+        res.json(document);
+      } catch (fileError) {
+        if (fileError.code === 'ENOENT') {
+          logger.warn(`File not found: ${documentPath}`);
+          res.status(404).json({ error: 'Document not found' });
+        } else {
+          logger.error(`Error reading file ${documentPath}:`, fileError);
+          res.status(500).json({ error: 'Failed to read document' });
+        }
+      }
+    } catch (error) {
+      logger.error('Error in document content endpoint:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 

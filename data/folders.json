@@ -1,0 +1,110 @@
+[
+  {
+    "id": 1,
+    "name": "My Folder",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": "My Folder",
+    "createdAt": "2025-08-28T17:55:12.304Z",
+    "updatedAt": "2025-08-28T17:55:12.304Z"
+  },
+  {
+    "id": 2,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:06:05.002Z",
+    "updatedAt": "2025-08-28T19:06:05.002Z"
+  },
+  {
+    "id": 3,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:06:09.116Z",
+    "updatedAt": "2025-08-28T19:06:09.116Z"
+  },
+  {
+    "id": 4,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:15:59.797Z",
+    "updatedAt": "2025-08-28T19:15:59.797Z"
+  },
+  {
+    "id": 5,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:16:02.373Z",
+    "updatedAt": "2025-08-28T19:16:02.373Z"
+  },
+  {
+    "id": 6,
+    "name": ".templates",
+    "spaceId": 2,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:16:03.541Z",
+    "updatedAt": "2025-08-28T19:16:03.541Z"
+  },
+  {
+    "id": 7,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:16:05.763Z",
+    "updatedAt": "2025-08-28T19:16:05.763Z"
+  },
+  {
+    "id": 8,
+    "name": ".templates",
+    "spaceId": 2,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:16:13.682Z",
+    "updatedAt": "2025-08-28T19:16:13.682Z"
+  },
+  {
+    "id": 9,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:16:44.115Z",
+    "updatedAt": "2025-08-28T19:16:44.115Z"
+  },
+  {
+    "id": 10,
+    "name": ".templates",
+    "spaceId": 2,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:16:58.546Z",
+    "updatedAt": "2025-08-28T19:16:58.546Z"
+  },
+  {
+    "id": 11,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:17:00.933Z",
+    "updatedAt": "2025-08-28T19:17:00.933Z"
+  },
+  {
+    "id": 12,
+    "name": ".templates",
+    "spaceId": 1,
+    "parentPath": "",
+    "path": ".templates",
+    "createdAt": "2025-08-28T19:18:29.819Z",
+    "updatedAt": "2025-08-28T19:18:29.819Z"
+  }
+]

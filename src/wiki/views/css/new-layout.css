@@ -734,10 +734,23 @@
 .section-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.section-title-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .section-title svg {

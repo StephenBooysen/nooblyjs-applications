@@ -49,6 +49,7 @@ module.exports = (options, eventEmitter, serviceRegistry) => {
   // Start background queue worker
   startQueueWorker({ dataManager, filing, cache, logger, queue, search });
   
+  // Register routes and views
   Routes(options, eventEmitter, { dataManager, filing, cache, logger, queue, search });
   Views(options, eventEmitter, { dataManager, filing, cache, logger, queue, search });
 }
@@ -79,29 +80,7 @@ async function initializeWikiData(dataManager, filing, cache, logger, queue, sea
           createdAt: '2024-01-15T10:00:00Z',
           updatedAt: '2024-08-20T14:30:00Z',
           author: 'System'
-        },
-                {
-          id: 1,
-          name: 'Team Space',
-          description: 'This space is for your team to contribiute to',
-          icon: '🏗️',
-          visibility: 'team',
-          documentCount: 0,
-          createdAt: '2024-01-15T10:00:00Z',
-          updatedAt: '2024-08-20T14:30:00Z',
-          author: 'System'
-        }, 
-        {
-          id: 1,
-          name: 'Knowledge Space',
-          description: 'This is a formated compilaton of data',
-          icon: '🏗️',
-          visibility: 'readonly',
-          documentCount: 0,
-          createdAt: '2024-01-15T10:00:00Z',
-          updatedAt: '2024-08-20T14:30:00Z',
-          author: 'System'
-        },        
+        }
       ];
       
       logger.info(`Storing ${defaultSpaces.length} spaces with JSON file storage...`);
@@ -112,66 +91,6 @@ async function initializeWikiData(dataManager, filing, cache, logger, queue, sea
       
       // Initialize default documents
       const defaultDocuments = [
-        {
-          id: 1,
-          title: 'Microservices Architecture Overview',
-          spaceId: 1,
-          spaceName: 'Architecture Documentation',
-          excerpt: 'Comprehensive guide to our microservices architecture, including service boundaries and communication patterns.',
-          author: 'Solution Architect',
-          createdAt: '2024-08-15T10:00:00Z',
-          modifiedAt: '2024-08-20T14:30:00Z',
-          views: 45,
-          tags: ['microservices', 'architecture', 'patterns']
-        },
-        {
-          id: 2,
-          title: 'User Authentication Requirements',
-          spaceId: 2,
-          spaceName: 'Business Requirements',
-          excerpt: 'Detailed requirements for multi-factor authentication implementation across all client applications.',
-          author: 'Business Analyst',
-          createdAt: '2024-08-10T09:30:00Z',
-          modifiedAt: '2024-08-19T16:45:00Z',
-          views: 32,
-          tags: ['authentication', 'security', 'requirements']
-        },
-        {
-          id: 3,
-          title: 'React Component Library Standards',
-          spaceId: 3,
-          spaceName: 'Development Guidelines',
-          excerpt: 'Guidelines for creating reusable React components with TypeScript and consistent styling patterns.',
-          author: 'Frontend Lead',
-          createdAt: '2024-08-12T11:00:00Z',
-          modifiedAt: '2024-08-21T09:15:00Z',
-          views: 58,
-          tags: ['react', 'components', 'standards']
-        },
-        {
-          id: 4,
-          title: 'Wiki API Specification',
-          spaceId: 4,
-          spaceName: 'API Documentation',
-          excerpt: 'REST API endpoints for the wiki system including authentication, spaces, and document management.',
-          author: 'Backend Developer',
-          createdAt: '2024-08-14T13:00:00Z',
-          modifiedAt: '2024-08-18T13:20:00Z',
-          views: 28,
-          tags: ['api', 'wiki', 'documentation']
-        },
-        {
-          id: 5,
-          title: 'Architecture Review - August 2024',
-          spaceId: 5,
-          spaceName: 'Meeting Notes',
-          excerpt: 'Monthly architecture review covering system performance, scalability improvements, and technical debt.',
-          author: 'Enterprise Architect',
-          createdAt: '2024-08-23T10:00:00Z',
-          modifiedAt: '2024-08-23T10:30:00Z',
-          views: 12,
-          tags: ['meeting', 'architecture', 'review']
-        }
       ];
       
       // Store documents

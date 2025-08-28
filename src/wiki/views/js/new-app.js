@@ -119,6 +119,9 @@ class WikiApp {
 
         // Modal events
         this.bindModalEvents();
+        
+        // Initialize template button state (hidden by default)
+        this.hideTemplateButton();
 
         // Global search
         document.getElementById('globalSearch')?.addEventListener('keypress', (e) => {
@@ -261,10 +264,13 @@ class WikiApp {
 
         try {
             const response = await fetch(`/applications/wiki/api/spaces/${this.currentSpace.id}/folders`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: API endpoint not available`);
+            }
             const tree = await response.json();
             this.renderFileTree(tree);
         } catch (error) {
-            console.error('Error loading file tree:', error);
+            console.log('File tree API not available, showing empty tree');
             this.renderEmptyFileTree();
         }
     }
@@ -337,20 +343,19 @@ class WikiApp {
     }
 
     renderTreeNodes(nodes, level = 0, isRoot = false) {
-        return nodes.map(node => {
+        return nodes.filter(node => {
+            // Hide system folders (those starting with .)
+            if (node.type === 'folder' && node.name.startsWith('.')) {
+                return false;
+            }
+            return true;
+        }).map(node => {
             if (node.type === 'folder') {
                 const hasChildren = node.children && node.children.length > 0;
                 const folderId = `folder-${node.path.replace(/[^a-zA-Z0-9]/g, '-')}`;
                 
                 return `
                     <div class="folder-item" data-folder-path="${node.path}" data-folder-id="${folderId}" style="padding-left: ${16 + level * 16}px">
-                        ${hasChildren ? `
-                            <div class="folder-toggle" data-folder-id="${folderId}">
-                                <svg viewBox="0 0 24 24">
-                                    <polyline points="9,18 15,12 9,6"></polyline>
-                                </svg>
-                            </div>
-                        ` : ''}
                         <svg class="folder-icon" width="16" height="16">
                             <use href="#icon-folder"></use>
                         </svg>
@@ -385,12 +390,16 @@ class WikiApp {
         const fileTree = document.getElementById('fileTree');
         if (!fileTree) return;
 
-        // Handle folder toggle clicks
-        fileTree.querySelectorAll('.folder-toggle').forEach(toggle => {
-            toggle.addEventListener('click', (e) => {
+        // Handle folder item clicks for toggling
+        fileTree.querySelectorAll('.folder-item').forEach(folderItem => {
+            folderItem.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const folderId = toggle.dataset.folderId;
-                this.toggleFolder(folderId);
+                const folderId = folderItem.dataset.folderId;
+                // Check if this folder has children
+                const hasChildren = document.querySelector(`[data-folder-children="${folderId}"]`);
+                if (hasChildren) {
+                    this.toggleFolder(folderId);
+                }
             });
         });
 
@@ -428,7 +437,7 @@ class WikiApp {
         // Show the space view with space content
         this.showSpaceView(space);
     }
-
+    
     selectFolder(folderPath) {
         this.currentFolder = folderPath;
         // Update file tree selection
@@ -444,15 +453,22 @@ class WikiApp {
         if (!folderItem || !folderChildren) return;
 
         const isExpanded = folderItem.classList.contains('expanded');
+        const folderIcon = folderItem.querySelector('.folder-icon use');
         
         if (isExpanded) {
             // Collapse
             folderItem.classList.remove('expanded');
             folderChildren.classList.remove('expanded');
+            if (folderIcon) {
+                folderIcon.setAttribute('href', '#icon-folder');
+            }
         } else {
             // Expand
             folderItem.classList.add('expanded');
             folderChildren.classList.add('expanded');
+            if (folderIcon) {
+                folderIcon.setAttribute('href', '#icon-folder-open');
+            }
         }
     }
 
@@ -729,6 +745,9 @@ class WikiApp {
         try {
             // Get the folder tree for this space
             const response = await fetch(`/applications/wiki/api/spaces/${space.id}/folders`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: API endpoint not available`);
+            }
             const tree = await response.json();
             
             if (tree.length === 0) {
@@ -803,12 +822,21 @@ class WikiApp {
             });
             
         } catch (error) {
-            console.error('Error loading space root items:', error);
+            console.log('Space root items API not available, showing placeholder');
             container.innerHTML = `
-                <div class="error-message">
-                    <p>Error loading space content</p>
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-folder"></use>
+                    </svg>
+                    <p>Space content will appear when backend is connected</p>
+                    <button id="createFirstFile" class="btn btn-primary" style="margin-top: 12px;">Create First File</button>
                 </div>
             `;
+            
+            // Bind create first file button
+            document.getElementById('createFirstFile')?.addEventListener('click', () => {
+                this.showCreateFileModal();
+            });
         }
     }
 
@@ -846,6 +874,7 @@ class WikiApp {
         }
         this.showModal('createFileModal');
         this.populateFileLocationSelect();
+        this.populateTemplateSelect();
     }
 
     populateFolderLocationSelect() {
@@ -868,6 +897,45 @@ class WikiApp {
         
         // Add existing folders as options
         // This would be populated from the current folder tree
+    }
+    
+    async populateTemplateSelect() {
+        const select = document.getElementById('fileTemplate');
+        if (!select) return;
+        
+        // Clear existing options except blank document
+        select.innerHTML = '<option value="">Blank Document</option>';
+        
+        try {
+            // Load templates from .templates folder
+            const response = await fetch(`/applications/wiki/api/spaces/${this.currentSpace.id}/templates`);
+            const templates = await response.json();
+            
+            // Add custom templates from .templates folder
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.path;
+                option.textContent = template.title || template.name;
+                select.appendChild(option);
+            });
+            
+        } catch (error) {
+            console.error('Error loading templates for dropdown:', error);
+            // Fall back to hardcoded templates if API fails
+            const fallbackTemplates = [
+                { value: 'basic', text: 'Basic Article' },
+                { value: 'api', text: 'API Documentation' },
+                { value: 'meeting', text: 'Meeting Notes' },
+                { value: 'requirements', text: 'Requirements Doc' }
+            ];
+            
+            fallbackTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.value;
+                option.textContent = template.text;
+                select.appendChild(option);
+            });
+        }
     }
 
     async handleCreateSpace() {
@@ -937,6 +1005,8 @@ class WikiApp {
         const formData = new FormData(form);
         
         try {
+            const templateContent = await this.getTemplateContent(formData.get('fileTemplate'));
+            
             const response = await fetch('/applications/wiki/api/documents', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -945,7 +1015,7 @@ class WikiApp {
                     spaceId: this.currentSpace.id,
                     folderPath: formData.get('fileLocation') || '',
                     template: formData.get('fileTemplate'),
-                    content: this.getTemplateContent(formData.get('fileTemplate'))
+                    content: templateContent
                 })
             });
 
@@ -965,14 +1035,40 @@ class WikiApp {
         }
     }
 
-    getTemplateContent(template) {
-        const templates = {
-            basic: '# Document Title\n\n## Overview\n\nDescription of the document.\n\n## Content\n\nYour content here.',
-            api: '# API Documentation\n\n## Endpoint\n\n`GET /api/endpoint`\n\n## Parameters\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| param1 | string | Description |\n\n## Response\n\n```json\n{\n  "status": "success"\n}\n```',
-            meeting: '# Meeting Notes\n\n**Date:** \n**Attendees:** \n**Agenda:** \n\n## Discussion\n\n## Action Items\n\n- [ ] Task 1\n- [ ] Task 2',
-            requirements: '# Requirements Document\n\n## Purpose\n\n## Scope\n\n## Requirements\n\n### Functional Requirements\n\n### Non-Functional Requirements\n\n## Acceptance Criteria'
-        };
-        return templates[template] || '';
+    async getTemplateContent(templatePath) {
+        if (!templatePath) return '';
+        
+        // Check if it's a custom template from .templates folder (path starts with .templates)
+        if (templatePath.startsWith('.templates/')) {
+            try {
+                const response = await fetch(`/applications/wiki/api/documents/content`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        spaceName: this.currentSpace.name,
+                        path: templatePath
+                    })
+                });
+                
+                const templateDoc = await response.json();
+                return templateDoc.content || '';
+                
+            } catch (error) {
+                console.error('Error loading custom template content:', error);
+                return '';
+            }
+        } else {
+            // Fall back to hardcoded templates for backward compatibility
+            const templates = {
+                basic: '# Document Title\n\n## Overview\n\nDescription of the document.\n\n## Content\n\nYour content here.',
+                api: '# API Documentation\n\n## Endpoint\n\n`GET /api/endpoint`\n\n## Parameters\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| param1 | string | Description |\n\n## Response\n\n```json\n{\n  "status": "success"\n}\n```',
+                meeting: '# Meeting Notes\n\n**Date:** \n**Attendees:** \n**Agenda:** \n\n## Discussion\n\n## Action Items\n\n- [ ] Task 1\n- [ ] Task 2',
+                requirements: '# Requirements Document\n\n## Purpose\n\n## Scope\n\n## Requirements\n\n### Functional Requirements\n\n### Non-Functional Requirements\n\n## Acceptance Criteria'
+            };
+            return templates[templatePath] || '';
+        }
     }
 
     getSpaceIcon(spaceName) {
@@ -1032,6 +1128,9 @@ class WikiApp {
         
         // Hide starred section and show only recent
         this.showRecentOnlyView();
+        
+        // Hide template button
+        this.hideTemplateButton();
     }
 
     showStarred() {
@@ -1047,12 +1146,24 @@ class WikiApp {
         
         // Hide recent section and show only starred
         this.showStarredOnlyView();
+        
+        // Hide template button
+        this.hideTemplateButton();
     }
 
     showTemplates() {
-        this.setActiveView('templates');
+        this.setActiveView('home');
         this.setActiveShortcut('shortcutTemplates');
-        this.loadTemplates();
+        this.currentView = 'templates';
+        
+        // Update workspace title
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Document Templates';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Reusable templates for creating new documents';
+        
+        // Hide other sections and show only templates
+        this.showTemplatesOnlyView();
     }
     
     showRecentOnlyView() {
@@ -1079,6 +1190,22 @@ class WikiApp {
         this.loadStarredFiles();
     }
     
+    showTemplatesOnlyView() {
+        // Hide recent and starred sections, show only templates
+        const recentSection = document.querySelector('.content-sections section:nth-child(1)');
+        const starredSection = document.querySelector('.content-sections section:nth-child(2)');
+        
+        if (recentSection) recentSection.style.display = 'none';
+        if (starredSection) starredSection.style.display = 'none';
+        
+        // Make sure templates section is visible
+        const templatesSection = document.querySelector('.content-sections section:nth-child(3)');
+        if (templatesSection) templatesSection.style.display = 'block';
+        
+        // Load templates
+        this.loadTemplates();
+    }
+    
     restoreHomeView() {
         // Show all sections
         const sections = document.querySelectorAll('.content-sections section');
@@ -1089,6 +1216,9 @@ class WikiApp {
         const workspaceSubtitle = document.getElementById('workspaceSubtitle');
         if (workspaceTitle) workspaceTitle.textContent = 'Welcome to Architecture Artifacts';
         if (workspaceSubtitle) workspaceSubtitle.textContent = 'Your documentation workspace dashboard';
+        
+        // Hide template button
+        this.hideTemplateButton();
     }
 
     setActiveView(viewName) {
@@ -1823,8 +1953,282 @@ class WikiApp {
         }
     }
 
-    loadTemplates() {
+    async loadTemplates() {
         console.log('Loading templates...');
+        
+        const container = document.getElementById('templatesContent');
+        if (!container) return;
+        
+        if (!this.currentSpace) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-clipboard"></use>
+                    </svg>
+                    <p>Select a space to view templates</p>
+                </div>
+            `;
+            return;
+        }
+        
+        try {
+            // Try to load templates from backend API
+            const response = await fetch(`/applications/wiki/api/spaces/${this.currentSpace.id}/templates`);
+            
+            if (!response.ok) {
+                throw new Error(`Templates API returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const templates = await response.json();
+            this.renderTemplatesContent(templates);
+            
+        } catch (error) {
+            console.log('Templates API error:', error.message);
+            // Show built-in templates fallback
+            this.renderTemplatesFallback();
+        }
+    }
+    
+    showTemplateButton() {
+        const templatesBtn = document.getElementById('templatesNewBtn');
+        const createFileBtn = document.getElementById('createFileBtn');
+        
+        // Show template button
+        if (templatesBtn) {
+            templatesBtn.style.display = 'block';
+            // Bind the click event if not already bound
+            if (!templatesBtn._templatesBound) {
+                templatesBtn.addEventListener('click', () => this.createNewTemplate());
+                templatesBtn._templatesBound = true;
+            }
+        }
+        
+        // Hide create file button when in templates view
+        if (createFileBtn) {
+            createFileBtn.style.display = 'none';
+        }
+    }
+    
+    hideTemplateButton() {
+        const templatesBtn = document.getElementById('templatesNewBtn');
+        const createFileBtn = document.getElementById('createFileBtn');
+        
+        // Hide template button
+        if (templatesBtn) {
+            templatesBtn.style.display = 'none';
+        }
+        
+        // Show create file button when not in templates view
+        if (createFileBtn) {
+            createFileBtn.style.display = 'block';
+        }
+    }
+    
+    renderTemplatesContent(templates) {
+        const container = document.getElementById('templatesContent');
+        if (!container) return;
+        
+        if (templates.length === 0) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-clipboard"></use>
+                    </svg>
+                    <p>No templates found</p>
+                    <button id="createFirstTemplate" class="btn btn-primary">
+                        <svg width="16" height="16">
+                            <use href="#icon-plus"></use>
+                        </svg>
+                        Create First Template
+                    </button>
+                </div>
+            `;
+            
+            // Bind create first template button
+            document.getElementById('createFirstTemplate')?.addEventListener('click', () => {
+                this.createNewTemplate();
+            });
+        } else {
+            // Render templates with create button
+            container.innerHTML = `
+                <div class="templates-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                    ${templates.map(template => `
+                        <div class="template-card" data-template-path="${template.path}" style="border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s ease; background: var(--card);">
+                            <div class="template-icon" style="width: 48px; height: 48px; background: var(--accent-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--accent);">
+                                <svg width="24" height="24">
+                                    <use href="#icon-clipboard"></use>
+                                </svg>
+                            </div>
+                            <div class="template-info">
+                                <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--foreground);">${template.title || template.name}</h4>
+                                <p class="template-meta" style="margin: 0; font-size: 13px; color: var(--muted-foreground);">Custom Template • ${template.lastModified ? new Date(template.lastModified).toLocaleDateString() : ''}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Bind template card clicks
+            container.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const templatePath = card.dataset.templatePath;
+                    this.editTemplate(templatePath);
+                });
+            });
+            
+            
+            // Add hover styles
+            const style = document.createElement('style');
+            style.textContent = `
+                .template-card:hover {
+                    border-color: var(--accent) !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                }
+            `;
+            container.appendChild(style);
+        }
+        
+        // Show the template button in the header
+        this.showTemplateButton();
+    }
+    
+    renderTemplatesFallback() {
+        const container = document.getElementById('templatesContent');
+        if (!container) return;
+        
+        // Show a nice fallback with built-in templates until backend is ready
+        const fallbackTemplates = [
+            {
+                name: 'Basic Document',
+                description: 'Simple document template with title and sections',
+                type: 'built-in',
+                key: 'basic'
+            },
+            {
+                name: 'API Documentation',
+                description: 'Template for documenting REST APIs',
+                type: 'built-in',
+                key: 'api'
+            },
+            {
+                name: 'Meeting Notes',
+                description: 'Template for meeting minutes and action items',
+                type: 'built-in',
+                key: 'meeting'
+            },
+            {
+                name: 'Requirements',
+                description: 'Template for requirements documentation',
+                type: 'built-in',
+                key: 'requirements'
+            }
+        ];
+        
+        container.innerHTML = `
+            <div class="templates-info-banner" style="background: var(--accent-bg); padding: 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                <svg width="20" height="20" style="color: var(--accent-foreground);">
+                    <use href="#icon-clipboard"></use>
+                </svg>
+                <div>
+                    <strong>Built-in Templates Available</strong>
+                    <p style="margin: 4px 0 0 0; color: var(--muted-foreground);">Custom templates will be available when the backend API is implemented.</p>
+                </div>
+            </div>
+            <div class="templates-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                ${fallbackTemplates.map(template => `
+                    <div class="template-card" data-template-key="${template.key}" style="border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s ease; background: var(--card);">
+                        <div class="template-icon" style="width: 48px; height: 48px; background: var(--accent-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--accent);">
+                            <svg width="24" height="24">
+                                <use href="#icon-clipboard"></use>
+                            </svg>
+                        </div>
+                        <div class="template-info">
+                            <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--foreground);">${template.name}</h4>
+                            <p class="template-meta" style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted-foreground);">${template.description}</p>
+                            <span class="template-badge" style="background: var(--accent); color: var(--accent-foreground); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;">Built-in</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Bind template card clicks for preview/edit
+        container.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const templateKey = card.dataset.templateKey;
+                this.previewBuiltInTemplate(templateKey);
+            });
+        });
+        
+        // Show the template button in the header
+        this.showTemplateButton();
+    }
+    
+    async previewBuiltInTemplate(templateKey) {
+        // Create a preview document with the built-in template content
+        const content = await this.getTemplateContent(templateKey);
+        const previewDoc = {
+            title: `${templateKey.charAt(0).toUpperCase() + templateKey.slice(1)} Template Preview`,
+            content: content,
+            metadata: {
+                viewer: 'markdown',
+                isTemplate: true,
+                isPreview: true
+            }
+        };
+        
+        this.currentDocument = previewDoc;
+        this.showEnhancedDocumentView(previewDoc);
+        this.showNotification('Previewing built-in template. Save to create a new document.', 'info');
+    }
+    
+    createNewTemplate() {
+        const templateName = prompt('Enter template name:');
+        if (!templateName) return;
+        
+        // Create a template document object
+        const templateDoc = {
+            title: templateName,
+            path: `.templates/${templateName}.md`,
+            spaceName: this.currentSpace.name,
+            content: '# ' + templateName + '\n\nYour template content goes here...',
+            metadata: {
+                viewer: 'markdown',
+                isTemplate: true
+            }
+        };
+        
+        // Open in editor
+        this.currentDocument = templateDoc;
+        this.showEnhancedDocumentView(templateDoc);
+    }
+    
+    async editTemplate(templatePath) {
+        try {
+            // Load template content
+            const response = await fetch(`/applications/wiki/api/documents/content`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    spaceName: this.currentSpace.name,
+                    path: templatePath
+                })
+            });
+            
+            const templateDoc = await response.json();
+            templateDoc.metadata = templateDoc.metadata || {};
+            templateDoc.metadata.isTemplate = true;
+            
+            this.currentDocument = templateDoc;
+            this.showEnhancedDocumentView(templateDoc);
+            
+        } catch (error) {
+            console.error('Error loading template:', error);
+            this.showNotification('Error loading template: ' + error.message, 'error');
+        }
     }
 
     showDocumentView(doc) {
