@@ -2178,6 +2178,37 @@
     max-width: 500px;
 }
 
+/* Star button styles */
+.star-btn {
+    transition: all 0.2s ease;
+}
+
+.star-btn:hover {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
+}
+
+.star-btn.starred {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
+}
+
+.star-btn.starred:hover {
+    background-color: var(--text-muted);
+    border-color: var(--text-muted);
+}
+
+.star-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.star-btn:hover svg,
+.star-btn.starred svg {
+    transform: scale(1.1);
+}
+
 /* User Profile Styles */
 .user-profile {
     display: flex;

@@ -207,6 +207,177 @@ module.exports = (options, eventEmitter, services) => {
     }
   });
 
+  // User activity tracking endpoints
+  app.get('/applications/wiki/api/user/activity', async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.session.wikiAuthenticated) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const userId = 'admin'; // For now, we'll use 'admin' as the default user
+      
+      // Try to get user activity from dataServe
+      let userActivity = await dataManager.read(`userActivity_${userId}`);
+      
+      // If result is empty array or doesn't have expected structure, create new activity record
+      if (Array.isArray(userActivity) || !userActivity || !userActivity.hasOwnProperty('starred')) {
+        logger.info(`No existing activity found for user ${userId}, creating new activity record`);
+        userActivity = {
+          userId: userId,
+          starred: [],
+          recent: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Save initial activity record
+        await dataManager.write(`userActivity_${userId}`, userActivity);
+      }
+
+      res.json(userActivity);
+    } catch (error) {
+      logger.error('Error fetching user activity:', error);
+      res.status(500).json({ error: 'Failed to fetch user activity' });
+    }
+  });
+
+  app.post('/applications/wiki/api/user/star', async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.session.wikiAuthenticated) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { path, spaceName, title, action } = req.body;
+      
+      if (!path || !spaceName || !title) {
+        return res.status(400).json({ error: 'Path, spaceName, and title are required' });
+      }
+
+      const userId = 'admin';
+      
+      // Get current user activity
+      let userActivity = await dataManager.read(`userActivity_${userId}`);
+      
+      // If result is empty array or doesn't have expected structure, create new activity record
+      if (Array.isArray(userActivity) || !userActivity || !userActivity.hasOwnProperty('starred')) {
+        userActivity = {
+          userId: userId,
+          starred: [],
+          recent: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      const documentInfo = {
+        path: path,
+        spaceName: spaceName,
+        title: title,
+        starredAt: new Date().toISOString()
+      };
+
+      if (action === 'star') {
+        // Add to starred if not already starred
+        const isAlreadyStarred = userActivity.starred.some(item => 
+          item.path === path && item.spaceName === spaceName
+        );
+        
+        if (!isAlreadyStarred) {
+          userActivity.starred.unshift(documentInfo);
+        }
+      } else if (action === 'unstar') {
+        // Remove from starred
+        userActivity.starred = userActivity.starred.filter(item => 
+          !(item.path === path && item.spaceName === spaceName)
+        );
+      }
+
+      userActivity.updatedAt = new Date().toISOString();
+      
+      // Save updated activity
+      await dataManager.write(`userActivity_${userId}`, userActivity);
+      
+      logger.info(`Document ${action}red: ${title} by user ${userId}`);
+
+      res.json({
+        success: true,
+        message: `Document ${action}red successfully`,
+        starred: userActivity.starred
+      });
+    } catch (error) {
+      logger.error('Error updating star status:', error);
+      res.status(500).json({ error: 'Failed to update star status' });
+    }
+  });
+
+  app.post('/applications/wiki/api/user/visit', async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.session.wikiAuthenticated) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { path, spaceName, title, action } = req.body;
+      
+      if (!path || !spaceName || !title) {
+        return res.status(400).json({ error: 'Path, spaceName, and title are required' });
+      }
+
+      const userId = 'admin';
+      
+      // Get current user activity
+      let userActivity = await dataManager.read(`userActivity_${userId}`);
+      
+      // If result is empty array or doesn't have expected structure, create new activity record
+      if (Array.isArray(userActivity) || !userActivity || !userActivity.hasOwnProperty('starred')) {
+        userActivity = {
+          userId: userId,
+          starred: [],
+          recent: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      const documentInfo = {
+        path: path,
+        spaceName: spaceName,
+        title: title,
+        action: action, // 'viewed' or 'edited'
+        visitedAt: new Date().toISOString()
+      };
+
+      // Remove existing entry for this document if it exists
+      userActivity.recent = userActivity.recent.filter(item => 
+        !(item.path === path && item.spaceName === spaceName)
+      );
+
+      // Add to beginning of recent list
+      userActivity.recent.unshift(documentInfo);
+
+      // Keep only last 20 recent items
+      userActivity.recent = userActivity.recent.slice(0, 20);
+
+      userActivity.updatedAt = new Date().toISOString();
+      
+      // Save updated activity
+      await dataManager.write(`userActivity_${userId}`, userActivity);
+      
+      logger.info(`Document visit tracked: ${title} (${action}) by user ${userId}`);
+
+      res.json({
+        success: true,
+        message: 'Visit tracked successfully',
+        recent: userActivity.recent
+      });
+    } catch (error) {
+      logger.error('Error tracking visit:', error);
+      res.status(500).json({ error: 'Failed to track visit' });
+    }
+  });
+
   // Wiki API endpoints with caching
   app.get('/applications/wiki/api/spaces', async (req, res) => {
     try {

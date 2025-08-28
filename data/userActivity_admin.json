@@ -1,0 +1,29 @@
+{
+  "userId": "admin",
+  "starred": [
+    {
+      "path": "Personal Space/Areas/home.md",
+      "spaceName": "Personal Space",
+      "title": "Home",
+      "starredAt": "2025-08-28T14:05:05.253Z"
+    }
+  ],
+  "recent": [
+    {
+      "path": "Personal Space/Areas/home.md",
+      "spaceName": "Personal Space",
+      "title": "Home",
+      "action": "viewed",
+      "visitedAt": "2025-08-28T14:05:00.013Z"
+    },
+    {
+      "path": "documents/1.md",
+      "spaceName": "Personal Space",
+      "title": "Test Document 1",
+      "action": "viewed",
+      "visitedAt": "2025-08-28T14:04:53.005Z"
+    }
+  ],
+  "createdAt": "2025-08-28T14:04:45.776Z",
+  "updatedAt": "2025-08-28T14:05:05.253Z"
+}

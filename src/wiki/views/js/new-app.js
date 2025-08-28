@@ -234,6 +234,9 @@ class WikiApp {
             // Load user profile first
             await this.loadUserProfile();
             
+            // Load user activity (starred and recent)
+            await this.loadUserActivity();
+            
             // Load spaces
             const spacesResponse = await fetch('/applications/wiki/api/spaces');
             this.data.spaces = await spacesResponse.json();
@@ -1008,27 +1011,84 @@ class WikiApp {
         this.setActiveShortcut('shortcutHome');
         this.currentView = 'home';
         
+        // Restore full home view
+        this.restoreHomeView();
+        
         // Load recent files for the homepage
         await this.loadRecentFiles();
         this.loadStarredFiles();
     }
 
     showRecent() {
-        this.setActiveView('recent');
+        this.setActiveView('home');
         this.setActiveShortcut('shortcutRecent');
-        this.loadRecentFiles();
+        this.currentView = 'recent';
+        
+        // Update workspace title
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Recent Documents';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Documents you have recently accessed';
+        
+        // Hide starred section and show only recent
+        this.showRecentOnlyView();
     }
 
     showStarred() {
-        this.setActiveView('starred');  
+        this.setActiveView('home');
         this.setActiveShortcut('shortcutStarred');
-        this.loadStarredFiles();
+        this.currentView = 'starred';
+        
+        // Update workspace title
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Starred Documents';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Documents you have marked as favorites';
+        
+        // Hide recent section and show only starred
+        this.showStarredOnlyView();
     }
 
     showTemplates() {
         this.setActiveView('templates');
         this.setActiveShortcut('shortcutTemplates');
         this.loadTemplates();
+    }
+    
+    showRecentOnlyView() {
+        // Hide starred and templates sections, show only recent
+        const starredSection = document.querySelector('.content-sections section:nth-child(2)');
+        const templatesSection = document.querySelector('.content-sections section:nth-child(3)');
+        
+        if (starredSection) starredSection.style.display = 'none';
+        if (templatesSection) templatesSection.style.display = 'none';
+        
+        // Load recent files
+        this.loadRecentFiles();
+    }
+    
+    showStarredOnlyView() {
+        // Hide recent and templates sections, show only starred
+        const recentSection = document.querySelector('.content-sections section:nth-child(1)');
+        const templatesSection = document.querySelector('.content-sections section:nth-child(3)');
+        
+        if (recentSection) recentSection.style.display = 'none';
+        if (templatesSection) templatesSection.style.display = 'none';
+        
+        // Load starred files
+        this.loadStarredFiles();
+    }
+    
+    restoreHomeView() {
+        // Show all sections
+        const sections = document.querySelectorAll('.content-sections section');
+        sections.forEach(section => section.style.display = 'block');
+        
+        // Restore original titles
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Welcome to Architecture Artifacts';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Your documentation workspace dashboard';
     }
 
     setActiveView(viewName) {
@@ -1170,6 +1230,12 @@ class WikiApp {
         // Setup download button functionality
         this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
         this.bindDocumentViewEvents();
     }
 
@@ -1210,6 +1276,12 @@ class WikiApp {
         
         // Setup download button functionality
         this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
         
         this.bindDocumentViewEvents();
     }
@@ -1261,6 +1333,12 @@ class WikiApp {
         // Setup download button functionality
         const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
         this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
         
         // Bind text viewer controls
         const showLineNumbersCheckbox = document.getElementById('showLineNumbers');
@@ -1329,6 +1407,12 @@ class WikiApp {
         const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
         this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
         // Apply syntax highlighting
         if (typeof Prism !== 'undefined') {
             setTimeout(() => {
@@ -1379,6 +1463,12 @@ class WikiApp {
         const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
         this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
         this.bindDocumentViewEvents();
     }
 
@@ -1425,6 +1515,12 @@ class WikiApp {
         // Setup download button functionality
         this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
         this.bindDocumentViewEvents();
     }
 
@@ -1457,6 +1553,24 @@ class WikiApp {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+            };
+        }
+    }
+    
+    // Helper method to setup star button functionality
+    setupStarButton(document) {
+        const starBtn = document.getElementById('starDocBtn');
+        if (starBtn) {
+            // Remove existing event listener
+            starBtn.onclick = null;
+            
+            // Update UI based on current star status
+            this.updateStarButtonUI(document);
+            
+            // Add click handler
+            starBtn.onclick = (e) => {
+                e.preventDefault();
+                this.toggleDocumentStar(document);
             };
         }
     }
@@ -1592,10 +1706,8 @@ class WikiApp {
         if (!container) return;
         
         try {
-            // Get recent files from all spaces, sorted by modification date
-            const recentFiles = this.data.documents
-                .sort((a, b) => new Date(b.modifiedAt || b.createdAt) - new Date(a.modifiedAt || a.createdAt))
-                .slice(0, 12); // Show up to 12 recent files
+            // Use activity data for recent files
+            const recentFiles = this.data.recent || [];
             
             if (recentFiles.length === 0) {
                 container.innerHTML = `
@@ -1613,16 +1725,17 @@ class WikiApp {
             container.innerHTML = `
                 <div class="items-grid">
                     ${recentFiles.map(file => {
-                        const fileTypeInfo = this.getFileTypeInfo(file.path || file.title);
+                        const fileTypeInfo = this.getFileTypeInfo(file.path);
                         const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
                         const iconColor = fileTypeInfo.color;
+                        const fileName = this.getFileNameFromPath(file.path);
                         
                         return `
-                            <div class="item-card file-card" data-document-path="${file.path || file.title}" data-space-name="${file.spaceName}">
+                            <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.space}">
                                 <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
                                 <div class="item-info">
-                                    <div class="item-name">${file.title}</div>
-                                    <div class="item-meta">File • ${fileTypeInfo.category} • Modified ${this.formatDate(file.modifiedAt || file.createdAt)}</div>
+                                    <div class="item-name">${fileName}</div>
+                                    <div class="item-meta">File • ${fileTypeInfo.category} • Visited ${this.formatDate(file.lastVisited)}</div>
                                 </div>
                             </div>
                         `;
@@ -1653,16 +1766,61 @@ class WikiApp {
         const container = document.getElementById('starredFilesContent');
         if (!container) return;
         
-        // Placeholder for starred files (would need to implement starring functionality)
-        container.innerHTML = `
-            <div class="no-content-message">
-                <svg width="48" height="48" class="no-content-icon">
-                    <use href="#icon-star"></use>
-                </svg>
-                <p>No starred files found</p>
-                <small>Star files to see them here</small>
-            </div>
-        `;
+        try {
+            // Use activity data for starred files
+            const starredFiles = this.data.starred || [];
+            
+            if (starredFiles.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content-message">
+                        <svg width="48" height="48" class="no-content-icon">
+                            <use href="#icon-star"></use>
+                        </svg>
+                        <p>No starred files found</p>
+                        <small>Star files to see them here</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="items-grid">
+                    ${starredFiles.map(file => {
+                        const fileTypeInfo = this.getFileTypeInfo(file.path);
+                        const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                        const iconColor = fileTypeInfo.color;
+                        const fileName = this.getFileNameFromPath(file.path);
+                        
+                        return `
+                            <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.space}">
+                                <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">${fileName}</div>
+                                    <div class="item-meta">File • ${fileTypeInfo.category} • Starred ${this.formatDate(file.starredAt)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // Bind click events
+            container.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const documentPath = card.dataset.documentPath;
+                    const spaceName = card.dataset.spaceName;
+                    this.openDocumentByPath(documentPath, spaceName);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading starred files:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <p>Error loading starred files</p>
+                </div>
+            `;
+        }
     }
 
     loadTemplates() {
@@ -2325,6 +2483,11 @@ class WikiApp {
         return iconMap[category] || 'fa-file';
     }
 
+    getFileNameFromPath(filePath) {
+        if (!filePath) return 'Untitled';
+        return filePath.split('/').pop() || filePath;
+    }
+
     // User Profile Management
     async loadUserProfile() {
         try {
@@ -2478,6 +2641,120 @@ class WikiApp {
         } catch (error) {
             console.error('Error updating profile:', error);
             this.showNotification('Failed to update profile: ' + error.message, 'error');
+        }
+    }
+
+    // User Activity Management
+    async loadUserActivity() {
+        try {
+            const response = await fetch('/applications/wiki/api/user/activity');
+            if (response.ok) {
+                this.userActivity = await response.json();
+                logger.info('User activity loaded:', this.userActivity);
+            } else {
+                console.warn('Failed to load user activity, using defaults');
+                this.userActivity = {
+                    starred: [],
+                    recent: []
+                };
+            }
+        } catch (error) {
+            console.error('Error loading user activity:', error);
+            this.userActivity = {
+                starred: [],
+                recent: []
+            };
+        }
+    }
+
+    async trackDocumentVisit(document, action = 'viewed') {
+        try {
+            const response = await fetch('/applications/wiki/api/user/visit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: document.path,
+                    spaceName: document.spaceName,
+                    title: document.title,
+                    action: action
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.userActivity.recent = result.recent;
+            }
+        } catch (error) {
+            console.error('Error tracking document visit:', error);
+        }
+    }
+
+    async toggleDocumentStar(document) {
+        if (!document) return;
+
+        const isStarred = this.isDocumentStarred(document);
+        const action = isStarred ? 'unstar' : 'star';
+
+        try {
+            const response = await fetch('/applications/wiki/api/user/star', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: document.path,
+                    spaceName: document.spaceName,
+                    title: document.title,
+                    action: action
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.userActivity.starred = result.starred;
+                this.updateStarButtonUI(document);
+                this.showNotification(
+                    isStarred ? 'Document unstarred' : 'Document starred', 
+                    'success'
+                );
+                
+                // Update home page if visible
+                if (this.currentView === 'home') {
+                    this.updateHomePageContent();
+                }
+            } else {
+                throw new Error(result.error || 'Failed to update star status');
+            }
+        } catch (error) {
+            console.error('Error toggling star:', error);
+            this.showNotification('Failed to update star status: ' + error.message, 'error');
+        }
+    }
+
+    isDocumentStarred(document) {
+        if (!this.userActivity || !this.userActivity.starred) return false;
+        return this.userActivity.starred.some(item => 
+            item.path === document.path && item.spaceName === document.spaceName
+        );
+    }
+
+    updateStarButtonUI(document) {
+        const starBtn = document.getElementById('starDocBtn');
+        const starText = starBtn?.querySelector('.star-text');
+        
+        if (!starBtn || !starText) return;
+
+        const isStarred = this.isDocumentStarred(document);
+        
+        if (isStarred) {
+            starBtn.classList.add('starred');
+            starText.textContent = 'Starred';
+        } else {
+            starBtn.classList.remove('starred');
+            starText.textContent = 'Star';
         }
     }
 }
