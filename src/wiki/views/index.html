@@ -148,6 +148,17 @@
                     <input type="text" id="globalSearch" placeholder="Search knowledge base..." class="search-input">
                 </div>
 
+                <!-- User Profile -->
+                <div id="userProfile" class="user-profile" title="Click to edit profile">
+                    <div class="user-avatar">
+                        <span id="userInitials">AD</span>
+                    </div>
+                    <div class="user-info">
+                        <span id="userName" class="user-name">Admin User</span>
+                        <span id="userRole" class="user-role">Administrator</span>
+                    </div>
+                </div>
+
                 <!-- Navigation -->
                 <nav class="nav">
                     <a href="#" id="logoutBtn" class="nav-link">
@@ -403,20 +414,73 @@
                 <div id="editorView" class="view hidden">
                     <div class="editor-container">
                         <div class="editor-header">
-                            <input type="text" id="docTitle" placeholder="Document Title" class="doc-title-input">
+                            <div class="editor-header-left">
+                                <input type="text" id="docTitle" placeholder="Document Title" class="doc-title-input">
+                                <span id="editingStatus" class="editing-status">Unsaved changes</span>
+                            </div>
                             <div class="editor-actions">
-                                <button id="saveDoc" class="btn btn-primary">Save</button>
-                                <button id="previewDoc" class="btn btn-secondary">Preview</button>
-                                <button id="closeEditor" class="btn btn-secondary">Close</button>
+                                <button id="saveDoc" class="btn btn-primary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-file"></use>
+                                    </svg>
+                                    Save
+                                    <span class="shortcut">Ctrl+S</span>
+                                </button>
+                                <button id="previewDoc" class="btn btn-secondary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-eye"></use>
+                                    </svg>
+                                    Preview
+                                </button>
+                                <button id="closeEditor" class="btn btn-secondary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-x"></use>
+                                    </svg>
+                                    Close
+                                </button>
                             </div>
                         </div>
                         
                         <div class="editor-main">
                             <div id="markdownEditor" class="editor-pane">
-                                <textarea id="editorTextarea" placeholder="Start writing in Markdown..."></textarea>
+                                <div class="editor-toolbar">
+                                    <div class="toolbar-group">
+                                        <button id="boldBtn" class="toolbar-btn" title="Bold (Ctrl+B)">
+                                            <i class="fas fa-bold"></i>
+                                        </button>
+                                        <button id="italicBtn" class="toolbar-btn" title="Italic (Ctrl+I)">
+                                            <i class="fas fa-italic"></i>
+                                        </button>
+                                        <button id="codeBtn" class="toolbar-btn" title="Inline Code">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </div>
+                                    <div class="toolbar-separator"></div>
+                                    <div class="toolbar-group">
+                                        <button id="h1Btn" class="toolbar-btn" title="Heading 1">H1</button>
+                                        <button id="h2Btn" class="toolbar-btn" title="Heading 2">H2</button>
+                                        <button id="h3Btn" class="toolbar-btn" title="Heading 3">H3</button>
+                                    </div>
+                                    <div class="toolbar-separator"></div>
+                                    <div class="toolbar-group">
+                                        <button id="listBtn" class="toolbar-btn" title="Unordered List">
+                                            <i class="fas fa-list-ul"></i>
+                                        </button>
+                                        <button id="numberedListBtn" class="toolbar-btn" title="Ordered List">
+                                            <i class="fas fa-list-ol"></i>
+                                        </button>
+                                        <button id="linkBtn" class="toolbar-btn" title="Link">
+                                            <i class="fas fa-link"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea id="editorTextarea" placeholder="Start writing..."></textarea>
                             </div>
                             <div id="previewPane" class="preview-pane hidden">
-                                <div id="previewContent" class="preview-content"></div>
+                                <div class="preview-header">
+                                    <h3>Preview</h3>
+                                </div>
+                                <div id="previewContent" class="preview-content markdown-content"></div>
                             </div>
                         </div>
                     </div>
@@ -438,6 +502,12 @@
                                     </svg>
                                     Edit
                                 </button>
+                                <button id="downloadDocBtn" class="btn btn-secondary">
+                                    <svg width="16" height="16">
+                                        <use href="#icon-share"></use>
+                                    </svg>
+                                    Download
+                                </button>
                                 <button id="shareDocBtn" class="btn btn-secondary">
                                     <svg width="16" height="16">
                                         <use href="#icon-share"></use>
@@ -452,9 +522,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="documentContent" class="document-content">
-                            <!-- Dynamic content -->
-                        </div>
+                        <!-- Content will be inserted directly here by JavaScript -->
                     </div>
                 </div>
 
@@ -575,6 +643,114 @@
                 <div class="modal-actions">
                     <button type="button" id="cancelCreateFile" class="btn btn-secondary">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="userProfileModal" class="modal hidden">
+        <div class="modal-content user-profile-modal">
+            <div class="modal-header">
+                <h2>User Profile</h2>
+                <button id="closeUserProfileModal" class="modal-close">
+                    <svg width="16" height="16">
+                        <use href="#icon-x"></use>
+                    </svg>
+                </button>
+            </div>
+            <form id="userProfileForm">
+                <div class="profile-section">
+                    <div class="profile-avatar-section">
+                        <div class="profile-avatar-large">
+                            <span id="profileInitials">AD</span>
+                        </div>
+                        <button type="button" id="changeAvatarBtn" class="btn btn-secondary">
+                            <i class="fas fa-camera"></i>
+                            Change Avatar
+                        </button>
+                    </div>
+                    
+                    <div class="profile-form-section">
+                        <div class="form-group">
+                            <label for="profileName">Full Name</label>
+                            <input type="text" id="profileName" name="profileName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileEmail">Email Address</label>
+                            <input type="email" id="profileEmail" name="profileEmail" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileRole">Role</label>
+                            <select id="profileRole" name="profileRole">
+                                <option value="administrator">Administrator</option>
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileBio">Bio</label>
+                            <textarea id="profileBio" name="profileBio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileLocation">Location</label>
+                            <input type="text" id="profileLocation" name="profileLocation" placeholder="City, Country">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profileTimezone">Timezone</label>
+                            <select id="profileTimezone" name="profileTimezone">
+                                <option value="UTC">UTC</option>
+                                <option value="America/New_York">Eastern Time</option>
+                                <option value="America/Chicago">Central Time</option>
+                                <option value="America/Denver">Mountain Time</option>
+                                <option value="America/Los_Angeles">Pacific Time</option>
+                                <option value="Europe/London">London</option>
+                                <option value="Europe/Paris">Paris</option>
+                                <option value="Asia/Tokyo">Tokyo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-settings-section">
+                    <h3>Preferences</h3>
+                    
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="emailNotifications" name="emailNotifications" checked>
+                            <span class="checkmark"></span>
+                            Email notifications
+                        </label>
+                    </div>
+                    
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="darkMode" name="darkMode">
+                            <span class="checkmark"></span>
+                            Dark mode (coming soon)
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="defaultLanguage">Default Language</label>
+                        <select id="defaultLanguage" name="defaultLanguage">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="ja">Japanese</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="cancelUserProfile" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>

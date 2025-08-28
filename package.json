@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node app.js",
-    "dev:web": "nodemon app.js"
+    "dev:web": "nodemon app.js",
+    "kill": "  kill -9 $(lsof -t -i:3001)"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.81",

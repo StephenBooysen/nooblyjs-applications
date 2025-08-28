@@ -64,6 +64,11 @@ class WikiApp {
             this.handleLogout();
         });
 
+        // User profile click
+        document.getElementById('userProfile')?.addEventListener('click', () => {
+            this.showUserProfileModal();
+        });
+
         // Sidebar collapsible sections
         document.getElementById('shortcutsHeader')?.addEventListener('click', () => {
             this.toggleSidebarSection('shortcuts');
@@ -226,6 +231,9 @@ class WikiApp {
 
     async loadInitialData() {
         try {
+            // Load user profile first
+            await this.loadUserProfile();
+            
             // Load spaces
             const spacesResponse = await fetch('/applications/wiki/api/spaces');
             this.data.spaces = await spacesResponse.json();
@@ -1131,31 +1139,36 @@ class WikiApp {
         
         this.updateDocumentHeader(doc);
         
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (!contentElement) return;
         
         const pdfUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}`;
         const downloadUrl = pdfUrl + '&download=true';
         
-        contentElement.innerHTML = `
-            <div class="pdf-viewer">
-                <div class="pdf-toolbar">
-                    <div class="file-info">
-                        <i class="fas fa-file-pdf" style="color: #dc3545;"></i>
-                        <span class="file-name">${doc.metadata.fileName}</span>
-                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
-                    </div>
-                    <div class="pdf-actions">
-                        <a href="${downloadUrl}" download="${doc.metadata.fileName}" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Download PDF
-                        </a>
-                    </div>
-                </div>
-                <div class="pdf-container">
-                    <iframe src="${pdfUrl}" width="100%" height="600px" style="border: none; border-radius: 8px;"></iframe>
+        // Remove any existing content after header and add PDF viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper pdf-viewer';
+        contentWrapper.innerHTML = `
+            <div class="pdf-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-file-pdf" style="color: #dc3545;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
                 </div>
             </div>
+            <div class="pdf-container">
+                <iframe src="${pdfUrl}" width="100%" height="calc(100vh - 160px)" style="border: none; border-radius: 8px;"></iframe>
+            </div>
         `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
         this.bindDocumentViewEvents();
     }
@@ -1167,31 +1180,36 @@ class WikiApp {
         
         this.updateDocumentHeader(doc);
         
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (!contentElement) return;
         
         const imageUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}`;
         const downloadUrl = imageUrl + '&download=true';
         
-        contentElement.innerHTML = `
-            <div class="image-viewer">
-                <div class="image-toolbar">
-                    <div class="file-info">
-                        <i class="fas fa-image" style="color: #17a2b8;"></i>
-                        <span class="file-name">${doc.metadata.fileName}</span>
-                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
-                    </div>
-                    <div class="image-actions">
-                        <a href="${downloadUrl}" download="${doc.metadata.fileName}" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Download Image
-                        </a>
-                    </div>
-                </div>
-                <div class="image-container">
-                    <img src="${imageUrl}" alt="${doc.metadata.fileName}" class="image-content" />
+        // Remove any existing content after header and add image viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper image-viewer';
+        contentWrapper.innerHTML = `
+            <div class="image-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-image" style="color: #17a2b8;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
                 </div>
             </div>
+            <div class="image-container">
+                <img src="${imageUrl}" alt="${doc.metadata.fileName}" class="image-content" />
+            </div>
         `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
         this.bindDocumentViewEvents();
     }
@@ -1203,35 +1221,46 @@ class WikiApp {
         
         this.updateDocumentHeader(doc);
         
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (!contentElement) return;
         
         const lines = doc.content.split('\n');
         const numberedLines = lines.map((line, index) => `${(index + 1).toString().padStart(4, ' ')}: ${this.escapeHtml(line)}`).join('\n');
         
-        contentElement.innerHTML = `
-            <div class="text-viewer">
-                <div class="text-toolbar">
-                    <div class="file-info">
-                        <i class="fas fa-file-text" style="color: #6c757d;"></i>
-                        <span class="file-name">${doc.metadata.fileName}</span>
-                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
-                        <span class="line-count">${lines.length} lines</span>
-                    </div>
-                    <div class="text-controls">
-                        <label class="control-label">
-                            <input type="checkbox" id="showLineNumbers" checked> Line Numbers
-                        </label>
-                        <label class="control-label">
-                            <input type="checkbox" id="wrapText"> Line Wrap
-                        </label>
-                    </div>
+        // Remove any existing content after header and add text viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper text-viewer';
+        contentWrapper.innerHTML = `
+            <div class="text-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-file-text" style="color: #6c757d;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                    <span class="line-count">${lines.length} lines</span>
                 </div>
-                <div class="text-container">
-                    <pre id="textContent" class="text-content with-numbers">${numberedLines}</pre>
+                <div class="text-controls">
+                    <label class="control-label">
+                        <input type="checkbox" id="showLineNumbers" checked> Line Numbers
+                    </label>
+                    <label class="control-label">
+                        <input type="checkbox" id="wrapText"> Line Wrap
+                    </label>
                 </div>
             </div>
+            <div class="text-container">
+                <pre id="textContent" class="text-content with-numbers">${numberedLines}</pre>
+            </div>
         `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
         // Bind text viewer controls
         const showLineNumbersCheckbox = document.getElementById('showLineNumbers');
@@ -1266,33 +1295,44 @@ class WikiApp {
         
         this.updateDocumentHeader(doc);
         
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (!contentElement) return;
         
         const language = this.getLanguageFromExtension(doc.metadata.extension);
         const lines = doc.content.split('\n').length;
         
-        contentElement.innerHTML = `
-            <div class="code-viewer">
-                <div class="code-toolbar">
-                    <div class="file-info">
-                        <i class="fas fa-file-code" style="color: #28a745;"></i>
-                        <span class="file-name">${doc.metadata.fileName}</span>
-                        <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
-                        <span class="line-count">${lines} lines</span>
-                        <span class="language-badge">${language}</span>
-                    </div>
-                </div>
-                <div class="code-container">
-                    <pre class="line-numbers"><code class="language-${language}" id="codeContent">${this.escapeHtml(doc.content)}</code></pre>
+        // Remove any existing content after header and add code viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper code-viewer';
+        contentWrapper.innerHTML = `
+            <div class="code-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-file-code" style="color: #28a745;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                    <span class="line-count">${lines} lines</span>
+                    <span class="language-badge">${language}</span>
                 </div>
             </div>
+            <div class="code-container">
+                <pre class="line-numbers"><code class="language-${language}" id="codeContent">${this.escapeHtml(doc.content)}</code></pre>
+            </div>
         `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
         // Apply syntax highlighting
         if (typeof Prism !== 'undefined') {
             setTimeout(() => {
-                Prism.highlightAllUnder(contentElement);
+                Prism.highlightAllUnder(contentWrapper);
             }, 100);
         }
         
@@ -1306,26 +1346,38 @@ class WikiApp {
         
         this.updateDocumentHeader(doc);
         
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (!contentElement) return;
+        
+        // Remove any existing content after header and add markdown viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper markdown-viewer';
         
         if (typeof marked !== 'undefined') {
             const renderedContent = marked.parse(doc.content);
-            contentElement.innerHTML = `
-                <div class="markdown-viewer">
-                    <div class="markdown-content">
-                        ${renderedContent}
-                    </div>
+            contentWrapper.innerHTML = `
+                <div class="markdown-content">
+                    ${renderedContent}
                 </div>
             `;
             
             // Apply syntax highlighting to code blocks
             if (typeof Prism !== 'undefined') {
-                Prism.highlightAllUnder(contentElement);
+                setTimeout(() => Prism.highlightAllUnder(contentWrapper), 100);
             }
         } else {
-            contentElement.innerHTML = `<pre class="markdown-fallback">${this.escapeHtml(doc.content)}</pre>`;
+            contentWrapper.innerHTML = `<pre class="markdown-fallback">${this.escapeHtml(doc.content)}</pre>`;
         }
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
         this.bindDocumentViewEvents();
     }
@@ -1337,34 +1389,41 @@ class WikiApp {
         
         this.updateDocumentHeader(doc);
         
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (!contentElement) return;
         
         const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
         
-        contentElement.innerHTML = `
-            <div class="default-viewer">
-                <div class="default-content">
-                    <div class="file-icon-large">
-                        <i class="fas fa-file" style="font-size: 4rem; color: #6c757d;"></i>
-                    </div>
-                    <div class="file-details">
-                        <h3>${doc.metadata.fileName}</h3>
-                        <p class="file-meta">
-                            <span>Size: ${this.formatFileSize(doc.metadata.size)}</span><br>
-                            <span>Modified: ${this.formatDate(doc.metadata.modified)}</span><br>
-                            <span>Type: ${doc.metadata.extension || 'Unknown'}</span>
-                        </p>
-                        <p class="file-description">
-                            This file type is not supported for inline viewing. You can download it to view with an appropriate application.
-                        </p>
-                        <a href="${downloadUrl}" download="${doc.metadata.fileName}" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Download File
-                        </a>
-                    </div>
+        // Remove any existing content after header and add default viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper default-viewer';
+        contentWrapper.innerHTML = `
+            <div class="default-content">
+                <div class="file-icon-large">
+                    <i class="fas fa-file" style="font-size: 4rem; color: #6c757d;"></i>
+                </div>
+                <div class="file-details">
+                    <h3>${doc.metadata.fileName}</h3>
+                    <p class="file-meta">
+                        <span>Size: ${this.formatFileSize(doc.metadata.size)}</span><br>
+                        <span>Modified: ${this.formatDate(doc.metadata.modified)}</span><br>
+                        <span>Type: ${doc.metadata.extension || 'Unknown'}</span>
+                    </p>
+                    <p class="file-description">
+                        This file type is not supported for inline viewing. You can download it to view with an appropriate application.
+                    </p>
                 </div>
             </div>
         `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
         
         this.bindDocumentViewEvents();
     }
@@ -1379,6 +1438,42 @@ class WikiApp {
         const backToSpace = document.getElementById('docBackToSpace');
         if (backToSpace) {
             backToSpace.textContent = doc.spaceName || 'Space';
+        }
+        
+        // Show/hide edit button based on file type
+        this.updateEditButton(doc);
+    }
+    
+    // Helper method to setup download button functionality
+    setupDownloadButton(downloadUrl, fileName) {
+        const downloadBtn = document.getElementById('downloadDocBtn');
+        if (downloadBtn) {
+            downloadBtn.onclick = (e) => {
+                e.preventDefault();
+                // Create temporary link for download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+        }
+    }
+    
+    // Helper method to update edit button visibility
+    updateEditButton(doc) {
+        const editBtn = document.getElementById('editDocBtn');
+        if (!editBtn) return;
+        
+        // Check if file type is editable
+        const viewer = doc.metadata?.viewer || 'default';
+        const isEditable = ['markdown', 'text', 'code', 'web', 'data'].includes(viewer);
+        
+        if (isEditable) {
+            editBtn.style.display = 'flex';
+        } else {
+            editBtn.style.display = 'none';
         }
     }
 
@@ -1598,7 +1693,7 @@ class WikiApp {
         }
         
         // Render document content
-        const contentElement = document.getElementById('documentContent');
+        const contentElement = document.querySelector('#documentView .document-container');
         if (contentElement && doc.content) {
             if (doc.content.startsWith('<img')) {
                 contentElement.innerHTML = doc.content;
@@ -1649,9 +1744,419 @@ class WikiApp {
     }
     
     showEditorView(doc) {
-        // Implementation for showing editor with document content
-        console.log('Opening editor for document:', doc);
-        // TODO: Implement editor view
+        const viewer = doc.metadata?.viewer || 'default';
+        
+        switch (viewer) {
+            case 'markdown':
+                this.showMarkdownEditor(doc);
+                break;
+            case 'text':
+            case 'code':
+            case 'web':
+            case 'data':
+                this.showTextCodeEditor(doc);
+                break;
+            default:
+                this.showNotification('This file type cannot be edited', 'warning');
+                return;
+        }
+    }
+    
+    // Markdown Editor Implementation
+    showMarkdownEditor(doc) {
+        this.setActiveView('editor');
+        this.currentView = 'editor';
+        this.isEditing = true;
+        
+        // Update editor header
+        const titleInput = document.getElementById('docTitle');
+        if (titleInput) {
+            titleInput.value = doc.title;
+        }
+        
+        const textarea = document.getElementById('editorTextarea');
+        if (textarea) {
+            textarea.value = doc.content || '';
+            // Auto-resize textarea
+            this.autoResizeTextarea(textarea);
+        }
+        
+        // Show markdown editor pane, hide preview initially
+        document.getElementById('markdownEditor')?.classList.remove('hidden');
+        document.getElementById('previewPane')?.classList.add('hidden');
+        
+        // Bind editor events
+        this.bindEditorEvents(doc);
+    }
+    
+    // Text/Code Editor Implementation
+    showTextCodeEditor(doc) {
+        this.setActiveView('editor');
+        this.currentView = 'editor';
+        this.isEditing = true;
+        
+        // Update editor header
+        const titleInput = document.getElementById('docTitle');
+        if (titleInput) {
+            titleInput.value = doc.title;
+        }
+        
+        const textarea = document.getElementById('editorTextarea');
+        if (textarea) {
+            textarea.value = doc.content || '';
+            // Set appropriate styling for code
+            textarea.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace';
+            textarea.style.fontSize = '14px';
+            textarea.style.lineHeight = '1.5';
+            // Auto-resize textarea
+            this.autoResizeTextarea(textarea);
+        }
+        
+        // Show editor pane, hide preview for non-markdown files
+        document.getElementById('markdownEditor')?.classList.remove('hidden');
+        document.getElementById('previewPane')?.classList.add('hidden');
+        
+        // Hide preview button for non-markdown files
+        const previewBtn = document.getElementById('previewDoc');
+        if (previewBtn) {
+            previewBtn.style.display = doc.metadata?.viewer === 'markdown' ? 'block' : 'none';
+        }
+        
+        // Bind editor events
+        this.bindEditorEvents(doc);
+    }
+    
+    // Auto-resize textarea to fit content
+    autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, window.innerHeight * 0.7) + 'px';
+        
+        // Add input listener for dynamic resizing
+        textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, window.innerHeight * 0.7) + 'px';
+        });
+    }
+    
+    // Bind editor events
+    bindEditorEvents(doc) {
+        // Save button
+        const saveBtn = document.getElementById('saveDoc');
+        if (saveBtn) {
+            saveBtn.onclick = () => this.saveDocument(doc);
+        }
+        
+        // Preview button (for markdown)
+        const previewBtn = document.getElementById('previewDoc');
+        if (previewBtn) {
+            previewBtn.onclick = () => this.togglePreview(doc);
+        }
+        
+        // Close button
+        const closeBtn = document.getElementById('closeEditor');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.closeEditor(doc);
+        }
+        
+        // Auto-save on Ctrl+S
+        document.addEventListener('keydown', (e) => {
+            if (this.isEditing && (e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                this.saveDocument(doc);
+            }
+        });
+        
+        // Bind toolbar buttons for markdown
+        if (doc.metadata?.viewer === 'markdown') {
+            this.bindMarkdownToolbar();
+        }
+        
+        // Track changes for unsaved indicator
+        this.trackContentChanges();
+    }
+    
+    // Bind markdown toolbar functionality
+    bindMarkdownToolbar() {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        // Bold button
+        document.getElementById('boldBtn')?.addEventListener('click', () => {
+            this.wrapSelection('**', '**', 'bold text');
+        });
+        
+        // Italic button
+        document.getElementById('italicBtn')?.addEventListener('click', () => {
+            this.wrapSelection('*', '*', 'italic text');
+        });
+        
+        // Code button
+        document.getElementById('codeBtn')?.addEventListener('click', () => {
+            this.wrapSelection('`', '`', 'code');
+        });
+        
+        // Heading buttons
+        document.getElementById('h1Btn')?.addEventListener('click', () => {
+            this.insertHeading(1);
+        });
+        
+        document.getElementById('h2Btn')?.addEventListener('click', () => {
+            this.insertHeading(2);
+        });
+        
+        document.getElementById('h3Btn')?.addEventListener('click', () => {
+            this.insertHeading(3);
+        });
+        
+        // List buttons
+        document.getElementById('listBtn')?.addEventListener('click', () => {
+            this.insertList('- ');
+        });
+        
+        document.getElementById('numberedListBtn')?.addEventListener('click', () => {
+            this.insertList('1. ');
+        });
+        
+        // Link button
+        document.getElementById('linkBtn')?.addEventListener('click', () => {
+            this.insertLink();
+        });
+    }
+    
+    // Helper method to wrap selected text
+    wrapSelection(before, after, placeholder) {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        const replacement = selectedText || placeholder;
+        
+        const newText = textarea.value.substring(0, start) + 
+                        before + replacement + after + 
+                        textarea.value.substring(end);
+        
+        textarea.value = newText;
+        
+        // Set cursor position
+        const newCursorPos = start + before.length + replacement.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+    }
+    
+    // Insert heading
+    insertHeading(level) {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end) || 'Heading';
+        
+        const hashmarks = '#'.repeat(level);
+        const replacement = `${hashmarks} ${selectedText}`;
+        
+        // If we're not at the start of a line, add a newline before
+        const beforeCursor = textarea.value.substring(0, start);
+        const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n');
+        
+        const newText = textarea.value.substring(0, start) + 
+                        (needsNewlineBefore ? '\n' : '') + 
+                        replacement + 
+                        textarea.value.substring(end);
+        
+        textarea.value = newText;
+        
+        // Set cursor at end of heading
+        const newCursorPos = start + (needsNewlineBefore ? 1 : 0) + replacement.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+    }
+    
+    // Insert list
+    insertList(prefix) {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const selectedText = textarea.value.substring(start, textarea.selectionEnd) || 'List item';
+        
+        const lines = selectedText.split('\n');
+        const listItems = lines.map(line => prefix + (line.trim() || 'List item')).join('\n');
+        
+        // If we're not at the start of a line, add a newline before
+        const beforeCursor = textarea.value.substring(0, start);
+        const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n');
+        
+        const newText = textarea.value.substring(0, start) + 
+                        (needsNewlineBefore ? '\n' : '') + 
+                        listItems + 
+                        textarea.value.substring(textarea.selectionEnd);
+        
+        textarea.value = newText;
+        
+        // Set cursor at end of list
+        const newCursorPos = start + (needsNewlineBefore ? 1 : 0) + listItems.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+    }
+    
+    // Insert link
+    insertLink() {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end) || 'link text';
+        
+        const linkText = `[${selectedText}](url)`;
+        
+        const newText = textarea.value.substring(0, start) + 
+                        linkText + 
+                        textarea.value.substring(end);
+        
+        textarea.value = newText;
+        
+        // Select the URL part for easy editing
+        const urlStart = start + selectedText.length + 3; // position after ](
+        const urlEnd = urlStart + 3; // length of 'url'
+        textarea.setSelectionRange(urlStart, urlEnd);
+        textarea.focus();
+    }
+    
+    // Track content changes
+    trackContentChanges() {
+        const textarea = document.getElementById('editorTextarea');
+        const titleInput = document.getElementById('docTitle');
+        const statusElement = document.getElementById('editingStatus');
+        
+        if (!textarea || !titleInput || !statusElement) return;
+        
+        let hasUnsavedChanges = false;
+        
+        const updateStatus = () => {
+            if (hasUnsavedChanges) {
+                statusElement.textContent = 'Unsaved changes';
+                statusElement.style.display = 'block';
+            } else {
+                statusElement.style.display = 'none';
+            }
+        };
+        
+        const markAsChanged = () => {
+            hasUnsavedChanges = true;
+            updateStatus();
+        };
+        
+        this.markAsSaved = () => {
+            hasUnsavedChanges = false;
+            updateStatus();
+        };
+        
+        textarea.addEventListener('input', markAsChanged);
+        titleInput.addEventListener('input', markAsChanged);
+        
+        updateStatus();
+    }
+    
+    // Save document
+    async saveDocument(doc) {
+        const titleInput = document.getElementById('docTitle');
+        const textarea = document.getElementById('editorTextarea');
+        
+        if (!titleInput || !textarea) return;
+        
+        const title = titleInput.value.trim();
+        const content = textarea.value;
+        
+        if (!title) {
+            this.showNotification('Document title is required', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/applications/wiki/api/documents/content', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: doc.path,
+                    spaceName: doc.spaceName,
+                    content: content
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update current document
+                this.currentDocument = {
+                    ...doc,
+                    title: title,
+                    content: content
+                };
+                
+                this.showNotification('Document saved successfully!', 'success');
+                
+                // Mark as saved to hide unsaved changes indicator
+                if (this.markAsSaved) {
+                    this.markAsSaved();
+                }
+                
+                // Update file tree and other views
+                await this.loadFileTree();
+            } else {
+                throw new Error(result.message || 'Failed to save document');
+            }
+        } catch (error) {
+            console.error('Error saving document:', error);
+            this.showNotification('Failed to save document: ' + error.message, 'error');
+        }
+    }
+    
+    // Toggle preview for markdown
+    togglePreview(doc) {
+        const editorPane = document.getElementById('markdownEditor');
+        const previewPane = document.getElementById('previewPane');
+        const previewContent = document.getElementById('previewContent');
+        const textarea = document.getElementById('editorTextarea');
+        const previewBtn = document.getElementById('previewDoc');
+        
+        if (!editorPane || !previewPane || !previewContent || !textarea || !previewBtn) return;
+        
+        if (previewPane.classList.contains('hidden')) {
+            // Show preview
+            if (typeof marked !== 'undefined') {
+                const renderedContent = marked.parse(textarea.value || '');
+                previewContent.innerHTML = renderedContent;
+                
+                // Apply syntax highlighting
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAllUnder(previewContent);
+                }
+            } else {
+                previewContent.innerHTML = '<p>Markdown preview not available</p>';
+            }
+            
+            previewPane.classList.remove('hidden');
+            previewBtn.textContent = 'Edit';
+        } else {
+            // Hide preview
+            previewPane.classList.add('hidden');
+            previewBtn.textContent = 'Preview';
+        }
+    }
+    
+    // Close editor
+    closeEditor(doc) {
+        this.isEditing = false;
+        
+        // Remove event listeners
+        document.removeEventListener('keydown', this.handleKeyDown);
+        
+        // Return to document view
+        this.showEnhancedDocumentView(this.currentDocument || doc);
     }
     
     escapeHtml(text) {
@@ -1818,6 +2323,162 @@ class WikiApp {
         };
         
         return iconMap[category] || 'fa-file';
+    }
+
+    // User Profile Management
+    async loadUserProfile() {
+        try {
+            const response = await fetch('/applications/wiki/api/profile');
+            if (response.ok) {
+                this.userProfile = await response.json();
+                this.updateUserProfileUI();
+            } else {
+                console.warn('Failed to load user profile, using defaults');
+                this.userProfile = {
+                    name: 'Admin User',
+                    email: 'admin@example.com',
+                    role: 'administrator'
+                };
+                this.updateUserProfileUI();
+            }
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+            // Use default profile
+            this.userProfile = {
+                name: 'Admin User',
+                email: 'admin@example.com', 
+                role: 'administrator'
+            };
+            this.updateUserProfileUI();
+        }
+    }
+
+    updateUserProfileUI() {
+        if (!this.userProfile) return;
+
+        // Update header profile
+        const userName = document.getElementById('userName');
+        const userRole = document.getElementById('userRole');
+        const userInitials = document.getElementById('userInitials');
+        
+        if (userName) userName.textContent = this.userProfile.name || 'Admin User';
+        if (userRole) userRole.textContent = this.capitalizeFirst(this.userProfile.role || 'administrator');
+        if (userInitials) {
+            const initials = this.getInitials(this.userProfile.name || 'Admin User');
+            userInitials.textContent = initials;
+        }
+
+        // Update modal profile
+        const profileInitials = document.getElementById('profileInitials');
+        if (profileInitials) {
+            profileInitials.textContent = this.getInitials(this.userProfile.name || 'Admin User');
+        }
+    }
+
+    getInitials(name) {
+        if (!name) return 'AU';
+        return name.split(' ')
+                   .map(part => part.charAt(0))
+                   .join('')
+                   .toUpperCase()
+                   .substring(0, 2);
+    }
+
+    capitalizeFirst(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    showUserProfileModal() {
+        if (!this.userProfile) {
+            this.showNotification('User profile not loaded', 'error');
+            return;
+        }
+
+        // Populate form with current profile data
+        document.getElementById('profileName').value = this.userProfile.name || '';
+        document.getElementById('profileEmail').value = this.userProfile.email || '';
+        document.getElementById('profileRole').value = this.userProfile.role || 'administrator';
+        document.getElementById('profileBio').value = this.userProfile.bio || '';
+        document.getElementById('profileLocation').value = this.userProfile.location || '';
+        document.getElementById('profileTimezone').value = this.userProfile.timezone || 'UTC';
+        
+        // Set preferences
+        document.getElementById('emailNotifications').checked = this.userProfile.preferences?.emailNotifications ?? true;
+        document.getElementById('darkMode').checked = this.userProfile.preferences?.darkMode ?? false;
+        document.getElementById('defaultLanguage').value = this.userProfile.preferences?.defaultLanguage || 'en';
+
+        // Show modal
+        this.showModal('userProfileModal');
+
+        // Bind form events
+        this.bindUserProfileEvents();
+    }
+
+    bindUserProfileEvents() {
+        // Close modal events
+        document.getElementById('closeUserProfileModal')?.addEventListener('click', () => {
+            this.hideModal('userProfileModal');
+        });
+
+        document.getElementById('cancelUserProfile')?.addEventListener('click', () => {
+            this.hideModal('userProfileModal');
+        });
+
+        // Form submission
+        const form = document.getElementById('userProfileForm');
+        if (form) {
+            form.removeEventListener('submit', this.handleUserProfileSubmit);
+            form.addEventListener('submit', (e) => this.handleUserProfileSubmit(e));
+        }
+
+        // Change avatar button (placeholder)
+        document.getElementById('changeAvatarBtn')?.addEventListener('click', () => {
+            this.showNotification('Avatar change feature coming soon!', 'info');
+        });
+    }
+
+    async handleUserProfileSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const profileData = {
+            name: formData.get('profileName'),
+            email: formData.get('profileEmail'),
+            role: formData.get('profileRole'),
+            bio: formData.get('profileBio'),
+            location: formData.get('profileLocation'),
+            timezone: formData.get('profileTimezone'),
+            preferences: {
+                emailNotifications: formData.has('emailNotifications'),
+                darkMode: formData.has('darkMode'),
+                defaultLanguage: formData.get('defaultLanguage')
+            }
+        };
+
+        try {
+            const response = await fetch('/applications/wiki/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(profileData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.userProfile = result.profile;
+                this.updateUserProfileUI();
+                this.hideModal('userProfileModal');
+                this.showNotification('Profile updated successfully!', 'success');
+            } else {
+                throw new Error(result.error || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            this.showNotification('Failed to update profile: ' + error.message, 'error');
+        }
     }
 }
 

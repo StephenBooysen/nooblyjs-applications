@@ -1,4 +1,4 @@
-# Digital Commerce Platform - Business View
+# Digital Commerce Platform - Business Views
 
 The Digital Commerce Platform serves as the primary customer-facing e-commerce solution, enabling online product browsing, purchasing, and order management across multiple channels. It supports B2C and B2B commerce operations with integrated payment processing, inventory management, and customer service capabilities.
 

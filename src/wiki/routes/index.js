@@ -57,6 +57,156 @@ module.exports = (options, eventEmitter, services) => {
     res.json({ authenticated: !!req.session.wikiAuthenticated });
   });
 
+  // User profile endpoints
+  app.get('/applications/wiki/api/profile', async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.session.wikiAuthenticated) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Try to get user profile from cache first
+      const cacheKey = 'wiki:user:profile:admin';
+      let userProfile = await cache.get(cacheKey);
+
+      if (!userProfile) {
+        // Load from dataServe or create default profile
+        try {
+          userProfile = await dataManager.read('userProfile');
+          if (!userProfile) {
+            // Create default user profile
+            userProfile = {
+              id: 'admin',
+              username: 'admin',
+              name: 'Admin User',
+              email: 'admin@example.com',
+              role: 'administrator',
+              bio: 'System administrator of the wiki platform.',
+              location: '',
+              timezone: 'UTC',
+              preferences: {
+                emailNotifications: true,
+                darkMode: false,
+                defaultLanguage: 'en'
+              },
+              avatar: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+
+            // Save default profile
+            await dataManager.write('userProfile', userProfile);
+            logger.info('Created default user profile');
+          }
+
+          // Cache for 30 minutes
+          await cache.put(cacheKey, userProfile, 1800);
+          logger.info('Loaded user profile from dataServe and cached');
+        } catch (error) {
+          logger.error('Error loading user profile from dataServe:', error);
+          // Return default profile without saving
+          userProfile = {
+            id: 'admin',
+            username: 'admin',
+            name: 'Admin User',
+            email: 'admin@example.com',
+            role: 'administrator',
+            bio: '',
+            location: '',
+            timezone: 'UTC',
+            preferences: {
+              emailNotifications: true,
+              darkMode: false,
+              defaultLanguage: 'en'
+            },
+            avatar: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+        }
+      } else {
+        logger.info('Loaded user profile from cache');
+      }
+
+      res.json(userProfile);
+    } catch (error) {
+      logger.error('Error fetching user profile:', error);
+      res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+  });
+
+  app.put('/applications/wiki/api/profile', async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.session.wikiAuthenticated) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const {
+        name,
+        email,
+        role,
+        bio,
+        location,
+        timezone,
+        preferences
+      } = req.body;
+
+      // Validate required fields
+      if (!name || !email) {
+        return res.status(400).json({ error: 'Name and email are required' });
+      }
+
+      // Get current profile
+      let currentProfile;
+      try {
+        currentProfile = await dataManager.read('userProfile');
+      } catch (error) {
+        logger.warn('No existing user profile found, creating new one');
+      }
+
+      // Create updated profile
+      const updatedProfile = {
+        ...(currentProfile || {}),
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: role || 'administrator',
+        bio: bio || '',
+        location: location || '',
+        timezone: timezone || 'UTC',
+        preferences: {
+          emailNotifications: preferences?.emailNotifications ?? true,
+          darkMode: preferences?.darkMode ?? false,
+          defaultLanguage: preferences?.defaultLanguage || 'en'
+        },
+        updatedAt: new Date().toISOString(),
+        // Preserve existing fields
+        id: 'admin',
+        username: 'admin',
+        avatar: currentProfile?.avatar || null,
+        createdAt: currentProfile?.createdAt || new Date().toISOString()
+      };
+
+      // Save updated profile
+      await dataManager.write('userProfile', updatedProfile);
+
+      // Clear cache to force refresh
+      const cacheKey = 'wiki:user:profile:admin';
+      await cache.delete(cacheKey);
+
+      logger.info(`Updated user profile for admin: ${name}`);
+
+      res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        profile: updatedProfile
+      });
+    } catch (error) {
+      logger.error('Error updating user profile:', error);
+      res.status(500).json({ error: 'Failed to update user profile' });
+    }
+  });
+
   // Wiki API endpoints with caching
   app.get('/applications/wiki/api/spaces', async (req, res) => {
     try {
@@ -855,6 +1005,85 @@ ${documentPath}\
     } catch (error) {
       logger.error('Error creating folder:', error);
       res.status(500).json({ success: false, message: 'Failed to create folder' });
+    }
+  });
+
+  // Save document content by file path
+  app.put('/applications/wiki/api/documents/content', async (req, res) => {
+    try {
+      const { path: documentPath, spaceName, content } = req.body;
+      
+      if (!documentPath || !spaceName || content === undefined) {
+        return res.status(400).json({ error: 'Document path, space name, and content are required' });
+      }
+
+      logger.info(`Saving document content to path: ${documentPath} in space: ${spaceName}`);
+      
+      // Resolve the absolute path to the documents folder
+      const documentsDir = path.resolve(__dirname, '../../../documents');
+      const absolutePath = path.resolve(documentsDir, spaceName, documentPath);
+      
+      // Security check: ensure the path is within the documents directory
+      if (!absolutePath.startsWith(documentsDir)) {
+        logger.warn(`Blocked attempt to save file outside documents directory: ${documentPath}`);
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      try {
+        const fs = require('fs').promises;
+        
+        // Ensure the directory exists
+        const dir = path.dirname(absolutePath);
+        await fs.mkdir(dir, { recursive: true });
+        
+        // Write the file content
+        await fs.writeFile(absolutePath, content, 'utf8');
+        
+        // Get file stats for response
+        const stats = await fs.stat(absolutePath);
+        
+        logger.info(`Successfully saved document to ${documentPath}`);
+        
+        // Update search index for searchable files
+        const fileTypeInfo = getFileTypeInfo(documentPath, mime.lookup(absolutePath) || 'text/plain');
+        if (['text', 'markdown', 'code', 'web', 'data'].includes(fileTypeInfo.category)) {
+          // Clear search cache to refresh results
+          await cache.delete('wiki:search:*');
+          
+          // Re-index this document
+          setImmediate(() => {
+            try {
+              searchIndexer.indexFile(absolutePath, {
+                name: path.basename(documentPath),
+                relativePath: documentPath,
+                spaceName: spaceName
+              });
+            } catch (indexError) {
+              logger.warn('Failed to update search index for saved file:', indexError.message);
+            }
+          });
+        }
+        
+        res.json({
+          success: true,
+          message: 'File saved successfully',
+          metadata: {
+            size: stats.size,
+            modified: stats.mtime,
+            path: documentPath,
+            spaceName: spaceName
+          }
+        });
+      } catch (fileError) {
+        logger.error(`Failed to save file ${documentPath}:`, fileError);
+        res.status(500).json({ 
+          error: 'Failed to save file',
+          message: fileError.message 
+        });
+      }
+    } catch (error) {
+      logger.error('Error in save document content endpoint:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
