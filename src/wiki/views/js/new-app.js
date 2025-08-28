@@ -1558,19 +1558,19 @@ class WikiApp {
     }
     
     // Helper method to setup star button functionality
-    setupStarButton(document) {
+    setupStarButton(documentData) {
         const starBtn = document.getElementById('starDocBtn');
         if (starBtn) {
             // Remove existing event listener
             starBtn.onclick = null;
             
             // Update UI based on current star status
-            this.updateStarButtonUI(document);
+            this.updateStarButtonUI(documentData);
             
             // Add click handler
             starBtn.onclick = (e) => {
                 e.preventDefault();
-                this.toggleDocumentStar(document);
+                this.toggleDocumentStar(documentData);
             };
         }
     }
@@ -2650,7 +2650,7 @@ class WikiApp {
             const response = await fetch('/applications/wiki/api/user/activity');
             if (response.ok) {
                 this.userActivity = await response.json();
-                logger.info('User activity loaded:', this.userActivity);
+                console.log('User activity loaded:', this.userActivity);
             } else {
                 console.warn('Failed to load user activity, using defaults');
                 this.userActivity = {
@@ -2691,10 +2691,10 @@ class WikiApp {
         }
     }
 
-    async toggleDocumentStar(document) {
-        if (!document) return;
+    async toggleDocumentStar(documentData) {
+        if (!documentData) return;
 
-        const isStarred = this.isDocumentStarred(document);
+        const isStarred = this.isDocumentStarred(documentData);
         const action = isStarred ? 'unstar' : 'star';
 
         try {
@@ -2704,18 +2704,23 @@ class WikiApp {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    path: document.path,
-                    spaceName: document.spaceName,
-                    title: document.title,
+                    path: documentData.path,
+                    spaceName: documentData.spaceName,
+                    title: documentData.title,
                     action: action
                 })
             });
+
+            if (response.status === 401) {
+                this.showNotification('Please log in to star documents', 'error');
+                return;
+            }
 
             const result = await response.json();
             
             if (result.success) {
                 this.userActivity.starred = result.starred;
-                this.updateStarButtonUI(document);
+                this.updateStarButtonUI(documentData);
                 this.showNotification(
                     isStarred ? 'Document unstarred' : 'Document starred', 
                     'success'
@@ -2734,20 +2739,20 @@ class WikiApp {
         }
     }
 
-    isDocumentStarred(document) {
+    isDocumentStarred(documentData) {
         if (!this.userActivity || !this.userActivity.starred) return false;
         return this.userActivity.starred.some(item => 
-            item.path === document.path && item.spaceName === document.spaceName
+            item.path === documentData.path && item.spaceName === documentData.spaceName
         );
     }
 
-    updateStarButtonUI(document) {
+    updateStarButtonUI(documentData) {
         const starBtn = document.getElementById('starDocBtn');
         const starText = starBtn?.querySelector('.star-text');
         
         if (!starBtn || !starText) return;
 
-        const isStarred = this.isDocumentStarred(document);
+        const isStarred = this.isDocumentStarred(documentData);
         
         if (isStarred) {
             starBtn.classList.add('starred');

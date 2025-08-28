@@ -10,6 +10,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const passport = require('passport');
 const path = require('path');
 const { EventEmitter } = require('events');
 
@@ -26,6 +27,12 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false }
 }));
+
+// Configure Passport
+const { configurePassport } = require('./src/auth/passport-config');
+configurePassport(passport);
+app.use(passport.initialize());
+app.use(passport.session());
 
 // initiate the event mechanism
 const eventEmitter = new EventEmitter()
@@ -66,20 +73,9 @@ const marketing = applicationRegistry.getApplication("marketing");
 const warehouse = applicationRegistry.getApplication("warehouse");
 const wiki = applicationRegistry.getApplication("wiki");
 
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  req.session.authenticated = true;
-  res.json({ success: true });
-});
-
-app.post('/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
-});
-
-app.get('/api/auth/check', (req, res) => {
-  res.json({ authenticated: !!req.session.authenticated });
-});
+// Authentication routes
+const authRoutes = require('./src/auth/routes');
+app.use('/api/auth', authRoutes);
 
 // Launch the application manager
 app.use(express.static(path.join(__dirname, 'public')));
