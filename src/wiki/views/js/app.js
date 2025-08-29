@@ -123,16 +123,8 @@ class WikiApp {
         // Initialize template button state (hidden by default)
         this.hideTemplateButton();
 
-        // Global search
-        document.getElementById('globalSearch')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.performSearch();
-            }
-        });
-
-        document.getElementById('searchBtn')?.addEventListener('click', () => {
-            this.performSearch();
-        });
+        // Global search with suggestions
+        this.initSearchFunctionality();
 
         // Refresh recent files button
         document.getElementById('refreshRecentBtn')?.addEventListener('click', async () => {
@@ -2098,12 +2090,230 @@ class WikiApp {
         this.currentDocument = null;
     }
 
+    initSearchFunctionality() {
+        const searchInput = document.getElementById('globalSearch');
+        const suggestionsContainer = document.getElementById('searchSuggestions');
+        
+        if (!searchInput || !suggestionsContainer) return;
+        
+        // Initialize search state variables
+        this.searchTimeout = null;
+        this.currentSuggestionIndex = -1;
+        this.isShowingSuggestions = false;
+        
+        // Handle input changes for suggestions
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            clearTimeout(this.searchTimeout);
+            
+            if (query.length === 0) {
+                this.hideSuggestions();
+                return;
+            }
+            
+            if (query.length >= 2) {
+                this.searchTimeout = setTimeout(() => {
+                    this.fetchSuggestions(query);
+                }, 300);
+            }
+        });
+        
+        // Handle key navigation
+        searchInput.addEventListener('keydown', (e) => {
+            const suggestionItems = suggestionsContainer.querySelectorAll('.suggestion-item');
+            
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (this.isShowingSuggestions && suggestionItems.length > 0) {
+                        this.currentSuggestionIndex = Math.min(this.currentSuggestionIndex + 1, suggestionItems.length - 1);
+                        this.highlightSuggestion(this.currentSuggestionIndex);
+                    }
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (this.isShowingSuggestions && suggestionItems.length > 0) {
+                        this.currentSuggestionIndex = Math.max(this.currentSuggestionIndex - 1, -1);
+                        this.highlightSuggestion(this.currentSuggestionIndex);
+                    }
+                    break;
+                    
+                case 'Enter':
+                    e.preventDefault();
+                    if (this.isShowingSuggestions && this.currentSuggestionIndex >= 0 && suggestionItems[this.currentSuggestionIndex]) {
+                        // Select the highlighted suggestion
+                        const suggestionData = suggestionItems[this.currentSuggestionIndex].dataset;
+                        this.selectSuggestion(suggestionData);
+                    } else {
+                        // Perform full search
+                        this.performSearch();
+                    }
+                    break;
+                    
+                case 'Escape':
+                    this.hideSuggestions();
+                    searchInput.blur();
+                    break;
+            }
+        });
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                this.hideSuggestions();
+            }
+        });
+        
+        // Show suggestions when focusing if there's a query
+        searchInput.addEventListener('focus', () => {
+            const query = searchInput.value.trim();
+            if (query.length >= 2) {
+                this.fetchSuggestions(query);
+            }
+        });
+    }
+    
+    async fetchSuggestions(query) {
+        try {
+            const response = await fetch(`/applications/wiki/api/search/suggestions?q=${encodeURIComponent(query)}&limit=8`);
+            const suggestions = await response.json();
+            
+            this.displaySuggestions(suggestions);
+        } catch (error) {
+            console.error('Suggestions error:', error);
+            this.hideSuggestions();
+        }
+    }
+    
+    displaySuggestions(suggestions) {
+        const container = document.getElementById('searchSuggestions');
+        
+        if (!suggestions || suggestions.length === 0) {
+            this.hideSuggestions();
+            return;
+        }
+        
+        const html = suggestions.map(suggestion => {
+            // Handle both string and object suggestions
+            let title, icon, dataPath, dataSpaceName, dataType, subtitle;
+            
+            if (typeof suggestion === 'string') {
+                // Simple string suggestion - use it as the search term
+                title = suggestion;
+                icon = this.getSuggestionIcon('search-term');
+                dataPath = '';
+                dataSpaceName = '';
+                dataType = 'search-term';
+                subtitle = 'Search for this term';
+            } else {
+                // Object suggestion with metadata
+                title = suggestion.title || suggestion.name || 'Untitled';
+                icon = this.getSuggestionIcon(suggestion.type || suggestion.baseType);
+                dataPath = suggestion.path || suggestion.relativePath || '';
+                dataSpaceName = suggestion.spaceName || suggestion.baseType || '';
+                dataType = suggestion.type || 'document';
+                subtitle = suggestion.spaceName ? `in ${suggestion.spaceName}` : '';
+            }
+            
+            return `
+                <div class="suggestion-item" 
+                     data-path="${dataPath}" 
+                     data-space-name="${dataSpaceName}"
+                     data-title="${title}"
+                     data-type="${dataType}">
+                    <svg class="suggestion-icon" width="16" height="16">
+                        <use href="#${icon}"></use>
+                    </svg>
+                    <div class="suggestion-text">
+                        <div class="suggestion-title">${title}</div>
+                        ${subtitle ? `<div class="suggestion-subtitle">${subtitle}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = html;
+        
+        // Add click handlers to suggestions
+        container.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this.selectSuggestion(item.dataset);
+            });
+        });
+        
+        container.classList.remove('hidden');
+        this.isShowingSuggestions = true;
+        this.currentSuggestionIndex = -1;
+    }
+    
+    getSuggestionIcon(type) {
+        switch (type) {
+            case 'markdown':
+            case 'wiki-document':
+                return 'icon-file';
+            case 'folder':
+                return 'icon-folder';
+            case 'code':
+                return 'icon-edit';
+            case 'image':
+                return 'icon-eye';
+            case 'search-term':
+                return 'icon-search';
+            default:
+                return 'icon-file';
+        }
+    }
+    
+    highlightSuggestion(index) {
+        const container = document.getElementById('searchSuggestions');
+        const items = container.querySelectorAll('.suggestion-item');
+        
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+    
+    selectSuggestion(suggestionData) {
+        const { path, spaceName, title, type } = suggestionData;
+        
+        this.hideSuggestions();
+        
+        // If it's a search term or no specific document, update search box and perform search
+        if (type === 'search-term' || (!path || !spaceName)) {
+            const searchInput = document.getElementById('globalSearch');
+            if (searchInput && title) {
+                searchInput.value = title;
+            }
+            this.performSearch();
+        } else {
+            // It's a specific document, load it directly
+            this.loadDocumentContent(path, spaceName, title);
+        }
+    }
+    
+    hideSuggestions() {
+        const container = document.getElementById('searchSuggestions');
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        this.isShowingSuggestions = false;
+        this.currentSuggestionIndex = -1;
+    }
+
     async performSearch() {
-        const query = document.getElementById('globalSearch').value.trim();
+        const searchInput = document.getElementById('globalSearch');
+        const query = searchInput.value.trim();
         if (!query) return;
 
+        this.hideSuggestions();
+
         try {
-            const response = await fetch(`/applications/wiki/api/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`/applications/wiki/api/search?q=${encodeURIComponent(query)}&includeContent=false`);
             const results = await response.json();
             
             this.showSearchResults(query, results);
@@ -2114,8 +2324,255 @@ class WikiApp {
     }
 
     showSearchResults(query, results) {
-        // Implementation for showing search results
-        console.log('Search results:', results);
+        // Update search query display
+        const queryElement = document.getElementById('searchQuery');
+        if (queryElement) {
+            queryElement.textContent = `"${query}"`;
+        }
+        
+        // Show search results view
+        this.setActiveView('search');
+        
+        const container = document.getElementById('searchResults');
+        if (!container) return;
+        
+        if (!results || results.length === 0) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-search"></use>
+                    </svg>
+                    <p>No results found for "${query}"</p>
+                    <p class="text-muted">Try different keywords or check your spelling</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const resultsHtml = results.map(result => {
+            const icon = this.getSuggestionIcon(result.type || 'document');
+            const title = result.title || result.name || 'Untitled';
+            const excerpt = result.excerpt || 'No description available';
+            const path = result.path || result.relativePath || '';
+            const spaceName = result.spaceName || 'Unknown Space';
+            const modifiedDate = result.modifiedAt ? new Date(result.modifiedAt).toLocaleDateString() : '';
+            
+            return `
+                <div class="search-result-item" 
+                     data-path="${path}" 
+                     data-space-name="${spaceName}"
+                     data-title="${title}">
+                    <div class="search-result-icon">
+                        <svg width="20" height="20">
+                            <use href="#${icon}"></use>
+                        </svg>
+                    </div>
+                    <div class="search-result-content">
+                        <h3 class="search-result-title">${title}</h3>
+                        <p class="search-result-excerpt">${excerpt}</p>
+                        <div class="search-result-meta">
+                            <span class="search-result-space">${spaceName}</span>
+                            ${modifiedDate ? `<span class="search-result-date">Modified ${modifiedDate}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = `
+            <div class="search-results-header">
+                <h2>Found ${results.length} result${results.length === 1 ? '' : 's'}</h2>
+            </div>
+            <div class="search-results-list">
+                ${resultsHtml}
+            </div>
+        `;
+        
+        // Add click handlers to results
+        container.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const { path, spaceName, title } = item.dataset;
+                this.loadDocumentContent(path, spaceName, title);
+            });
+        });
+    }
+
+    async loadDocumentContent(path, spaceName, title) {
+        try {
+            // Extract the correct space name and file path from the full path
+            // The path format is "Personal Space/Areas/file.md" where "Personal Space" is the actual space
+            let actualSpaceName = spaceName;
+            let actualPath = path;
+            
+            // If the spaceName is "documents" (the base directory), extract space from path
+            if (spaceName === 'documents' || spaceName === 'docs') {
+                const pathParts = path.split('/');
+                if (pathParts.length > 1) {
+                    actualSpaceName = pathParts[0]; // First part is the space name
+                    actualPath = pathParts.slice(1).join('/'); // Rest is the file path within the space
+                }
+            }
+            
+            console.log(`Loading document: ${actualPath} from space: ${actualSpaceName}`);
+            
+            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(actualPath)}&spaceName=${encodeURIComponent(actualSpaceName)}&enhanced=true`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Track the visit
+                await fetch('/applications/wiki/api/user/visit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: actualPath,
+                        spaceName: actualSpaceName,
+                        title: title,
+                        action: 'viewed'
+                    })
+                });
+                
+                // Show document view
+                this.displayDocument(data, actualSpaceName, actualPath);
+            } else {
+                throw new Error(data.error || 'Failed to load document');
+            }
+        } catch (error) {
+            console.error('Error loading document:', error);
+            this.showNotification('Failed to load document', 'error');
+        }
+    }
+
+    displayDocument(documentData, spaceName, path) {
+        this.setActiveView('document');
+        
+        // Update breadcrumb
+        const spaceLink = document.getElementById('docBackToSpace');
+        if (spaceLink) {
+            spaceLink.textContent = spaceName;
+            spaceLink.onclick = () => this.showHome();
+        }
+        
+        const titleElement = document.getElementById('currentDocTitle');
+        if (titleElement) {
+            titleElement.textContent = documentData.metadata?.fileName || path;
+        }
+        
+        // Render content based on viewer type
+        const container = document.querySelector('#documentView .document-container');
+        const existingContent = container.querySelector('.document-content');
+        if (existingContent) {
+            existingContent.remove();
+        }
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'document-content';
+        
+        if (documentData.metadata?.viewer === 'markdown') {
+            // Render markdown
+            contentDiv.innerHTML = `<div class="markdown-content">${marked.parse(documentData.content || '')}</div>`;
+        } else {
+            // Render as preformatted text
+            contentDiv.innerHTML = `<pre class="document-text">${this.escapeHtml(documentData.content || 'No content available')}</pre>`;
+        }
+        
+        container.appendChild(contentDiv);
+        
+        // Update edit button
+        const editBtn = document.getElementById('editDocBtn');
+        if (editBtn) {
+            editBtn.onclick = () => this.editDocument(path, spaceName, documentData);
+        }
+        
+        // Store current document info
+        this.currentDocument = { path, spaceName, data: documentData };
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    editDocument(path, spaceName, documentData) {
+        // Switch to editor view and load the document content for editing
+        this.setActiveView('editor');
+        
+        // Load the document title and content
+        const titleInput = document.getElementById('docTitle');
+        const editorTextarea = document.getElementById('editorTextarea');
+        
+        if (titleInput && documentData.title) {
+            titleInput.value = documentData.title || documentData.metadata?.fileName || path;
+        }
+        
+        if (editorTextarea && documentData.content) {
+            editorTextarea.value = documentData.content;
+        }
+        
+        // Store current document info for saving
+        this.currentDocument = { 
+            path, 
+            spaceName, 
+            data: documentData,
+            isEditing: true 
+        };
+        
+        // Update save button functionality
+        const saveBtn = document.getElementById('saveDoc');
+        if (saveBtn) {
+            saveBtn.onclick = () => this.saveCurrentDocument();
+        }
+    }
+
+    async saveCurrentDocument() {
+        if (!this.currentDocument || !this.currentDocument.isEditing) {
+            this.showNotification('No document to save', 'error');
+            return;
+        }
+        
+        const titleInput = document.getElementById('docTitle');
+        const editorTextarea = document.getElementById('editorTextarea');
+        
+        const title = titleInput?.value?.trim() || this.currentDocument.data.title;
+        const content = editorTextarea?.value || '';
+        
+        try {
+            const response = await fetch('/applications/wiki/api/documents/content', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: this.currentDocument.path,
+                    spaceName: this.currentDocument.spaceName,
+                    content: content
+                })
+            });
+            
+            if (response.ok) {
+                this.showNotification('Document saved successfully', 'success');
+                
+                // Update the stored document data
+                this.currentDocument.data.content = content;
+                this.currentDocument.data.title = title;
+                
+                // Track the edit
+                await fetch('/applications/wiki/api/user/visit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: this.currentDocument.path,
+                        spaceName: this.currentDocument.spaceName,
+                        title: title,
+                        action: 'edited'
+                    })
+                });
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save document');
+            }
+        } catch (error) {
+            console.error('Error saving document:', error);
+            this.showNotification('Failed to save document: ' + error.message, 'error');
+        }
     }
 
     // Placeholder methods for not-yet-implemented features

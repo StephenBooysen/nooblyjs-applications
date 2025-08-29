@@ -10,6 +10,27 @@
   ],
   "recent": [
     {
+      "path": "Areas/digital-commerce-platform/engineering.md",
+      "spaceName": "Personal Space",
+      "title": "engineering.md",
+      "action": "viewed",
+      "visitedAt": "2025-08-29T18:48:19.518Z"
+    },
+    {
+      "path": "app.js",
+      "spaceName": "Personal Space",
+      "title": "app.js",
+      "action": "viewed",
+      "visitedAt": "2025-08-29T18:42:14.483Z"
+    },
+    {
+      "path": "Home.md",
+      "spaceName": "Personal Space",
+      "title": "Home.md",
+      "action": "viewed",
+      "visitedAt": "2025-08-29T16:42:14.659Z"
+    },
+    {
       "path": "Resources/People/Roles/Principle Engineer.md",
       "spaceName": "Personal Space",
       "title": "Principle Engineer.md",
@@ -25,5 +46,5 @@
     }
   ],
   "createdAt": "2025-08-28T14:04:45.776Z",
-  "updatedAt": "2025-08-29T01:33:03.307Z"
+  "updatedAt": "2025-08-29T18:48:19.518Z"
 }
