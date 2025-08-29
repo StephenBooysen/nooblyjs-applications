@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wiki</title>
     <link rel="stylesheet" href="../../styles.css">
-    <link rel="stylesheet" href="css/new-layout.css">
+    <link rel="stylesheet" href="css/wiki-layout.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -252,18 +252,18 @@
                             <polyline points="6,9 12,15 18,9"></polyline>
                         </svg>
                         <span>Spaces</span>
-                        <div class="spaces-count">3</div>
+                        <div class="spaces-actions">
+                            <button id="createSpaceBtn" class="action-btn" title="New Space">
+                                <svg width="12" height="12">
+                                    <use href="#icon-plus"></use>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div id="spacesContent" class="section-content">
                         <div id="spacesList" class="spaces-list">
                             <!-- Dynamic spaces content -->
                         </div>
-                        <button id="createSpaceBtn" class="create-space-btn">
-                            <svg width="16" height="16">
-                                <use href="#icon-plus"></use>
-                            </svg>
-                            <span>Create new space</span>
-                        </button>
                     </div>
                 </div>
             </aside>
@@ -765,12 +765,44 @@
         </div>
     </div>
 
+    <!-- Context Menu for File Tree -->
+    <div id="fileContextMenu" class="context-menu hidden">
+        <div class="context-menu-item" id="contextCreateFolder">
+            <svg width="16" height="16">
+                <use href="#icon-folder"></use>
+            </svg>
+            <span>Create Folder</span>
+        </div>
+        <div class="context-menu-item" id="contextCreateFile">
+            <svg width="16" height="16">
+                <use href="#icon-plus"></use>
+            </svg>
+            <span>Create File</span>
+        </div>
+        <div class="context-menu-item" id="contextUpload">
+            <svg width="16" height="16">
+                <use href="#icon-share"></use>
+            </svg>
+            <span>Upload File</span>
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item context-menu-item-danger" id="contextDelete">
+            <svg width="16" height="16">
+                <use href="#icon-x"></use>
+            </svg>
+            <span>Delete</span>
+        </div>
+    </div>
+
+    <!-- Hidden file input for uploads -->
+    <input type="file" id="fileUploadInput" multiple style="display: none;">
+
     <div id="overlay" class="overlay hidden"></div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    <script src="js/new-app.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

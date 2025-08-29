@@ -1518,6 +1518,120 @@ ${documentPath}\
     }
   });
 
+  // Delete folder endpoint
+  app.delete('/applications/wiki/api/folders/:path(*)', async (req, res) => {
+    try {
+      const folderPath = decodeURIComponent(req.params.path);
+      const { spaceId } = req.body || {};
+      
+      logger.info(`Deleting folder: ${folderPath}`);
+      
+      if (!folderPath) {
+        return res.status(400).json({ success: false, message: 'Folder path is required' });
+      }
+      
+      // Build the full path for the folder
+      const fullFolderPath = path.join('./wiki-files', folderPath);
+      
+      try {
+        // Check if folder exists
+        const exists = await filing.exists(fullFolderPath);
+        if (!exists) {
+          return res.status(404).json({ success: false, message: 'Folder not found' });
+        }
+        
+        // Delete the folder and all its contents
+        await filing.deleteDirectory(fullFolderPath);
+        
+        // Also remove any documents from the data manager that were in this folder
+        try {
+          const documents = await dataManager.read('documents');
+          const updatedDocuments = documents.filter(doc => 
+            !doc.folderPath || !doc.folderPath.startsWith(folderPath)
+          );
+          
+          if (updatedDocuments.length !== documents.length) {
+            await dataManager.write('documents', updatedDocuments);
+          }
+        } catch (dataError) {
+          logger.warn('Error updating document metadata after folder deletion:', dataError);
+        }
+        
+        logger.info(`Successfully deleted folder: ${folderPath}`);
+        res.json({ success: true, message: 'Folder deleted successfully' });
+        
+      } catch (deleteError) {
+        logger.error(`Error deleting folder ${folderPath}:`, deleteError);
+        res.status(500).json({ success: false, message: 'Failed to delete folder' });
+      }
+      
+    } catch (error) {
+      logger.error('Error in delete folder endpoint:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  // Delete document endpoint  
+  app.delete('/applications/wiki/api/documents/:path(*)', async (req, res) => {
+    try {
+      const filePath = decodeURIComponent(req.params.path);
+      const { spaceId } = req.body || {};
+      
+      logger.info(`Deleting document: ${filePath}`);
+      
+      if (!filePath) {
+        return res.status(400).json({ success: false, message: 'File path is required' });
+      }
+      
+      // Build the full path for the file
+      const fullFilePath = path.join('./wiki-files', filePath);
+      
+      try {
+        // Check if file exists
+        const exists = await filing.exists(fullFilePath);
+        if (!exists) {
+          return res.status(404).json({ success: false, message: 'Document not found' });
+        }
+        
+        // Delete the file
+        await filing.remove(fullFilePath);
+        
+        // Remove document from the data manager
+        try {
+          const documents = await dataManager.read('documents');
+          const updatedDocuments = documents.filter(doc => 
+            doc.path !== filePath && doc.folderPath !== filePath
+          );
+          
+          if (updatedDocuments.length !== documents.length) {
+            await dataManager.write('documents', updatedDocuments);
+          }
+        } catch (dataError) {
+          logger.warn('Error updating document metadata after file deletion:', dataError);
+        }
+        
+        // Remove from search index
+        try {
+          const searchId = filePath.replace(/[^a-zA-Z0-9]/g, '_');
+          search.remove(searchId);
+        } catch (searchError) {
+          logger.warn('Error removing document from search index:', searchError);
+        }
+        
+        logger.info(`Successfully deleted document: ${filePath}`);
+        res.json({ success: true, message: 'Document deleted successfully' });
+        
+      } catch (deleteError) {
+        logger.error(`Error deleting document ${filePath}:`, deleteError);
+        res.status(500).json({ success: false, message: 'Failed to delete document' });
+      }
+      
+    } catch (error) {
+      logger.error('Error in delete document endpoint:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
   // Application status endpoint
   app.get('/applications/wiki/api/status', (req, res) => {
     res.json({ 

@@ -1,22 +1,29 @@
 /**
- * @fileoverview Wiki Application
- * The client side javascript library that encapsulates the Wiki application
+ * @fileoverview Updated Wiki Application with new layout
+ * Handles the new collapsible sidebar design with folders and files
  * 
  * @author NooblyJS Team
- * @version 1.0.0
- * @since 2025-08-22
+ * @version 2.0.0
+ * @since 2025-08-26
  */
 class WikiApp {
     constructor() {
         this.currentView = 'login';
         this.currentSpace = null;
         this.currentDocument = null;
+        this.currentFolder = null;
         this.isEditing = false;
         this.data = {
             spaces: [],
             documents: [],
+            folders: [],
             templates: [],
-            recent: []
+            recent: [],
+            starred: []
+        };
+        this.sidebarState = {
+            shortcuts: true,
+            spaces: true
         };
         this.init();
     }
@@ -25,6 +32,7 @@ class WikiApp {
         this.checkAuth();
         this.bindEvents();
         this.initMarkdown();
+        this.initSidebar();
     }
 
     async checkAuth() {
@@ -45,170 +53,219 @@ class WikiApp {
 
     bindEvents() {
         // Login form
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleLogin();
         });
 
-        // Navigation
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.handleLogout();
         });
 
-        document.getElementById('homeLink').addEventListener('click', (e) => {
+        // User profile click
+        document.getElementById('userProfile')?.addEventListener('click', () => {
+            this.showUserProfileModal();
+        });
+
+        // Sidebar collapsible sections
+        document.getElementById('shortcutsHeader')?.addEventListener('click', () => {
+            this.toggleSidebarSection('shortcuts');
+        });
+
+        document.getElementById('spacesHeader')?.addEventListener('click', () => {
+            this.toggleSidebarSection('spaces');
+        });
+
+        // Shortcuts navigation
+        document.getElementById('shortcutHome')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.showHome();
         });
 
-        document.getElementById('spacesLink').addEventListener('click', (e) => {
+        document.getElementById('shortcutRecent')?.addEventListener('click', (e) => {
             e.preventDefault();
-            this.showSpaces();
+            this.showRecent();
         });
 
-        document.getElementById('createLink').addEventListener('click', (e) => {
+        document.getElementById('shortcutStarred')?.addEventListener('click', (e) => {
             e.preventDefault();
-            this.showEditor();
+            this.showStarred();
         });
 
-        document.getElementById('templatesLink').addEventListener('click', (e) => {
+        document.getElementById('shortcutTemplates')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.showTemplates();
         });
 
-        // Enhanced Search with suggestions
-        const globalSearch = document.getElementById('globalSearch');
-        let searchTimeout;
-        let suggestionsVisible = false;
-        
-        // Create search suggestions dropdown
-        this.createSearchSuggestions();
-        
-        globalSearch.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            const query = e.target.value.trim();
-            
-            if (query.length >= 2) {
-                searchTimeout = setTimeout(() => {
-                    this.fetchSearchSuggestions(query);
-                }, 300); // Debounce for 300ms
-            } else {
-                this.hideSearchSuggestions();
-            }
+        // File actions
+        document.getElementById('createFolderBtn')?.addEventListener('click', () => {
+            this.showCreateFolderModal();
         });
 
-        globalSearch.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.performSearch(e.target.value);
-                this.hideSearchSuggestions();
-            } else if (e.key === 'Escape') {
-                this.hideSearchSuggestions();
-            } else if (e.key === 'ArrowDown' && suggestionsVisible) {
-                e.preventDefault();
-                this.navigateSuggestions('down');
-            } else if (e.key === 'ArrowUp' && suggestionsVisible) {
-                e.preventDefault();
-                this.navigateSuggestions('up');
-            }
+        document.getElementById('createFileBtn')?.addEventListener('click', () => {
+            this.showCreateFileModal();
         });
 
-        // Hide suggestions when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container')) {
-                this.hideSearchSuggestions();
-            }
+        document.getElementById('createNewMarkdownBtn')?.addEventListener('click', () => {
+            this.showCreateFileModal();
         });
 
-        // Quick actions
-        document.getElementById('quickCreateDoc').addEventListener('click', () => {
-            this.showEditor();
-        });
-
-        document.getElementById('quickCreateSpace').addEventListener('click', () => {
-            this.showCreateSpaceModal();
-        });
-
-        document.getElementById('quickBrowse').addEventListener('click', () => {
-            this.showSpaces();
-        });
-
-        // Space management
-        document.getElementById('createSpaceBtn').addEventListener('click', () => {
-            this.showCreateSpaceModal();
-        });
-
-        document.getElementById('createSpaceFromView').addEventListener('click', () => {
+        // Space actions
+        document.getElementById('createSpaceBtn')?.addEventListener('click', () => {
             this.showCreateSpaceModal();
         });
 
         // Modal events
-        document.getElementById('closeCreateSpaceModal').addEventListener('click', () => {
-            this.hideCreateSpaceModal();
+        this.bindModalEvents();
+        
+        // Initialize template button state (hidden by default)
+        this.hideTemplateButton();
+
+        // Global search
+        document.getElementById('globalSearch')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.performSearch();
+            }
         });
 
-        document.getElementById('cancelCreateSpace').addEventListener('click', () => {
-            this.hideCreateSpaceModal();
+        document.getElementById('searchBtn')?.addEventListener('click', () => {
+            this.performSearch();
         });
 
-        document.getElementById('overlay').addEventListener('click', () => {
-            this.hideCreateSpaceModal();
+        // Refresh recent files button
+        document.getElementById('refreshRecentBtn')?.addEventListener('click', async () => {
+            await this.loadRecentFiles();
         });
 
-        document.getElementById('createSpaceForm').addEventListener('submit', (e) => {
+        // Context menu functionality
+        this.initContextMenu();
+    }
+
+    initContextMenu() {
+        const contextMenu = document.getElementById('fileContextMenu');
+        let currentContextPath = null;
+
+        // Prevent browser context menu on file tree
+        document.getElementById('fileTree')?.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Add right-click event listeners to file tree items (will be added dynamically when tree is built)
+        this.contextMenuTargetPath = null;
+
+        // Context menu item clicks
+        document.getElementById('contextCreateFolder')?.addEventListener('click', () => {
+            console.log('Context menu Create Folder clicked, contextMenuTargetPath:', this.contextMenuTargetPath);
+            this.hideContextMenu();
+            this.showCreateFolderModal(this.contextMenuTargetPath);
+        });
+
+        document.getElementById('contextCreateFile')?.addEventListener('click', () => {
+            this.hideContextMenu();
+            this.showCreateFileModal(this.contextMenuTargetPath);
+        });
+
+        document.getElementById('contextUpload')?.addEventListener('click', () => {
+            this.hideContextMenu();
+            this.showUploadDialog(this.contextMenuTargetPath);
+        });
+
+        document.getElementById('contextDelete')?.addEventListener('click', () => {
+            console.log('Context menu Delete clicked, contextMenuTargetPath:', this.contextMenuTargetPath, 'contextMenuTargetType:', this.contextMenuTargetType);
+            this.hideContextMenu();
+            this.handleDeleteItem(this.contextMenuTargetPath, this.contextMenuTargetType);
+        });
+
+        // File upload handling
+        document.getElementById('fileUploadInput')?.addEventListener('change', (e) => {
+            this.handleFileUpload(e.target.files, this.contextMenuTargetPath);
+        });
+
+        // Hide context menu when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.context-menu')) {
+                this.hideContextMenu();
+            }
+        });
+    }
+
+    showContextMenu(e, targetPath = null, targetType = 'folder') {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const contextMenu = document.getElementById('fileContextMenu');
+        this.contextMenuTargetPath = targetPath || ''; // Empty string for root
+        this.contextMenuTargetType = targetType;
+        
+        console.log('Context menu opened for path:', targetPath, 'type:', targetType); // Debug log
+        
+        // Position the context menu
+        contextMenu.style.left = e.pageX + 'px';
+        contextMenu.style.top = e.pageY + 'px';
+        contextMenu.classList.remove('hidden');
+    }
+
+    hideContextMenu() {
+        const contextMenu = document.getElementById('fileContextMenu');
+        contextMenu?.classList.add('hidden');
+        this.contextMenuTargetPath = null;
+    }
+
+    bindModalEvents() {
+        // Create space modal
+        document.getElementById('createSpaceForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleCreateSpace();
         });
 
-        // Editor events
-        document.getElementById('saveDoc').addEventListener('click', () => {
-            this.saveDocument();
+        document.getElementById('closeCreateSpaceModal')?.addEventListener('click', () => {
+            this.hideModal('createSpaceModal');
         });
 
-        document.getElementById('previewDoc').addEventListener('click', () => {
-            this.togglePreview();
+        document.getElementById('cancelCreateSpace')?.addEventListener('click', () => {
+            this.hideModal('createSpaceModal');
         });
 
-        document.getElementById('closeEditor').addEventListener('click', () => {
-            this.closeEditor();
-        });
-
-        // Navigation breadcrumbs
-        document.getElementById('backToSpaces').addEventListener('click', (e) => {
+        // Create folder modal
+        document.getElementById('createFolderForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.showSpaces();
+            this.handleCreateFolder();
         });
 
-        document.getElementById('docBackToSpace').addEventListener('click', (e) => {
+        document.getElementById('closeCreateFolderModal')?.addEventListener('click', () => {
+            this.hideModal('createFolderModal');
+        });
+
+        document.getElementById('cancelCreateFolder')?.addEventListener('click', () => {
+            this.hideModal('createFolderModal');
+        });
+
+        // Create file modal
+        document.getElementById('createFileForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            if (this.currentSpace) {
-                this.showSpace(this.currentSpace);
-            } else {
-                this.showSpaces();
-            }
+            this.handleCreateFile();
         });
 
-        // Document actions
-        document.getElementById('editDocBtn').addEventListener('click', () => {
-            this.editCurrentDocument();
+        document.getElementById('closeCreateFileModal')?.addEventListener('click', () => {
+            this.hideModal('createFileModal');
         });
 
-        document.getElementById('shareDocBtn').addEventListener('click', () => {
-            this.shareDocument();
+        document.getElementById('cancelCreateFile')?.addEventListener('click', () => {
+            this.hideModal('createFileModal');
         });
 
-        document.getElementById('docHistory').addEventListener('click', () => {
-            this.showDocumentHistory();
+        // Overlay click to close modals
+        document.getElementById('overlay')?.addEventListener('click', () => {
+            this.hideAllModals();
         });
+    }
 
-        // Space actions
-        document.getElementById('createDocInSpace').addEventListener('click', () => {
-            this.createDocumentInSpace();
-        });
-
-        document.getElementById('spaceSettings').addEventListener('click', () => {
-            this.showSpaceSettings();
-        });
+    initSidebar() {
+        // Set initial collapsed states
+        this.updateSidebarSection('shortcuts', this.sidebarState.shortcuts);
+        this.updateSidebarSection('spaces', this.sidebarState.spaces);
     }
 
     initMarkdown() {
@@ -226,862 +283,2870 @@ class WikiApp {
         }
     }
 
+    toggleSidebarSection(section) {
+        this.sidebarState[section] = !this.sidebarState[section];
+        this.updateSidebarSection(section, this.sidebarState[section]);
+    }
+
+    updateSidebarSection(section, isExpanded) {
+        const header = document.getElementById(`${section}Header`);
+        const content = document.getElementById(`${section}Content`);
+        
+        if (!header || !content) return;
+
+        if (isExpanded) {
+            header.classList.remove('collapsed');
+            content.classList.remove('collapsed');
+            content.style.maxHeight = 'none'; // Allow natural height when expanded
+        } else {
+            header.classList.add('collapsed');
+            content.classList.add('collapsed');
+            content.style.maxHeight = '0px';
+        }
+    }
+
     async loadInitialData() {
         try {
-            const [spacesRes, docsRes, recentRes] = await Promise.all([
-                fetch('/applications/wiki/api/spaces'),
-                fetch('/applications/wiki/api/documents'),
-                fetch('/applications/wiki/api/recent')
-            ]);
+            // Load user profile first
+            await this.loadUserProfile();
+            
+            // Load user activity (starred and recent)
+            await this.loadUserActivity();
+            
+            // Load spaces
+            const spacesResponse = await fetch('/applications/wiki/api/spaces');
+            this.data.spaces = await spacesResponse.json();
 
-            this.data.spaces = await spacesRes.json();
-            this.data.documents = await docsRes.json();
-            this.data.recent = await recentRes.json();
+            // Load documents  
+            const documentsResponse = await fetch('/applications/wiki/api/documents');
+            this.data.documents = await documentsResponse.json();
 
-            this.updateSidebar();
+            this.renderSpacesList();
+            this.loadFileTree();
+            
         } catch (error) {
-            console.error('Failed to load initial data:', error);
+            console.error('Error loading initial data:', error);
         }
+    }
+
+    async loadFileTree() {
+        if (!this.currentSpace) {
+            this.renderEmptyFileTree();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/applications/wiki/api/spaces/${this.currentSpace.id}/folders`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: API endpoint not available`);
+            }
+            const tree = await response.json();
+            this.renderFileTree(tree);
+        } catch (error) {
+            console.log('File tree API not available, showing empty tree');
+            this.renderEmptyFileTree();
+        }
+    }
+
+    renderSpacesList() {
+        const spacesList = document.getElementById('spacesList');
+        if (!spacesList) return;
+
+        if (this.data.spaces.length === 0) {
+            spacesList.innerHTML = '<div class="no-spaces">No spaces available</div>';
+            return;
+        }
+
+        spacesList.innerHTML = this.data.spaces.map(space => `
+            <div class="space-item ${this.currentSpace?.id === space.id ? 'selected' : ''}" 
+                 data-space-id="${space.id}">
+                <i class="fas fa-${this.getSpaceIcon(space.name)}"></i>
+                <span class="space-name">${space.name}</span>
+            </div>
+        `).join('');
+
+        // Update spaces count
+        const spacesCount = document.querySelector('.spaces-count');
+        if (spacesCount) {
+            spacesCount.textContent = this.data.spaces.length;
+        }
+
+        // Bind click events
+        spacesList.querySelectorAll('.space-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const spaceId = parseInt(item.dataset.spaceId);
+                this.selectSpace(spaceId);
+            });
+        });
+
+        // Auto-select first space if none selected
+        if (!this.currentSpace && this.data.spaces.length > 0) {
+            this.selectSpace(this.data.spaces[0].id);
+        }
+    }
+
+    renderFileTree(tree) {
+        const fileTree = document.getElementById('fileTree');
+        if (!fileTree) return;
+
+        if (tree.length === 0) {
+            this.renderEmptyFileTree();
+            return;
+        }
+
+        // Store the full tree data for later use
+        this.fullFileTree = tree;
+        
+        // Render only root level items initially (folders collapsed)
+        fileTree.innerHTML = this.renderTreeNodes(tree, 0, true);
+        this.bindFileTreeEvents();
+    }
+
+    renderEmptyFileTree() {
+        const fileTree = document.getElementById('fileTree');
+        if (!fileTree) return;
+
+        fileTree.innerHTML = `
+            <div class="empty-tree">
+                <div class="empty-message">
+                    ${this.currentSpace ? 'No files or folders' : 'Select a space to view files'}
+                </div>
+            </div>
+        `;
+    }
+
+    renderTreeNodes(nodes, level = 0, isRoot = false) {
+        return nodes.filter(node => {
+            // Hide system folders (those starting with .)
+            if (node.type === 'folder' && node.name.startsWith('.')) {
+                return false;
+            }
+            return true;
+        }).map(node => {
+            if (node.type === 'folder') {
+                const hasChildren = node.children && node.children.length > 0;
+                const folderId = `folder-${node.path.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                
+                return `
+                    <div class="folder-item" data-folder-path="${node.path}" data-folder-id="${folderId}" style="padding-left: ${16 + level * 16}px">
+                        <svg class="folder-icon" width="16" height="16">
+                            <use href="#icon-folder"></use>
+                        </svg>
+                        <span>${node.name}</span>
+                    </div>
+                    ${hasChildren ? `
+                        <div class="folder-children" data-folder-children="${folderId}">
+                            ${this.renderTreeNodes(node.children, level + 1, false)}
+                        </div>
+                    ` : ''}
+                `;
+            } else if (node.type === 'document') {
+                // Only show root-level documents initially
+                if (isRoot || level > 0) {
+                    const fileTypeInfo = this.getFileTypeInfo(node.path || node.name);
+                    const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                    const iconColor = fileTypeInfo.color;
+                    
+                    return `
+                        <div class="file-item" data-document-path="${node.path}" data-space-name="${node.spaceName}" style="padding-left: ${16 + level * 16}px">
+                            <i class="fas ${iconClass}" style="color: ${iconColor}; width: 16px; text-align: center;"></i>
+                            <span>${node.title || node.name}</span>
+                        </div>
+                    `;
+                }
+            }
+            return '';
+        }).join('');
+    }
+
+    bindFileTreeEvents() {
+        const fileTree = document.getElementById('fileTree');
+        if (!fileTree) return;
+
+        console.log('Binding file tree events. Current file tree HTML:', fileTree.innerHTML);
+        console.log('Found folder items:', fileTree.querySelectorAll('.folder-item').length);
+
+        // Handle folder item clicks for toggling
+        fileTree.querySelectorAll('.folder-item').forEach(folderItem => {
+            folderItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const folderId = folderItem.dataset.folderId;
+                // Check if this folder has children
+                const hasChildren = document.querySelector(`[data-folder-children="${folderId}"]`);
+                if (hasChildren) {
+                    this.toggleFolder(folderId);
+                }
+            });
+        });
+
+        // Handle folder item clicks (for content loading)
+        fileTree.querySelectorAll('.folder-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Don't trigger if clicking the toggle
+                if (e.target.closest('.folder-toggle')) return;
+                
+                const folderPath = item.dataset.folderPath;
+                this.selectFolder(folderPath);
+                this.loadFolderContent(folderPath);
+            });
+        });
+
+        // Handle file item clicks
+        fileTree.querySelectorAll('.file-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const documentPath = item.dataset.documentPath;
+                const spaceName = item.dataset.spaceName;
+                this.openDocumentByPath(documentPath, spaceName);
+            });
+        });
+
+        // Add context menu functionality to folder items
+        fileTree.querySelectorAll('.folder-item').forEach(folderItem => {
+            console.log('Binding context menu to folder item:', folderItem, 'data-folder-path:', folderItem.dataset.folderPath);
+            folderItem.addEventListener('contextmenu', (e) => {
+                const folderPath = folderItem.dataset.folderPath;
+                console.log('Context menu triggered on folder item, folderPath:', folderPath);
+                this.showContextMenu(e, folderPath, 'folder');
+            });
+        });
+
+        // Add context menu functionality to file items
+        fileTree.querySelectorAll('.file-item').forEach(fileItem => {
+            console.log('Binding context menu to file item:', fileItem, 'data-document-path:', fileItem.dataset.documentPath);
+            fileItem.addEventListener('contextmenu', (e) => {
+                e.stopPropagation(); // Prevent folder context menu from firing
+                const filePath = fileItem.dataset.documentPath;
+                console.log('Context menu triggered on file item, filePath:', filePath);
+                this.showContextMenu(e, filePath, 'file');
+            });
+        });
+
+        // Add context menu for file tree root (empty space)
+        fileTree.addEventListener('contextmenu', (e) => {
+            // Only show context menu if not clicking on a folder or file item
+            if (!e.target.closest('.folder-item') && !e.target.closest('.file-item')) {
+                this.showContextMenu(e, null, 'folder'); // null means root directory
+            }
+        });
+    }
+
+    async selectSpace(spaceId) {
+        const space = this.data.spaces.find(s => s.id === spaceId);
+        if (!space) return;
+
+        this.currentSpace = space;
+        this.renderSpacesList(); // Re-render to show selection
+        await this.loadFileTree();
+        this.updateWorkspaceHeader();
+        
+        // Show the space view with space content
+        this.showSpaceView(space);
+    }
+    
+    selectFolder(folderPath) {
+        this.currentFolder = folderPath;
+        // Update file tree selection
+        document.querySelectorAll('.folder-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.folderPath === folderPath);
+        });
+    }
+
+    toggleFolder(folderId) {
+        const folderItem = document.querySelector(`[data-folder-id="${folderId}"]`);
+        const folderChildren = document.querySelector(`[data-folder-children="${folderId}"]`);
+        
+        if (!folderItem || !folderChildren) return;
+
+        const isExpanded = folderItem.classList.contains('expanded');
+        const folderIcon = folderItem.querySelector('.folder-icon use');
+        
+        if (isExpanded) {
+            // Collapse
+            folderItem.classList.remove('expanded');
+            folderChildren.classList.remove('expanded');
+            if (folderIcon) {
+                folderIcon.setAttribute('href', '#icon-folder');
+            }
+        } else {
+            // Expand
+            folderItem.classList.add('expanded');
+            folderChildren.classList.add('expanded');
+            if (folderIcon) {
+                folderIcon.setAttribute('href', '#icon-folder-open');
+            }
+        }
+    }
+
+    async loadFolderContent(folderPath) {
+        // Find the folder data from the full tree
+        const folder = this.findFolderInTree(this.fullFileTree, folderPath);
+        if (!folder) return;
+
+        // Create a folder overview view
+        const folderContent = this.createFolderOverview(folder);
+        this.showFolderView(folderContent);
+    }
+
+    findFolderInTree(nodes, targetPath) {
+        for (const node of nodes) {
+            if (node.type === 'folder' && node.path === targetPath) {
+                return node;
+            }
+            if (node.children) {
+                const found = this.findFolderInTree(node.children, targetPath);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    createFolderOverview(folder) {
+        const childFiles = folder.children ? folder.children.filter(c => c.type === 'document') : [];
+        const childFolders = folder.children ? folder.children.filter(c => c.type === 'folder') : [];
+
+        // Add child count to each folder for display
+        const foldersWithCounts = childFolders.map(childFolder => ({
+            ...childFolder,
+            childCount: childFolder.children ? childFolder.children.length : 0
+        }));
+
+        return {
+            title: folder.name,
+            path: folder.path,
+            spaceName: this.currentSpace?.name || 'Unknown Space',
+            stats: {
+                files: childFiles.length,
+                folders: childFolders.length
+            },
+            files: childFiles,
+            folders: foldersWithCounts
+        };
+    }
+
+    showFolderView(folderContent) {
+        // Switch to a custom folder view
+        this.setActiveView('folder');
+        
+        // Update the main content to show folder overview
+        const mainContent = document.getElementById('mainContent');
+        if (!mainContent) return;
+
+        // Calculate total items for each type
+        const totalFiles = folderContent.stats.files;
+        const totalFolders = folderContent.stats.folders;
+        
+        // Create folder view HTML matching the reference design
+        const folderViewHtml = `
+            <div id="folderView" class="view">
+                <div class="folder-header">
+                    <nav class="breadcrumb">
+                        <a href="#" id="backToSpace">${folderContent.spaceName}</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span>${folderContent.title}</span>
+                    </nav>
+                    
+                    <div class="folder-title-section">
+                        <svg class="folder-main-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                        </svg>
+                        <div class="folder-title-info">
+                            <h1>${folderContent.title}</h1>
+                            <div class="folder-stats">
+                                ${totalFiles > 0 ? `<span class="stat-badge">${totalFiles} file${totalFiles !== 1 ? 's' : ''}</span>` : ''}
+                                ${totalFolders > 0 ? `<span class="stat-badge">${totalFolders} folder${totalFolders !== 1 ? 's' : ''}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="folder-content">
+                    ${folderContent.folders.length === 0 && folderContent.files.length === 0 ? `
+                        <div class="empty-folder">
+                            <svg width="48" height="48" class="empty-folder-icon">
+                                <use href="#icon-folder"></use>
+                            </svg>
+                            <p>This folder is empty</p>
+                        </div>
+                    ` : `
+                        <div class="items-grid">
+                            ${folderContent.folders.map(folder => {
+                                const childCount = folder.childCount || 0;
+                                return `
+                                    <div class="item-card folder-card" data-folder-path="${folder.path}">
+                                        <svg class="item-icon folder-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                                        </svg>
+                                        <div class="item-info">
+                                            <div class="item-name">${folder.name}</div>
+                                            <div class="item-meta">Folder • ${childCount} item${childCount !== 1 ? 's' : ''}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                            ${folderContent.files.map(file => {
+                                const fileTypeInfo = this.getFileTypeInfo(file.path || file.name);
+                                const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                                const iconColor = fileTypeInfo.color;
+                                
+                                return `
+                                <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.spaceName}">
+                                    <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                    <div class="item-info">
+                                        <div class="item-name">${file.title || file.name}</div>
+                                        <div class="item-meta">File • ${fileTypeInfo.category}</div>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+
+        // Remove existing folder view if any
+        const existingFolderView = document.getElementById('folderView');
+        if (existingFolderView) {
+            existingFolderView.remove();
+        }
+
+        // Add the new folder view
+        mainContent.insertAdjacentHTML('beforeend', folderViewHtml);
+        
+        // Bind events for the folder view
+        this.bindFolderViewEvents();
+    }
+
+    bindFolderViewEvents() {
+        // Back to space button
+        document.getElementById('backToSpace')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showHome();
+        });
+
+        // Folder cards click events
+        document.querySelectorAll('#folderView .folder-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const folderPath = card.dataset.folderPath;
+                this.loadFolderContent(folderPath);
+            });
+        });
+
+        // File cards click events
+        document.querySelectorAll('#folderView .file-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const documentPath = card.dataset.documentPath;
+                const spaceName = card.dataset.spaceName;
+                this.openDocumentByPath(documentPath, spaceName);
+            });
+        });
+    }
+
+    // Space View Implementation
+    async showSpaceView(space) {
+        this.setActiveView('space');
+        this.currentView = 'space';
+        
+        // Update space header
+        const spaceNameElement = document.getElementById('currentSpaceName');
+        if (spaceNameElement) {
+            spaceNameElement.textContent = space.name;
+        }
+        
+        // Bind back to home button
+        document.getElementById('backToHome')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showHome();
+        });
+        
+        // Load space content
+        await this.loadSpaceContent(space);
+    }
+
+    async loadSpaceContent(space) {
+        try {
+            // Load recent files for this space
+            await this.loadSpaceRecentFiles(space);
+            
+            // Load starred files for this space (placeholder for now)
+            this.loadSpaceStarredFiles(space);
+            
+            // Load root files and folders
+            await this.loadSpaceRootItems(space);
+            
+        } catch (error) {
+            console.error('Error loading space content:', error);
+        }
+    }
+
+    async loadSpaceRecentFiles(space) {
+        const container = document.getElementById('spaceRecentFiles');
+        if (!container) return;
+        
+        // Filter documents that belong to this space and sort by modification date
+        const recentFiles = this.data.documents
+            .filter(doc => doc.spaceId === space.id)
+            .sort((a, b) => new Date(b.modifiedAt || b.createdAt) - new Date(a.modifiedAt || a.createdAt))
+            .slice(0, 6); // Show only 6 most recent
+        
+        if (recentFiles.length === 0) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-history"></use>
+                    </svg>
+                    <p>No recent files in this space</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = recentFiles.map(file => {
+            const fileTypeInfo = this.getFileTypeInfo(file.path || file.title);
+            const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+            const iconColor = fileTypeInfo.color;
+            
+            return `
+                <div class="file-card" data-document-path="${file.path || file.title}" data-space-name="${file.spaceName}">
+                    <i class="fas ${iconClass} file-card-icon" style="color: ${iconColor};"></i>
+                    <div class="file-card-info">
+                        <div class="file-card-name">${file.title}</div>
+                        <div class="file-card-meta">Modified ${this.formatDate(file.modifiedAt || file.createdAt)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Bind click events
+        container.querySelectorAll('.file-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const documentPath = card.dataset.documentPath;
+                const spaceName = card.dataset.spaceName;
+                this.openDocumentByPath(documentPath, spaceName);
+            });
+        });
+    }
+
+    loadSpaceStarredFiles(space) {
+        const container = document.getElementById('spaceStarredFiles');
+        if (!container) return;
+        
+        // Placeholder for starred files (would need to implement starring functionality)
+        container.innerHTML = `
+            <div class="no-content-message">
+                <svg width="48" height="48" class="no-content-icon">
+                    <use href="#icon-star"></use>
+                </svg>
+                <p>No starred files in this space</p>
+                <small>Star files to see them here</small>
+            </div>
+        `;
+    }
+
+    async loadSpaceRootItems(space) {
+        const container = document.getElementById('spaceRootItems');
+        if (!container) return;
+        
+        try {
+            // Get the folder tree for this space
+            const response = await fetch(`/applications/wiki/api/spaces/${space.id}/folders`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: API endpoint not available`);
+            }
+            const tree = await response.json();
+            
+            if (tree.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content-message">
+                        <svg width="48" height="48" class="no-content-icon">
+                            <use href="#icon-folder"></use>
+                        </svg>
+                        <p>No files or folders in this space</p>
+                        <button id="createFirstFile" class="btn btn-primary" style="margin-top: 12px;">Create First File</button>
+                    </div>
+                `;
+                
+                // Bind create first file button
+                document.getElementById('createFirstFile')?.addEventListener('click', () => {
+                    this.showCreateFileModal();
+                });
+                return;
+            }
+            
+            // Render root level items only
+            const rootItems = tree.filter(item => !item.path.includes('/') || item.path.split('/').length === 1);
+            
+            container.innerHTML = `
+                <div class="items-grid">
+                    ${rootItems.map(item => {
+                        if (item.type === 'folder') {
+                            const childCount = item.children ? item.children.length : 0;
+                            return `
+                                <div class="item-card folder-card" data-folder-path="${item.path}">
+                                    <i class="fas fa-folder item-icon" style="color: var(--text-secondary); font-size: 24px;"></i>
+                                    <div class="item-info">
+                                        <div class="item-name">${item.name}</div>
+                                        <div class="item-meta">Folder • ${childCount} item${childCount !== 1 ? 's' : ''}</div>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (item.type === 'document') {
+                            const fileTypeInfo = this.getFileTypeInfo(item.path || item.name);
+                            const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                            const iconColor = fileTypeInfo.color;
+                            
+                            return `
+                                <div class="item-card file-card" data-document-path="${item.path}" data-space-name="${item.spaceName}">
+                                    <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                    <div class="item-info">
+                                        <div class="item-name">${item.title || item.name}</div>
+                                        <div class="item-meta">File • ${fileTypeInfo.category}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        return '';
+                    }).join('')}
+                </div>
+            `;
+            
+            // Bind click events for folders and files
+            container.querySelectorAll('.folder-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const folderPath = card.dataset.folderPath;
+                    this.loadFolderContent(folderPath);
+                });
+            });
+            
+            container.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const documentPath = card.dataset.documentPath;
+                    const spaceName = card.dataset.spaceName;
+                    this.openDocumentByPath(documentPath, spaceName);
+                });
+            });
+            
+        } catch (error) {
+            console.log('Space root items API not available, showing placeholder');
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-folder"></use>
+                    </svg>
+                    <p>Space content will appear when backend is connected</p>
+                    <button id="createFirstFile" class="btn btn-primary" style="margin-top: 12px;">Create First File</button>
+                </div>
+            `;
+            
+            // Bind create first file button
+            document.getElementById('createFirstFile')?.addEventListener('click', () => {
+                this.showCreateFileModal();
+            });
+        }
+    }
+
+    updateWorkspaceHeader() {
+        const titleEl = document.getElementById('workspaceTitle');
+        const subtitleEl = document.getElementById('workspaceSubtitle');
+
+        if (this.currentSpace) {
+            if (titleEl) titleEl.textContent = `Welcome to ${this.currentSpace.name}`;
+            if (subtitleEl) subtitleEl.textContent = this.currentSpace.description || 'Your documentation workspace dashboard';
+        } else {
+            if (titleEl) titleEl.textContent = 'Welcome to Design Artifacts Wiki';
+            if (subtitleEl) subtitleEl.textContent = 'Your documentation workspace dashboard';
+        }
+    }
+
+    // Modal methods
+    showCreateSpaceModal() {
+        this.showModal('createSpaceModal');
+    }
+
+    showCreateFolderModal(prefilledPath = null) {
+        if (!this.currentSpace) {
+            alert('Please select a space first');
+            return;
+        }
+        
+        this.showModal('createFolderModal');
+        
+        if (prefilledPath !== null) {
+            // Hide the location dropdown when pre-filled from context menu
+            const folderLocationSelect = document.getElementById('folderLocation');
+            const locationGroup = folderLocationSelect?.parentElement;
+            if (locationGroup) {
+                locationGroup.style.display = 'none';
+            }
+            // Store the path for form submission
+            this.prefilledFolderPath = prefilledPath;
+            console.log('Creating folder with prefilled path:', prefilledPath); // Debug log
+        } else {
+            // Show the location dropdown for normal creation
+            const folderLocationSelect = document.getElementById('folderLocation');
+            const locationGroup = folderLocationSelect?.parentElement;
+            if (locationGroup) {
+                locationGroup.style.display = 'block';
+            }
+            this.populateFolderLocationSelect();
+            this.prefilledFolderPath = null;
+        }
+    }
+
+    showCreateFileModal(prefilledPath = null) {
+        if (!this.currentSpace) {
+            alert('Please select a space first');
+            return;
+        }
+        
+        this.showModal('createFileModal');
+        
+        if (prefilledPath !== null) {
+            // Hide the location dropdown when pre-filled from context menu
+            const fileLocationSelect = document.getElementById('fileLocation');
+            const locationGroup = fileLocationSelect?.parentElement;
+            if (locationGroup) {
+                locationGroup.style.display = 'none';
+            }
+            // Store the path for form submission
+            this.prefilledFilePath = prefilledPath;
+            console.log('Creating file with prefilled path:', prefilledPath); // Debug log
+        } else {
+            // Show the location dropdown for normal creation
+            const fileLocationSelect = document.getElementById('fileLocation');
+            const locationGroup = fileLocationSelect?.parentElement;
+            if (locationGroup) {
+                locationGroup.style.display = 'block';
+            }
+            this.populateFileLocationSelect();
+            this.prefilledFilePath = null;
+        }
+        
+        this.populateTemplateSelect();
+    }
+
+    showUploadDialog(targetPath = null) {
+        this.uploadTargetPath = targetPath || '';
+        const fileInput = document.getElementById('fileUploadInput');
+        fileInput?.click();
+    }
+
+    async handleFileUpload(files, targetPath = '') {
+        if (!files || files.length === 0) return;
+        
+        const uploadPath = targetPath || '';
+        
+        for (const file of files) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('path', uploadPath);
+                formData.append('spaceName', this.currentSpace?.name || 'Personal Space');
+                
+                const response = await fetch('/applications/wiki/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    this.showNotification(`File "${file.name}" uploaded successfully`, 'success');
+                } else {
+                    this.showNotification(`Failed to upload "${file.name}"`, 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                this.showNotification(`Failed to upload "${file.name}"`, 'error');
+            }
+        }
+        
+        // Reset the file input
+        const fileInput = document.getElementById('fileUploadInput');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        
+        // Refresh the file tree
+        await this.loadFileTree();
+    }
+
+    async handleDeleteItem(itemPath, itemType) {
+        if (!itemPath && itemType === 'folder') {
+            this.showNotification('Cannot delete root folder', 'error');
+            return;
+        }
+
+        const itemName = itemPath ? itemPath.split('/').pop() : 'item';
+        const itemTypeDisplay = itemType === 'folder' ? 'folder' : 'file';
+        
+        // Show confirmation dialog
+        const confirmed = confirm(`Are you sure you want to delete the ${itemTypeDisplay} "${itemName}"?\n\nThis action cannot be undone.${itemType === 'folder' ? ' All contents will be deleted.' : ''}`);
+        
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            let response;
+            
+            if (itemType === 'folder') {
+                // Delete folder
+                response = await fetch(`/applications/wiki/api/folders/${encodeURIComponent(itemPath)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        spaceId: this.currentSpace?.id,
+                        path: itemPath
+                    })
+                });
+            } else {
+                // Delete file
+                response = await fetch(`/applications/wiki/api/documents/${encodeURIComponent(itemPath)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        spaceId: this.currentSpace?.id,
+                        path: itemPath
+                    })
+                });
+            }
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showNotification(`${itemTypeDisplay.charAt(0).toUpperCase() + itemTypeDisplay.slice(1)} "${itemName}" deleted successfully`, 'success');
+                
+                // Refresh the file tree
+                await this.loadFileTree();
+                
+                // If we're currently viewing the deleted item, go back to home
+                if (this.currentDocument && itemType === 'file' && this.currentDocument.path === itemPath) {
+                    this.showHome();
+                }
+            } else {
+                throw new Error(result.message || `Failed to delete ${itemTypeDisplay}`);
+            }
+        } catch (error) {
+            console.error(`Error deleting ${itemTypeDisplay}:`, error);
+            this.showNotification(`Failed to delete ${itemTypeDisplay}`, 'error');
+        }
+    }
+
+    populateFolderLocationSelect() {
+        const select = document.getElementById('folderLocation');
+        if (!select) return;
+
+        // Clear existing options except root
+        select.innerHTML = '<option value="">Root</option>';
+        
+        // Add existing folders as options
+        // This would be populated from the current folder tree
+    }
+
+    populateFileLocationSelect() {
+        const select = document.getElementById('fileLocation');
+        if (!select) return;
+
+        // Clear existing options except root
+        select.innerHTML = '<option value="">Root</option>';
+        
+        // Add existing folders as options
+        // This would be populated from the current folder tree
+    }
+    
+    async populateTemplateSelect() {
+        const select = document.getElementById('fileTemplate');
+        if (!select) return;
+        
+        // Clear existing options except blank document
+        select.innerHTML = '<option value="">Blank Document</option>';
+        
+        try {
+            // Load templates from .templates folder
+            const response = await fetch(`/applications/wiki/api/spaces/${this.currentSpace.id}/templates`);
+            const templates = await response.json();
+            
+            // Add custom templates from .templates folder
+            templates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.path;
+                option.textContent = template.title || template.name;
+                select.appendChild(option);
+            });
+            
+        } catch (error) {
+            console.error('Error loading templates for dropdown:', error);
+            // Fall back to hardcoded templates if API fails
+            const fallbackTemplates = [
+                { value: 'basic', text: 'Basic Article' },
+                { value: 'api', text: 'API Documentation' },
+                { value: 'meeting', text: 'Meeting Notes' },
+                { value: 'requirements', text: 'Requirements Doc' }
+            ];
+            
+            fallbackTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.value;
+                option.textContent = template.text;
+                select.appendChild(option);
+            });
+        }
+    }
+
+    async handleCreateSpace() {
+        const form = document.getElementById('createSpaceForm');
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch('/applications/wiki/api/spaces', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.get('spaceName'),
+                    description: formData.get('spaceDescription'),
+                    visibility: formData.get('spaceVisibility')
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.hideModal('createSpaceModal');
+                form.reset();
+                await this.loadInitialData();
+                this.showNotification('Space created successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to create space');
+            }
+        } catch (error) {
+            console.error('Error creating space:', error);
+            this.showNotification('Failed to create space', 'error');
+        }
+    }
+
+    async handleCreateFolder() {
+        const form = document.getElementById('createFolderForm');
+        const formData = new FormData(form);
+        
+        try {
+            // Use prefilled path if available, otherwise use form selection
+            const parentPath = this.prefilledFolderPath !== null ? 
+                this.prefilledFolderPath : 
+                (formData.get('folderLocation') || '');
+                
+            console.log('Creating folder with parentPath:', parentPath, 'prefilledFolderPath:', this.prefilledFolderPath); // Debug log
+                
+            const response = await fetch('/applications/wiki/api/folders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.get('folderName'),
+                    spaceId: this.currentSpace.id,
+                    parentPath: parentPath
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.hideModal('createFolderModal');
+                form.reset();
+                await this.loadFileTree();
+                this.showNotification('Folder created successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to create folder');
+            }
+        } catch (error) {
+            console.error('Error creating folder:', error);
+            this.showNotification('Failed to create folder', 'error');
+        }
+    }
+
+    async handleCreateFile() {
+        const form = document.getElementById('createFileForm');
+        const formData = new FormData(form);
+        
+        try {
+            const templateContent = await this.getTemplateContent(formData.get('fileTemplate'));
+            
+            // Use prefilled path if available, otherwise use form selection
+            const folderPath = this.prefilledFilePath !== null ? 
+                this.prefilledFilePath : 
+                (formData.get('fileLocation') || '');
+            
+            const response = await fetch('/applications/wiki/api/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: formData.get('fileName').replace('.md', ''),
+                    spaceId: this.currentSpace.id,
+                    folderPath: folderPath,
+                    template: formData.get('fileTemplate'),
+                    content: templateContent
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.hideModal('createFileModal');
+                form.reset();
+                await this.loadFileTree();
+                this.showNotification('File created successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Failed to create file');
+            }
+        } catch (error) {
+            console.error('Error creating file:', error);
+            this.showNotification('Failed to create file', 'error');
+        }
+    }
+
+    async getTemplateContent(templatePath) {
+        if (!templatePath) return '';
+        
+        // Check if it's a custom template from .templates folder (path starts with .templates)
+        if (templatePath.startsWith('.templates/')) {
+            try {
+                const response = await fetch(`/applications/wiki/api/documents/content`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        spaceName: this.currentSpace.name,
+                        path: templatePath
+                    })
+                });
+                
+                const templateDoc = await response.json();
+                return templateDoc.content || '';
+                
+            } catch (error) {
+                console.error('Error loading custom template content:', error);
+                return '';
+            }
+        } else {
+            // Fall back to hardcoded templates for backward compatibility
+            const templates = {
+                basic: '# Document Title\n\n## Overview\n\nDescription of the document.\n\n## Content\n\nYour content here.',
+                api: '# API Documentation\n\n## Endpoint\n\n`GET /api/endpoint`\n\n## Parameters\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| param1 | string | Description |\n\n## Response\n\n```json\n{\n  "status": "success"\n}\n```',
+                meeting: '# Meeting Notes\n\n**Date:** \n**Attendees:** \n**Agenda:** \n\n## Discussion\n\n## Action Items\n\n- [ ] Task 1\n- [ ] Task 2',
+                requirements: '# Requirements Document\n\n## Purpose\n\n## Scope\n\n## Requirements\n\n### Functional Requirements\n\n### Non-Functional Requirements\n\n## Acceptance Criteria'
+            };
+            return templates[templatePath] || '';
+        }
+    }
+
+    getSpaceIcon(spaceName) {
+        // Map space names to appropriate Font Awesome icon names
+        const iconMappings = {
+            'Architecture Documentation': 'sitemap',
+            'Business Requirements': 'briefcase',
+            'Development Guidelines': 'code',
+            'API Documentation': 'plug',
+            'Meeting Notes': 'sticky-note',
+            'My Cool Space': 'folder'
+        };
+
+        // Look for keywords in space name if exact match not found
+        const name = spaceName.toLowerCase();
+        if (iconMappings[spaceName]) {
+            return iconMappings[spaceName];
+        } else if (name.includes('architecture')) {
+            return 'sitemap';
+        } else if (name.includes('business') || name.includes('requirement')) {
+            return 'briefcase';
+        } else if (name.includes('development') || name.includes('code')) {
+            return 'code';
+        } else if (name.includes('api')) {
+            return 'plug';
+        } else if (name.includes('meeting') || name.includes('notes')) {
+            return 'sticky-note';
+        } else {
+            return 'folder';
+        }
+    }
+
+    // View methods
+    async showHome() {
+        this.setActiveView('home');
+        this.setActiveShortcut('shortcutHome');
+        this.currentView = 'home';
+        
+        // Restore full home view
+        this.restoreHomeView();
+        
+        // Load recent files for the homepage
+        await this.loadRecentFiles();
+        this.loadStarredFiles();
+    }
+
+    showRecent() {
+        this.setActiveView('home');
+        this.setActiveShortcut('shortcutRecent');
+        this.currentView = 'recent';
+        
+        // Update workspace title
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Recent Documents';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Documents you have recently accessed';
+        
+        // Hide starred section and show only recent
+        this.showRecentOnlyView();
+        
+        // Hide template button
+        this.hideTemplateButton();
+    }
+
+    showStarred() {
+        this.setActiveView('home');
+        this.setActiveShortcut('shortcutStarred');
+        this.currentView = 'starred';
+        
+        // Update workspace title
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Starred Documents';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Documents you have marked as favorites';
+        
+        // Hide recent section and show only starred
+        this.showStarredOnlyView();
+        
+        // Hide template button
+        this.hideTemplateButton();
+    }
+
+    showTemplates() {
+        this.setActiveView('home');
+        this.setActiveShortcut('shortcutTemplates');
+        this.currentView = 'templates';
+        
+        // Update workspace title
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Document Templates';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Reusable templates for creating new documents';
+        
+        // Hide other sections and show only templates
+        this.showTemplatesOnlyView();
+    }
+    
+    showRecentOnlyView() {
+        // Hide starred and templates sections, show only recent
+        const starredSection = document.querySelector('.content-sections section:nth-child(2)');
+        const templatesSection = document.querySelector('.content-sections section:nth-child(3)');
+        
+        if (starredSection) starredSection.style.display = 'none';
+        if (templatesSection) templatesSection.style.display = 'none';
+        
+        // Load recent files
+        this.loadRecentFiles();
+    }
+    
+    showStarredOnlyView() {
+        // Hide recent and templates sections, show only starred
+        const recentSection = document.querySelector('.content-sections section:nth-child(1)');
+        const templatesSection = document.querySelector('.content-sections section:nth-child(3)');
+        
+        if (recentSection) recentSection.style.display = 'none';
+        if (templatesSection) templatesSection.style.display = 'none';
+        
+        // Load starred files
+        this.loadStarredFiles();
+    }
+    
+    showTemplatesOnlyView() {
+        // Hide recent and starred sections, show only templates
+        const recentSection = document.querySelector('.content-sections section:nth-child(1)');
+        const starredSection = document.querySelector('.content-sections section:nth-child(2)');
+        
+        if (recentSection) recentSection.style.display = 'none';
+        if (starredSection) starredSection.style.display = 'none';
+        
+        // Make sure templates section is visible
+        const templatesSection = document.querySelector('.content-sections section:nth-child(3)');
+        if (templatesSection) templatesSection.style.display = 'block';
+        
+        // Load templates
+        this.loadTemplates();
+    }
+    
+    restoreHomeView() {
+        // Show all sections
+        const sections = document.querySelectorAll('.content-sections section');
+        sections.forEach(section => section.style.display = 'block');
+        
+        // Restore original titles
+        const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubtitle = document.getElementById('workspaceSubtitle');
+        if (workspaceTitle) workspaceTitle.textContent = 'Welcome to Architecture Artifacts';
+        if (workspaceSubtitle) workspaceSubtitle.textContent = 'Your documentation workspace dashboard';
+        
+        // Hide template button
+        this.hideTemplateButton();
+    }
+
+    setActiveView(viewName) {
+        document.querySelectorAll('.view').forEach(view => {
+            view.classList.add('hidden');
+        });
+        
+        const targetView = document.getElementById(`${viewName}View`);
+        if (targetView) {
+            targetView.classList.remove('hidden');
+        }
+    }
+
+    setActiveShortcut(shortcutId) {
+        document.querySelectorAll('.shortcut-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        const activeShortcut = document.getElementById(shortcutId);
+        if (activeShortcut) {
+            activeShortcut.classList.add('active');
+        }
+    }
+
+    async openDocument(documentId) {
+        try {
+            const response = await fetch(`/applications/wiki/api/documents/${documentId}`);
+            const document = await response.json();
+            
+            this.currentDocument = document;
+            this.showDocumentView(document);
+        } catch (error) {
+            console.error('Error loading document:', error);
+            this.showNotification('Failed to load document', 'error');
+        }
+    }
+
+    async openDocumentByPath(documentPath, spaceName) {
+        try {
+            // Use enhanced API to get file content with metadata
+            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(documentPath)}&spaceName=${encodeURIComponent(spaceName)}&enhanced=true`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load document: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            const { content, metadata } = data;
+            
+            const document = {
+                title: documentPath.split('/').pop(),
+                path: documentPath,
+                spaceName: spaceName,
+                content: content,
+                metadata: metadata
+            };
+            
+            this.currentDocument = document;
+            this.showEnhancedDocumentView(document);
+        } catch (error) {
+            console.error('Error loading document by path:', error);
+            
+            // Fallback: create a basic document structure
+            const document = {
+                title: documentPath.split('/').pop(),
+                path: documentPath,
+                spaceName: spaceName,
+                content: `# ${documentPath.split('/').pop()}\n\nFailed to load content from ${documentPath}`,
+                metadata: { category: 'markdown', viewer: 'markdown' }
+            };
+            
+            this.currentDocument = document;
+            this.showEnhancedDocumentView(document);
+            this.showNotification('Failed to load document content', 'error');
+        }
+    }
+
+    // Enhanced document viewer that routes to appropriate viewer based on file type
+    showEnhancedDocumentView(document) {
+        const viewer = document.metadata?.viewer || 'default';
+        
+        switch (viewer) {
+            case 'pdf':
+                this.showPdfViewer(document);
+                break;
+            case 'image':
+                this.showImageViewer(document);
+                break;
+            case 'text':
+                this.showTextViewer(document);
+                break;
+            case 'code':
+                this.showCodeViewer(document);
+                break;
+            case 'markdown':
+                this.showMarkdownViewer(document);
+                break;
+            default:
+                this.showDefaultViewer(document);
+                break;
+        }
+    }
+
+    // PDF Viewer Implementation
+    showPdfViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (!contentElement) return;
+        
+        const pdfUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}`;
+        const downloadUrl = pdfUrl + '&download=true';
+        
+        // Remove any existing content after header and add PDF viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper pdf-viewer';
+        contentWrapper.innerHTML = `
+            <div class="pdf-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-file-pdf" style="color: #dc3545;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                </div>
+            </div>
+            <div class="pdf-container">
+                <iframe src="${pdfUrl}" width="100%" height="calc(100vh - 160px)" style="border: none; border-radius: 8px;"></iframe>
+            </div>
+        `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Image Viewer Implementation  
+    showImageViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (!contentElement) return;
+        
+        const imageUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}`;
+        const downloadUrl = imageUrl + '&download=true';
+        
+        // Remove any existing content after header and add image viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper image-viewer';
+        contentWrapper.innerHTML = `
+            <div class="image-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-image" style="color: #17a2b8;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="${imageUrl}" alt="${doc.metadata.fileName}" class="image-content" />
+            </div>
+        `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Text File Viewer Implementation
+    showTextViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (!contentElement) return;
+        
+        const lines = doc.content.split('\n');
+        const numberedLines = lines.map((line, index) => `${(index + 1).toString().padStart(4, ' ')}: ${this.escapeHtml(line)}`).join('\n');
+        
+        // Remove any existing content after header and add text viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper text-viewer';
+        contentWrapper.innerHTML = `
+            <div class="text-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-file-text" style="color: #6c757d;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                    <span class="line-count">${lines.length} lines</span>
+                </div>
+                <div class="text-controls">
+                    <label class="control-label">
+                        <input type="checkbox" id="showLineNumbers" checked> Line Numbers
+                    </label>
+                    <label class="control-label">
+                        <input type="checkbox" id="wrapText"> Line Wrap
+                    </label>
+                </div>
+            </div>
+            <div class="text-container">
+                <pre id="textContent" class="text-content with-numbers">${numberedLines}</pre>
+            </div>
+        `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
+        // Bind text viewer controls
+        const showLineNumbersCheckbox = document.getElementById('showLineNumbers');
+        const wrapTextCheckbox = document.getElementById('wrapText');
+        const textContent = document.getElementById('textContent');
+        
+        showLineNumbersCheckbox?.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                textContent.textContent = numberedLines;
+                textContent.className = 'text-content with-numbers';
+            } else {
+                textContent.textContent = doc.content;
+                textContent.className = 'text-content';
+            }
+        });
+        
+        wrapTextCheckbox?.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                textContent.style.whiteSpace = 'pre-wrap';
+            } else {
+                textContent.style.whiteSpace = 'pre';
+            }
+        });
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Code Viewer Implementation
+    showCodeViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (!contentElement) return;
+        
+        const language = this.getLanguageFromExtension(doc.metadata.extension);
+        const lines = doc.content.split('\n').length;
+        
+        // Remove any existing content after header and add code viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper code-viewer';
+        contentWrapper.innerHTML = `
+            <div class="code-info-bar">
+                <div class="file-info">
+                    <i class="fas fa-file-code" style="color: #28a745;"></i>
+                    <span class="file-name">${doc.metadata.fileName}</span>
+                    <span class="file-size">${this.formatFileSize(doc.metadata.size)}</span>
+                    <span class="line-count">${lines} lines</span>
+                    <span class="language-badge">${language}</span>
+                </div>
+            </div>
+            <div class="code-container">
+                <pre class="line-numbers"><code class="language-${language}" id="codeContent">${this.escapeHtml(doc.content)}</code></pre>
+            </div>
+        `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
+        // Apply syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            setTimeout(() => {
+                Prism.highlightAllUnder(contentWrapper);
+            }, 100);
+        }
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Markdown Viewer Implementation (enhanced version of existing)
+    showMarkdownViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (!contentElement) return;
+        
+        // Remove any existing content after header and add markdown viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper markdown-viewer';
+        
+        if (typeof marked !== 'undefined') {
+            const renderedContent = marked.parse(doc.content);
+            contentWrapper.innerHTML = `
+                <div class="markdown-content">
+                    ${renderedContent}
+                </div>
+            `;
+            
+            // Apply syntax highlighting to code blocks
+            if (typeof Prism !== 'undefined') {
+                setTimeout(() => Prism.highlightAllUnder(contentWrapper), 100);
+            }
+        } else {
+            contentWrapper.innerHTML = `<pre class="markdown-fallback">${this.escapeHtml(doc.content)}</pre>`;
+        }
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Default/Fallback Viewer Implementation
+    showDefaultViewer(doc) {
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        this.updateDocumentHeader(doc);
+        
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (!contentElement) return;
+        
+        const downloadUrl = `/applications/wiki/api/documents/content?path=${encodeURIComponent(doc.path)}&spaceName=${encodeURIComponent(doc.spaceName)}&download=true`;
+        
+        // Remove any existing content after header and add default viewer
+        const header = contentElement.querySelector('.document-header');
+        const existingContent = contentElement.querySelector('.document-content-wrapper');
+        if (existingContent) existingContent.remove();
+        
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'document-content-wrapper default-viewer';
+        contentWrapper.innerHTML = `
+            <div class="default-content">
+                <div class="file-icon-large">
+                    <i class="fas fa-file" style="font-size: 4rem; color: #6c757d;"></i>
+                </div>
+                <div class="file-details">
+                    <h3>${doc.metadata.fileName}</h3>
+                    <p class="file-meta">
+                        <span>Size: ${this.formatFileSize(doc.metadata.size)}</span><br>
+                        <span>Modified: ${this.formatDate(doc.metadata.modified)}</span><br>
+                        <span>Type: ${doc.metadata.extension || 'Unknown'}</span>
+                    </p>
+                    <p class="file-description">
+                        This file type is not supported for inline viewing. You can download it to view with an appropriate application.
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        contentElement.appendChild(contentWrapper);
+        
+        // Setup download button functionality
+        this.setupDownloadButton(downloadUrl, doc.metadata.fileName);
+        
+        // Setup star button functionality
+        this.setupStarButton(doc);
+        
+        // Track document visit
+        this.trackDocumentVisit(doc, 'viewed');
+        
+        this.bindDocumentViewEvents();
+    }
+
+    // Helper method to update document header
+    updateDocumentHeader(doc) {
+        const docTitle = document.getElementById('currentDocTitle');
+        if (docTitle) {
+            docTitle.textContent = doc.title;
+        }
+        
+        const backToSpace = document.getElementById('docBackToSpace');
+        if (backToSpace) {
+            backToSpace.textContent = doc.spaceName || 'Space';
+        }
+        
+        // Show/hide edit button based on file type
+        this.updateEditButton(doc);
+    }
+    
+    // Helper method to setup download button functionality
+    setupDownloadButton(downloadUrl, fileName) {
+        const downloadBtn = document.getElementById('downloadDocBtn');
+        if (downloadBtn) {
+            downloadBtn.onclick = (e) => {
+                e.preventDefault();
+                // Create temporary link for download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+        }
+    }
+    
+    // Helper method to setup star button functionality
+    setupStarButton(documentData) {
+        const starBtn = document.getElementById('starDocBtn');
+        if (starBtn) {
+            // Remove existing event listener
+            starBtn.onclick = null;
+            
+            // Update UI based on current star status
+            this.updateStarButtonUI(documentData);
+            
+            // Add click handler
+            starBtn.onclick = (e) => {
+                e.preventDefault();
+                this.toggleDocumentStar(documentData);
+            };
+        }
+    }
+    
+    // Helper method to update edit button visibility
+    updateEditButton(doc) {
+        const editBtn = document.getElementById('editDocBtn');
+        if (!editBtn) return;
+        
+        // Check if file type is editable
+        const viewer = doc.metadata?.viewer || 'default';
+        const isEditable = ['markdown', 'text', 'code', 'web', 'data'].includes(viewer);
+        
+        if (isEditable) {
+            editBtn.style.display = 'flex';
+        } else {
+            editBtn.style.display = 'none';
+        }
+    }
+
+    // Utility methods
+    showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        const overlay = document.getElementById('overlay');
+        
+        if (modal && overlay) {
+            modal.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+        }
+    }
+
+    hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        const overlay = document.getElementById('overlay');
+        
+        if (modal && overlay) {
+            modal.classList.add('hidden');
+            overlay.classList.add('hidden');
+            
+            // Clean up context menu prefilled paths and show location dropdowns again
+            if (modalId === 'createFolderModal') {
+                this.prefilledFolderPath = null;
+                const folderLocationSelect = document.getElementById('folderLocation');
+                const locationGroup = folderLocationSelect?.parentElement;
+                if (locationGroup) {
+                    locationGroup.style.display = 'block';
+                }
+            } else if (modalId === 'createFileModal') {
+                this.prefilledFilePath = null;
+                const fileLocationSelect = document.getElementById('fileLocation');
+                const locationGroup = fileLocationSelect?.parentElement;
+                if (locationGroup) {
+                    locationGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+
+    hideAllModals() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.add('hidden');
+        });
+        document.getElementById('overlay')?.classList.add('hidden');
+    }
+
+    showNotification(message, type = 'info') {
+        // Create a simple notification system
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Login/Logout methods
+    showLogin() {
+        document.getElementById('loginPage').classList.remove('hidden');
+        document.getElementById('wikiApp').classList.add('hidden');
     }
 
     async handleLogin() {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        const errorDiv = document.getElementById('loginError');
-
+        
         try {
             const response = await fetch('/applications/wiki/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
 
-            const data = await response.json();
-
-            if (data.success) {
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('wikiApp').classList.remove('hidden');
                 await this.loadInitialData();
                 this.showHome();
             } else {
-                errorDiv.textContent = data.message || 'Invalid credentials';
-                errorDiv.classList.remove('hidden');
+                document.getElementById('loginError').textContent = result.message || 'Login failed';
+                document.getElementById('loginError').classList.remove('hidden');
             }
         } catch (error) {
             console.error('Login error:', error);
-            errorDiv.textContent = 'Login failed. Please try again.';
-            errorDiv.classList.remove('hidden');
+            document.getElementById('loginError').textContent = 'Login failed';
+            document.getElementById('loginError').classList.remove('hidden');
         }
     }
 
     async handleLogout() {
         try {
-            await fetch('/applications/wiki/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            this.showLogin();
+            await fetch('/applications/wiki/logout', { method: 'POST' });
         } catch (error) {
             console.error('Logout error:', error);
-            this.showLogin();
         }
-    }
-
-    showLogin() {
-        this.hideAllViews();
-        document.getElementById('loginPage').classList.remove('hidden');
+        
+        this.showLogin();
         this.currentView = 'login';
-        this.updateNavigation();
+        this.currentSpace = null;
+        this.currentDocument = null;
     }
 
-    showHome() {
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
-        document.getElementById('homeView').classList.remove('hidden');
-        this.currentView = 'home';
-        this.updateNavigation();
-        this.loadHomeData();
-    }
+    async performSearch() {
+        const query = document.getElementById('globalSearch').value.trim();
+        if (!query) return;
 
-    showSpaces() {
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
-        document.getElementById('spacesView').classList.remove('hidden');
-        this.currentView = 'spaces';
-        this.updateNavigation();
-        this.loadSpacesView();
-    }
-
-    showSpace(space) {
-        this.currentSpace = space;
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
-        document.getElementById('spaceView').classList.remove('hidden');
-        this.currentView = 'space';
-        this.updateNavigation();
-        this.loadSpaceView(space);
-    }
-
-    showEditor(document = null) {
-        this.currentDocument = document;
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
-        document.getElementById('editorView').classList.remove('hidden');
-        this.currentView = 'editor';
-        this.updateNavigation();
-        this.initEditor(document);
-    }
-
-    showDocument(document) {
-        this.currentDocument = document;
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
-        document.getElementById('documentView').classList.remove('hidden');
-        this.currentView = 'document';
-        this.updateNavigation();
-        this.loadDocumentView(document);
-    }
-
-    showSearch(query) {
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
-        document.getElementById('searchView').classList.remove('hidden');
-        this.currentView = 'search';
-        this.updateNavigation();
-        this.performSearch(query);
-    }
-
-    showTemplates() {
-        // Implement templates view
-        console.log('Templates view - to be implemented');
-    }
-
-    hideAllViews() {
-        document.getElementById('loginPage').classList.add('hidden');
-        document.getElementById('wikiApp').classList.add('hidden');
-        document.querySelectorAll('.view').forEach(view => {
-            view.classList.add('hidden');
-        });
-    }
-
-    updateNavigation() {
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-
-        switch (this.currentView) {
-            case 'home':
-                document.getElementById('homeLink').classList.add('active');
-                break;
-            case 'spaces':
-            case 'space':
-                document.getElementById('spacesLink').classList.add('active');
-                break;
-            case 'editor':
-                document.getElementById('createLink').classList.add('active');
-                break;
-            case 'templates':
-                document.getElementById('templatesLink').classList.add('active');
-                break;
-        }
-    }
-
-    updateSidebar() {
-        this.updateSpacesList();
-        this.updateRecentList();
-    }
-
-    updateSpacesList() {
-        const spacesList = document.getElementById('spacesList');
-        spacesList.innerHTML = '';
-
-        this.data.spaces.forEach(space => {
-            const spaceItem = document.createElement('a');
-            spaceItem.href = '#';
-            spaceItem.className = 'space-item';
-            spaceItem.innerHTML = `
-                <svg class="space-icon" width="16" height="16">
-                    <use href="#icon-folder"></use>
-                </svg>
-                <span>${space.name}</span>
-            `;
-            spaceItem.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showSpace(space);
-            });
-            spacesList.appendChild(spaceItem);
-        });
-    }
-
-    updateRecentList() {
-        const recentList = document.getElementById('recentList');
-        recentList.innerHTML = '';
-
-        this.data.recent.forEach(item => {
-            const recentItem = document.createElement('a');
-            recentItem.href = '#';
-            recentItem.className = 'recent-item';
-            const iconId = item.type === 'space' ? 'icon-folder' : 'icon-file';
-            recentItem.innerHTML = `
-                <svg class="recent-icon" width="16" height="16">
-                    <use href="#${iconId}"></use>
-                </svg>
-                <span>${item.title}</span>
-            `;
-            recentItem.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (item.type === 'space') {
-                    this.showSpace(item);
-                } else {
-                    this.showDocument(item);
-                }
-            });
-            recentList.appendChild(recentItem);
-        });
-    }
-
-    async loadHomeData() {
-        try {
-            const [recentModifiedRes, popularRes] = await Promise.all([
-                fetch('/applications/wiki/api/documents/recent'),
-                fetch('/applications/wiki/api/documents/popular')
-            ]);
-
-            const recentModified = await recentModifiedRes.json();
-            const popularContent = await popularRes.json();
-
-            this.renderRecentlyModified(recentModified);
-            this.renderPopularContent(popularContent);
-        } catch (error) {
-            console.error('Failed to load home data:', error);
-        }
-    }
-
-    renderRecentlyModified(documents) {
-        const container = document.getElementById('recentlyModified');
-        container.innerHTML = '';
-
-        if (documents.length === 0) {
-            container.innerHTML = '<p class="text-tertiary">No recent documents</p>';
-            return;
-        }
-
-        documents.forEach(doc => {
-            const item = document.createElement('div');
-            item.className = 'widget-item';
-            item.innerHTML = `
-                <div class="widget-item-title">
-                    <a href="#" data-doc-id="${doc.id}">${doc.title}</a>
-                </div>
-                <div class="widget-item-meta">
-                    <span>${doc.spaceName}</span> • 
-                    <span>${this.formatDate(doc.modifiedAt)}</span>
-                </div>
-            `;
-            item.querySelector('a').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showDocument(doc);
-            });
-            container.appendChild(item);
-        });
-    }
-
-    renderPopularContent(documents) {
-        const container = document.getElementById('popularContent');
-        container.innerHTML = '';
-
-        if (documents.length === 0) {
-            container.innerHTML = '<p class="text-tertiary">No popular content yet</p>';
-            return;
-        }
-
-        documents.forEach(doc => {
-            const item = document.createElement('div');
-            item.className = 'widget-item';
-            item.innerHTML = `
-                <div class="widget-item-title">
-                    <a href="#" data-doc-id="${doc.id}">${doc.title}</a>
-                </div>
-                <div class="widget-item-meta">
-                    <span>${doc.spaceName}</span> • 
-                    <span>${doc.views} views</span>
-                </div>
-            `;
-            item.querySelector('a').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showDocument(doc);
-            });
-            container.appendChild(item);
-        });
-    }
-
-    loadSpacesView() {
-        const spacesGrid = document.getElementById('spacesGrid');
-        spacesGrid.innerHTML = '';
-
-        this.data.spaces.forEach(space => {
-            const spaceCard = document.createElement('div');
-            spaceCard.className = 'space-card glassmorphism';
-            spaceCard.innerHTML = `
-                <h3>${space.name}</h3>
-                <p>${space.description || 'No description'}</p>
-                <div class="space-meta">
-                    <span>${space.documentCount || 0} documents</span>
-                    <span>Updated ${this.formatDate(space.updatedAt)}</span>
-                </div>
-            `;
-            spaceCard.addEventListener('click', () => {
-                this.showSpace(space);
-            });
-            spacesGrid.appendChild(spaceCard);
-        });
-    }
-
-    async loadSpaceView(space) {
-        document.getElementById('currentSpaceName').textContent = space.name;
-        
-        try {
-            const response = await fetch(`/applications/wiki/api/spaces/${space.id}/documents`);
-            const documents = await response.json();
-            
-            const spaceContent = document.getElementById('spaceContent');
-            spaceContent.innerHTML = '';
-
-            if (documents.length === 0) {
-                spaceContent.innerHTML = `
-                    <div class="empty-state glassmorphism">
-                        <h3>No documents yet</h3>
-                        <p>Create your first document in this space.</p>
-                        <button class="btn btn-primary" onclick="app.createDocumentInSpace()">
-                            + Create Document
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-
-            const documentsGrid = document.createElement('div');
-            documentsGrid.className = 'documents-grid';
-            
-            documents.forEach(doc => {
-                const docCard = document.createElement('div');
-                docCard.className = 'document-card glassmorphism';
-                docCard.innerHTML = `
-                    <h4>${doc.title}</h4>
-                    <p>${doc.excerpt || 'No preview available'}</p>
-                    <div class="document-meta">
-                        <span>Modified ${this.formatDate(doc.modifiedAt)}</span>
-                        <span>by ${doc.author}</span>
-                    </div>
-                `;
-                docCard.addEventListener('click', () => {
-                    this.showDocument(doc);
-                });
-                documentsGrid.appendChild(docCard);
-            });
-            
-            spaceContent.appendChild(documentsGrid);
-        } catch (error) {
-            console.error('Failed to load space documents:', error);
-        }
-    }
-
-    initEditor(document = null) {
-        const titleInput = document.getElementById('docTitle');
-        const textarea = document.getElementById('editorTextarea');
-        
-        if (document) {
-            titleInput.value = document.title || '';
-            textarea.value = document.content || '';
-        } else {
-            titleInput.value = '';
-            textarea.value = '';
-        }
-
-        // Auto-save functionality
-        let saveTimeout;
-        const autoSave = () => {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-                this.saveDocument(true); // Auto-save
-            }, 5000);
-        };
-
-        titleInput.addEventListener('input', autoSave);
-        textarea.addEventListener('input', autoSave);
-    }
-
-    togglePreview() {
-        const editorPane = document.getElementById('markdownEditor');
-        const previewPane = document.getElementById('previewPane');
-        const previewBtn = document.getElementById('previewDoc');
-        
-        if (previewPane.classList.contains('hidden')) {
-            // Show split view
-            const content = document.getElementById('editorTextarea').value;
-            const previewContent = document.getElementById('previewContent');
-            
-            if (typeof marked !== 'undefined') {
-                previewContent.innerHTML = marked.parse(content);
-            } else {
-                previewContent.innerHTML = '<p>Markdown parser not available</p>';
-            }
-            
-            editorPane.classList.add('split');
-            previewPane.classList.remove('hidden');
-            previewBtn.textContent = 'Hide Preview';
-        } else {
-            // Hide preview
-            editorPane.classList.remove('split');
-            previewPane.classList.add('hidden');
-            previewBtn.textContent = 'Preview';
-        }
-    }
-
-    async saveDocument(isAutoSave = false) {
-        const title = document.getElementById('docTitle').value.trim();
-        const content = document.getElementById('editorTextarea').value;
-        
-        if (!title && !isAutoSave) {
-            alert('Please enter a document title');
-            return;
-        }
-
-        const documentData = {
-            title: title || 'Untitled',
-            content: content,
-            spaceId: this.currentSpace?.id || null
-        };
-
-        if (this.currentDocument?.id) {
-            documentData.id = this.currentDocument.id;
-        }
-
-        try {
-            const response = await fetch('/applications/wiki/api/documents', {
-                method: this.currentDocument?.id ? 'PUT' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(documentData)
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                this.currentDocument = result.document;
-                if (!isAutoSave) {
-                    this.showNotification('Document saved successfully', 'success');
-                }
-                // Refresh data
-                await this.loadInitialData();
-            } else {
-                if (!isAutoSave) {
-                    this.showNotification(result.message || 'Failed to save document', 'error');
-                }
-            }
-        } catch (error) {
-            console.error('Save error:', error);
-            if (!isAutoSave) {
-                this.showNotification('Failed to save document', 'error');
-            }
-        }
-    }
-
-    closeEditor() {
-        if (this.currentSpace) {
-            this.showSpace(this.currentSpace);
-        } else {
-            this.showHome();
-        }
-    }
-
-    async loadDocumentView(document) {
-        document.getElementById('currentDocTitle').textContent = document.title;
-        
-        try {
-            const response = await fetch(`/applications/wiki/api/documents/${document.id}`);
-            const fullDocument = await response.json();
-            
-            const content = document.getElementById('documentContent');
-            if (typeof marked !== 'undefined') {
-                content.innerHTML = marked.parse(fullDocument.content || '');
-            } else {
-                content.innerHTML = '<pre>' + (fullDocument.content || 'Content not available') + '</pre>';
-            }
-        } catch (error) {
-            console.error('Failed to load document:', error);
-            document.getElementById('documentContent').innerHTML = '<p>Failed to load document content</p>';
-        }
-    }
-
-    editCurrentDocument() {
-        this.showEditor(this.currentDocument);
-    }
-
-    shareDocument() {
-        // Implement document sharing
-        const shareUrl = `${window.location.origin}/applications/wiki/doc/${this.currentDocument.id}`;
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            this.showNotification('Share link copied to clipboard', 'success');
-        }).catch(() => {
-            this.showNotification('Failed to copy share link', 'error');
-        });
-    }
-
-    showDocumentHistory() {
-        // Implement document history view
-        console.log('Document history - to be implemented');
-    }
-
-    createDocumentInSpace() {
-        this.showEditor();
-    }
-
-    showSpaceSettings() {
-        // Implement space settings
-        console.log('Space settings - to be implemented');
-    }
-
-    async performSearch(query) {
-        if (!query.trim()) return;
-
-        document.getElementById('searchQuery').textContent = `"${query}"`;
-        
         try {
             const response = await fetch(`/applications/wiki/api/search?q=${encodeURIComponent(query)}`);
             const results = await response.json();
             
-            this.renderSearchResults(results);
+            this.showSearchResults(query, results);
         } catch (error) {
-            console.error('Search failed:', error);
-            this.renderSearchResults([]);
+            console.error('Search error:', error);
+            this.showNotification('Search failed', 'error');
         }
     }
 
-    renderSearchResults(results) {
-        const container = document.getElementById('searchResults');
-        container.innerHTML = '';
+    showSearchResults(query, results) {
+        // Implementation for showing search results
+        console.log('Search results:', results);
+    }
 
-        if (results.length === 0) {
+    // Placeholder methods for not-yet-implemented features
+    async loadRecentFiles() {
+        const container = document.getElementById('recentFilesContent');
+        if (!container) return;
+        
+        try {
+            // Use activity data for recent files
+            const recentFiles = this.data.recent || [];
+            
+            if (recentFiles.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content-message">
+                        <svg width="48" height="48" class="no-content-icon">
+                            <use href="#icon-history"></use>
+                        </svg>
+                        <p>No recent files found</p>
+                        <small>Files you access will appear here</small>
+                    </div>
+                `;
+                return;
+            }
+            
             container.innerHTML = `
-                <div class="empty-state glassmorphism">
-                    <h3>No results found</h3>
-                    <p>Try different keywords or check your spelling.</p>
+                <div class="items-grid">
+                    ${recentFiles.map(file => {
+                        const fileTypeInfo = this.getFileTypeInfo(file.path);
+                        const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                        const iconColor = fileTypeInfo.color;
+                        const fileName = this.getFileNameFromPath(file.path);
+                        
+                        return `
+                            <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.space}">
+                                <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">${fileName}</div>
+                                    <div class="item-meta">File • ${fileTypeInfo.category} • Visited ${this.formatDate(file.lastVisited)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // Bind click events
+            container.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const documentPath = card.dataset.documentPath;
+                    const spaceName = card.dataset.spaceName;
+                    this.openDocumentByPath(documentPath, spaceName);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading recent files:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <p>Error loading recent files</p>
+                </div>
+            `;
+        }
+    }
+
+    loadStarredFiles() {
+        const container = document.getElementById('starredFilesContent');
+        if (!container) return;
+        
+        try {
+            // Use activity data for starred files
+            const starredFiles = this.data.starred || [];
+            
+            if (starredFiles.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content-message">
+                        <svg width="48" height="48" class="no-content-icon">
+                            <use href="#icon-star"></use>
+                        </svg>
+                        <p>No starred files found</p>
+                        <small>Star files to see them here</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="items-grid">
+                    ${starredFiles.map(file => {
+                        const fileTypeInfo = this.getFileTypeInfo(file.path);
+                        const iconClass = this.getFileTypeIconClass(fileTypeInfo.category);
+                        const iconColor = fileTypeInfo.color;
+                        const fileName = this.getFileNameFromPath(file.path);
+                        
+                        return `
+                            <div class="item-card file-card" data-document-path="${file.path}" data-space-name="${file.space}">
+                                <i class="fas ${iconClass} item-icon" style="color: ${iconColor}; font-size: 24px;"></i>
+                                <div class="item-info">
+                                    <div class="item-name">${fileName}</div>
+                                    <div class="item-meta">File • ${fileTypeInfo.category} • Starred ${this.formatDate(file.starredAt)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // Bind click events
+            container.querySelectorAll('.file-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const documentPath = card.dataset.documentPath;
+                    const spaceName = card.dataset.spaceName;
+                    this.openDocumentByPath(documentPath, spaceName);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading starred files:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <p>Error loading starred files</p>
+                </div>
+            `;
+        }
+    }
+
+    async loadTemplates() {
+        console.log('Loading templates...');
+        
+        const container = document.getElementById('templatesContent');
+        if (!container) return;
+        
+        if (!this.currentSpace) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-clipboard"></use>
+                    </svg>
+                    <p>Select a space to view templates</p>
                 </div>
             `;
             return;
         }
-
-        results.forEach(result => {
-            const resultCard = document.createElement('div');
-            resultCard.className = 'search-result';
-            resultCard.innerHTML = `
-                <h3>${result.title}</h3>
-                <p>${result.excerpt}</p>
-                <div class="search-meta">
-                    <span>${result.spaceName}</span> • 
-                    <span>Modified ${this.formatDate(result.modifiedAt)}</span>
+        
+        try {
+            // Try to load templates from backend API
+            const response = await fetch(`/applications/wiki/api/spaces/${this.currentSpace.id}/templates`);
+            
+            if (!response.ok) {
+                throw new Error(`Templates API returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const templates = await response.json();
+            this.renderTemplatesContent(templates);
+            
+        } catch (error) {
+            console.log('Templates API error:', error.message);
+            // Show built-in templates fallback
+            this.renderTemplatesFallback();
+        }
+    }
+    
+    showTemplateButton() {
+        const templatesBtn = document.getElementById('templatesNewBtn');
+        const createFileBtn = document.getElementById('createFileBtn');
+        
+        // Show template button
+        if (templatesBtn) {
+            templatesBtn.style.display = 'block';
+            // Bind the click event if not already bound
+            if (!templatesBtn._templatesBound) {
+                templatesBtn.addEventListener('click', () => this.createNewTemplate());
+                templatesBtn._templatesBound = true;
+            }
+        }
+        
+        // Hide create file button when in templates view
+        if (createFileBtn) {
+            createFileBtn.style.display = 'none';
+        }
+    }
+    
+    hideTemplateButton() {
+        const templatesBtn = document.getElementById('templatesNewBtn');
+        const createFileBtn = document.getElementById('createFileBtn');
+        
+        // Hide template button
+        if (templatesBtn) {
+            templatesBtn.style.display = 'none';
+        }
+        
+        // Show create file button when not in templates view
+        if (createFileBtn) {
+            createFileBtn.style.display = 'block';
+        }
+    }
+    
+    renderTemplatesContent(templates) {
+        const container = document.getElementById('templatesContent');
+        if (!container) return;
+        
+        if (templates.length === 0) {
+            container.innerHTML = `
+                <div class="no-content-message">
+                    <svg width="48" height="48" class="no-content-icon">
+                        <use href="#icon-clipboard"></use>
+                    </svg>
+                    <p>No templates found</p>
+                    <button id="createFirstTemplate" class="btn btn-primary">
+                        <svg width="16" height="16">
+                            <use href="#icon-plus"></use>
+                        </svg>
+                        Create First Template
+                    </button>
                 </div>
             `;
-            resultCard.addEventListener('click', () => {
-                this.showDocument(result);
+            
+            // Bind create first template button
+            document.getElementById('createFirstTemplate')?.addEventListener('click', () => {
+                this.createNewTemplate();
             });
-            container.appendChild(resultCard);
+        } else {
+            // Render templates with create button
+            container.innerHTML = `
+                <div class="templates-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                    ${templates.map(template => `
+                        <div class="template-card" data-template-path="${template.path}" style="border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s ease; background: var(--card);">
+                            <div class="template-icon" style="width: 48px; height: 48px; background: var(--accent-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--accent);">
+                                <svg width="24" height="24">
+                                    <use href="#icon-clipboard"></use>
+                                </svg>
+                            </div>
+                            <div class="template-info">
+                                <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--foreground);">${template.title || template.name}</h4>
+                                <p class="template-meta" style="margin: 0; font-size: 13px; color: var(--muted-foreground);">Custom Template • ${template.lastModified ? new Date(template.lastModified).toLocaleDateString() : ''}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Bind template card clicks
+            container.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const templatePath = card.dataset.templatePath;
+                    this.editTemplate(templatePath);
+                });
+            });
+            
+            
+            // Add hover styles
+            const style = document.createElement('style');
+            style.textContent = `
+                .template-card:hover {
+                    border-color: var(--accent) !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                }
+            `;
+            container.appendChild(style);
+        }
+        
+        // Show the template button in the header
+        this.showTemplateButton();
+    }
+    
+    renderTemplatesFallback() {
+        const container = document.getElementById('templatesContent');
+        if (!container) return;
+        
+        // Show a nice fallback with built-in templates until backend is ready
+        const fallbackTemplates = [
+            {
+                name: 'Basic Document',
+                description: 'Simple document template with title and sections',
+                type: 'built-in',
+                key: 'basic'
+            },
+            {
+                name: 'API Documentation',
+                description: 'Template for documenting REST APIs',
+                type: 'built-in',
+                key: 'api'
+            },
+            {
+                name: 'Meeting Notes',
+                description: 'Template for meeting minutes and action items',
+                type: 'built-in',
+                key: 'meeting'
+            },
+            {
+                name: 'Requirements',
+                description: 'Template for requirements documentation',
+                type: 'built-in',
+                key: 'requirements'
+            }
+        ];
+        
+        container.innerHTML = `
+            <div class="templates-info-banner" style="background: var(--accent-bg); padding: 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                <svg width="20" height="20" style="color: var(--accent-foreground);">
+                    <use href="#icon-clipboard"></use>
+                </svg>
+                <div>
+                    <strong>Built-in Templates Available</strong>
+                    <p style="margin: 4px 0 0 0; color: var(--muted-foreground);">Custom templates will be available when the backend API is implemented.</p>
+                </div>
+            </div>
+            <div class="templates-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                ${fallbackTemplates.map(template => `
+                    <div class="template-card" data-template-key="${template.key}" style="border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s ease; background: var(--card);">
+                        <div class="template-icon" style="width: 48px; height: 48px; background: var(--accent-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--accent);">
+                            <svg width="24" height="24">
+                                <use href="#icon-clipboard"></use>
+                            </svg>
+                        </div>
+                        <div class="template-info">
+                            <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--foreground);">${template.name}</h4>
+                            <p class="template-meta" style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted-foreground);">${template.description}</p>
+                            <span class="template-badge" style="background: var(--accent); color: var(--accent-foreground); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;">Built-in</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Bind template card clicks for preview/edit
+        container.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const templateKey = card.dataset.templateKey;
+                this.previewBuiltInTemplate(templateKey);
+            });
         });
+        
+        // Show the template button in the header
+        this.showTemplateButton();
     }
-
-    showCreateSpaceModal() {
-        document.getElementById('createSpaceModal').classList.remove('hidden');
-        document.getElementById('overlay').classList.remove('hidden');
-        document.getElementById('spaceName').focus();
-    }
-
-    hideCreateSpaceModal() {
-        document.getElementById('createSpaceModal').classList.add('hidden');
-        document.getElementById('overlay').classList.add('hidden');
-        document.getElementById('createSpaceForm').reset();
-    }
-
-    async handleCreateSpace() {
-        const formData = new FormData(document.getElementById('createSpaceForm'));
-        const spaceData = {
-            name: formData.get('spaceName'),
-            description: formData.get('spaceDescription'),
-            visibility: formData.get('spaceVisibility')
+    
+    async previewBuiltInTemplate(templateKey) {
+        // Create a preview document with the built-in template content
+        const content = await this.getTemplateContent(templateKey);
+        const previewDoc = {
+            title: `${templateKey.charAt(0).toUpperCase() + templateKey.slice(1)} Template Preview`,
+            content: content,
+            metadata: {
+                viewer: 'markdown',
+                isTemplate: true,
+                isPreview: true
+            }
         };
-
+        
+        this.currentDocument = previewDoc;
+        this.showEnhancedDocumentView(previewDoc);
+        this.showNotification('Previewing built-in template. Save to create a new document.', 'info');
+    }
+    
+    createNewTemplate() {
+        const templateName = prompt('Enter template name:');
+        if (!templateName) return;
+        
+        // Create a template document object
+        const templateDoc = {
+            title: templateName,
+            path: `.templates/${templateName}.md`,
+            spaceName: this.currentSpace.name,
+            content: '# ' + templateName + '\n\nYour template content goes here...',
+            metadata: {
+                viewer: 'markdown',
+                isTemplate: true
+            }
+        };
+        
+        // Open in editor
+        this.currentDocument = templateDoc;
+        this.showEnhancedDocumentView(templateDoc);
+    }
+    
+    async editTemplate(templatePath) {
         try {
-            const response = await fetch('/applications/wiki/api/spaces', {
+            // Load template content
+            const response = await fetch(`/applications/wiki/api/documents/content`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(spaceData)
+                body: JSON.stringify({
+                    spaceName: this.currentSpace.name,
+                    path: templatePath
+                })
             });
+            
+            const templateDoc = await response.json();
+            templateDoc.metadata = templateDoc.metadata || {};
+            templateDoc.metadata.isTemplate = true;
+            
+            this.currentDocument = templateDoc;
+            this.showEnhancedDocumentView(templateDoc);
+            
+        } catch (error) {
+            console.error('Error loading template:', error);
+            this.showNotification('Error loading template: ' + error.message, 'error');
+        }
+    }
 
+    showDocumentView(doc) {
+        // Legacy method for backward compatibility - delegate to enhanced viewer
+        if (doc.metadata) {
+            this.showEnhancedDocumentView(doc);
+            return;
+        }
+        
+        // Fallback to original implementation for documents without metadata
+        this.setActiveView('document');
+        this.currentView = 'document';
+        
+        // Update document header
+        const docTitle = document.getElementById('currentDocTitle');
+        if (docTitle) {
+            docTitle.textContent = doc.title;
+        }
+        
+        // Update breadcrumb to show space
+        const backToSpace = document.getElementById('docBackToSpace');
+        if (backToSpace) {
+            backToSpace.textContent = doc.spaceName || 'Space';
+        }
+        
+        // Render document content
+        const contentElement = document.querySelector('#documentView .document-container');
+        if (contentElement && doc.content) {
+            if (doc.content.startsWith('<img')) {
+                contentElement.innerHTML = doc.content;
+            } else if (typeof marked !== 'undefined') {
+                // Render markdown content
+                contentElement.innerHTML = marked.parse(doc.content);
+                
+                // Apply syntax highlighting if Prism is available
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAllUnder(contentElement);
+                }
+            } else {
+                // Fallback: display as preformatted text
+                contentElement.innerHTML = `<pre>${this.escapeHtml(doc.content)}</pre>`;
+            }
+        } else {
+            contentElement.innerHTML = '<div class="error-message">Failed to load document content</div>';
+        }
+        
+        // Bind document action events
+        this.bindDocumentViewEvents();
+    }
+    
+    bindDocumentViewEvents() {
+        // Edit document button
+        const editBtn = document.getElementById('editDocBtn');
+        if (editBtn) {
+            editBtn.onclick = () => {
+                this.editCurrentDocument();
+            };
+        }
+        
+        // Back to space button
+        const backBtn = document.getElementById('docBackToSpace');
+        if (backBtn) {
+            backBtn.onclick = (e) => {
+                e.preventDefault();
+                this.showHome();
+            };
+        }
+    }
+    
+    editCurrentDocument() {
+        if (this.currentDocument) {
+            // Switch to editor view with current document loaded
+            this.showEditorView(this.currentDocument);
+        }
+    }
+    
+    showEditorView(doc) {
+        const viewer = doc.metadata?.viewer || 'default';
+        
+        switch (viewer) {
+            case 'markdown':
+                this.showMarkdownEditor(doc);
+                break;
+            case 'text':
+            case 'code':
+            case 'web':
+            case 'data':
+                this.showTextCodeEditor(doc);
+                break;
+            default:
+                this.showNotification('This file type cannot be edited', 'warning');
+                return;
+        }
+    }
+    
+    // Markdown Editor Implementation
+    showMarkdownEditor(doc) {
+        this.setActiveView('editor');
+        this.currentView = 'editor';
+        this.isEditing = true;
+        
+        // Update editor header
+        const titleInput = document.getElementById('docTitle');
+        if (titleInput) {
+            titleInput.value = doc.title;
+        }
+        
+        const textarea = document.getElementById('editorTextarea');
+        if (textarea) {
+            textarea.value = doc.content || '';
+            // Auto-resize textarea
+            this.autoResizeTextarea(textarea);
+        }
+        
+        // Show markdown editor pane, hide preview initially
+        document.getElementById('markdownEditor')?.classList.remove('hidden');
+        document.getElementById('previewPane')?.classList.add('hidden');
+        
+        // Bind editor events
+        this.bindEditorEvents(doc);
+    }
+    
+    // Text/Code Editor Implementation
+    showTextCodeEditor(doc) {
+        this.setActiveView('editor');
+        this.currentView = 'editor';
+        this.isEditing = true;
+        
+        // Update editor header
+        const titleInput = document.getElementById('docTitle');
+        if (titleInput) {
+            titleInput.value = doc.title;
+        }
+        
+        const textarea = document.getElementById('editorTextarea');
+        if (textarea) {
+            textarea.value = doc.content || '';
+            // Set appropriate styling for code
+            textarea.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace';
+            textarea.style.fontSize = '14px';
+            textarea.style.lineHeight = '1.5';
+            // Auto-resize textarea
+            this.autoResizeTextarea(textarea);
+        }
+        
+        // Show editor pane, hide preview for non-markdown files
+        document.getElementById('markdownEditor')?.classList.remove('hidden');
+        document.getElementById('previewPane')?.classList.add('hidden');
+        
+        // Hide preview button for non-markdown files
+        const previewBtn = document.getElementById('previewDoc');
+        if (previewBtn) {
+            previewBtn.style.display = doc.metadata?.viewer === 'markdown' ? 'block' : 'none';
+        }
+        
+        // Bind editor events
+        this.bindEditorEvents(doc);
+    }
+    
+    // Auto-resize textarea to fit content
+    autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, window.innerHeight * 0.7) + 'px';
+        
+        // Add input listener for dynamic resizing
+        textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, window.innerHeight * 0.7) + 'px';
+        });
+    }
+    
+    // Bind editor events
+    bindEditorEvents(doc) {
+        // Save button
+        const saveBtn = document.getElementById('saveDoc');
+        if (saveBtn) {
+            saveBtn.onclick = () => this.saveDocument(doc);
+        }
+        
+        // Preview button (for markdown)
+        const previewBtn = document.getElementById('previewDoc');
+        if (previewBtn) {
+            previewBtn.onclick = () => this.togglePreview(doc);
+        }
+        
+        // Close button
+        const closeBtn = document.getElementById('closeEditor');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.closeEditor(doc);
+        }
+        
+        // Auto-save on Ctrl+S
+        document.addEventListener('keydown', (e) => {
+            if (this.isEditing && (e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                this.saveDocument(doc);
+            }
+        });
+        
+        // Bind toolbar buttons for markdown
+        if (doc.metadata?.viewer === 'markdown') {
+            this.bindMarkdownToolbar();
+        }
+        
+        // Track changes for unsaved indicator
+        this.trackContentChanges();
+    }
+    
+    // Bind markdown toolbar functionality
+    bindMarkdownToolbar() {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        // Bold button
+        document.getElementById('boldBtn')?.addEventListener('click', () => {
+            this.wrapSelection('**', '**', 'bold text');
+        });
+        
+        // Italic button
+        document.getElementById('italicBtn')?.addEventListener('click', () => {
+            this.wrapSelection('*', '*', 'italic text');
+        });
+        
+        // Code button
+        document.getElementById('codeBtn')?.addEventListener('click', () => {
+            this.wrapSelection('`', '`', 'code');
+        });
+        
+        // Heading buttons
+        document.getElementById('h1Btn')?.addEventListener('click', () => {
+            this.insertHeading(1);
+        });
+        
+        document.getElementById('h2Btn')?.addEventListener('click', () => {
+            this.insertHeading(2);
+        });
+        
+        document.getElementById('h3Btn')?.addEventListener('click', () => {
+            this.insertHeading(3);
+        });
+        
+        // List buttons
+        document.getElementById('listBtn')?.addEventListener('click', () => {
+            this.insertList('- ');
+        });
+        
+        document.getElementById('numberedListBtn')?.addEventListener('click', () => {
+            this.insertList('1. ');
+        });
+        
+        // Link button
+        document.getElementById('linkBtn')?.addEventListener('click', () => {
+            this.insertLink();
+        });
+    }
+    
+    // Helper method to wrap selected text
+    wrapSelection(before, after, placeholder) {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        const replacement = selectedText || placeholder;
+        
+        const newText = textarea.value.substring(0, start) + 
+                        before + replacement + after + 
+                        textarea.value.substring(end);
+        
+        textarea.value = newText;
+        
+        // Set cursor position
+        const newCursorPos = start + before.length + replacement.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+    }
+    
+    // Insert heading
+    insertHeading(level) {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end) || 'Heading';
+        
+        const hashmarks = '#'.repeat(level);
+        const replacement = `${hashmarks} ${selectedText}`;
+        
+        // If we're not at the start of a line, add a newline before
+        const beforeCursor = textarea.value.substring(0, start);
+        const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n');
+        
+        const newText = textarea.value.substring(0, start) + 
+                        (needsNewlineBefore ? '\n' : '') + 
+                        replacement + 
+                        textarea.value.substring(end);
+        
+        textarea.value = newText;
+        
+        // Set cursor at end of heading
+        const newCursorPos = start + (needsNewlineBefore ? 1 : 0) + replacement.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+    }
+    
+    // Insert list
+    insertList(prefix) {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const selectedText = textarea.value.substring(start, textarea.selectionEnd) || 'List item';
+        
+        const lines = selectedText.split('\n');
+        const listItems = lines.map(line => prefix + (line.trim() || 'List item')).join('\n');
+        
+        // If we're not at the start of a line, add a newline before
+        const beforeCursor = textarea.value.substring(0, start);
+        const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n');
+        
+        const newText = textarea.value.substring(0, start) + 
+                        (needsNewlineBefore ? '\n' : '') + 
+                        listItems + 
+                        textarea.value.substring(textarea.selectionEnd);
+        
+        textarea.value = newText;
+        
+        // Set cursor at end of list
+        const newCursorPos = start + (needsNewlineBefore ? 1 : 0) + listItems.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus();
+    }
+    
+    // Insert link
+    insertLink() {
+        const textarea = document.getElementById('editorTextarea');
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end) || 'link text';
+        
+        const linkText = `[${selectedText}](url)`;
+        
+        const newText = textarea.value.substring(0, start) + 
+                        linkText + 
+                        textarea.value.substring(end);
+        
+        textarea.value = newText;
+        
+        // Select the URL part for easy editing
+        const urlStart = start + selectedText.length + 3; // position after ](
+        const urlEnd = urlStart + 3; // length of 'url'
+        textarea.setSelectionRange(urlStart, urlEnd);
+        textarea.focus();
+    }
+    
+    // Track content changes
+    trackContentChanges() {
+        const textarea = document.getElementById('editorTextarea');
+        const titleInput = document.getElementById('docTitle');
+        const statusElement = document.getElementById('editingStatus');
+        
+        if (!textarea || !titleInput || !statusElement) return;
+        
+        let hasUnsavedChanges = false;
+        
+        const updateStatus = () => {
+            if (hasUnsavedChanges) {
+                statusElement.textContent = 'Unsaved changes';
+                statusElement.style.display = 'block';
+            } else {
+                statusElement.style.display = 'none';
+            }
+        };
+        
+        const markAsChanged = () => {
+            hasUnsavedChanges = true;
+            updateStatus();
+        };
+        
+        this.markAsSaved = () => {
+            hasUnsavedChanges = false;
+            updateStatus();
+        };
+        
+        textarea.addEventListener('input', markAsChanged);
+        titleInput.addEventListener('input', markAsChanged);
+        
+        updateStatus();
+    }
+    
+    // Save document
+    async saveDocument(doc) {
+        const titleInput = document.getElementById('docTitle');
+        const textarea = document.getElementById('editorTextarea');
+        
+        if (!titleInput || !textarea) return;
+        
+        const title = titleInput.value.trim();
+        const content = textarea.value;
+        
+        if (!title) {
+            this.showNotification('Document title is required', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/applications/wiki/api/documents/content', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: doc.path,
+                    spaceName: doc.spaceName,
+                    content: content
+                })
+            });
+            
             const result = await response.json();
             
             if (result.success) {
-                this.hideCreateSpaceModal();
-                this.showNotification('Space created successfully', 'success');
-                await this.loadInitialData();
-                this.showSpace(result.space);
+                // Update current document
+                this.currentDocument = {
+                    ...doc,
+                    title: title,
+                    content: content
+                };
+                
+                this.showNotification('Document saved successfully!', 'success');
+                
+                // Mark as saved to hide unsaved changes indicator
+                if (this.markAsSaved) {
+                    this.markAsSaved();
+                }
+                
+                // Update file tree and other views
+                await this.loadFileTree();
             } else {
-                this.showNotification(result.message || 'Failed to create space', 'error');
+                throw new Error(result.message || 'Failed to save document');
             }
         } catch (error) {
-            console.error('Create space error:', error);
-            this.showNotification('Failed to create space', 'error');
+            console.error('Error saving document:', error);
+            this.showNotification('Failed to save document: ' + error.message, 'error');
         }
     }
-
-    showNotification(message, type = 'info') {
-        // Simple notification system
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 90px;
-            right: 20px;
-            padding: 12px 16px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-sm);
-            color: var(--text-primary);
-            z-index: 3000;
-            backdrop-filter: blur(20px);
-            box-shadow: var(--glass-shadow);
-        `;
+    
+    // Toggle preview for markdown
+    togglePreview(doc) {
+        const editorPane = document.getElementById('markdownEditor');
+        const previewPane = document.getElementById('previewPane');
+        const previewContent = document.getElementById('previewContent');
+        const textarea = document.getElementById('editorTextarea');
+        const previewBtn = document.getElementById('previewDoc');
         
-        if (type === 'success') {
-            notification.style.borderColor = 'var(--success-color)';
-            notification.style.color = 'var(--success-color)';
-        } else if (type === 'error') {
-            notification.style.borderColor = 'var(--danger-color)';
-            notification.style.color = 'var(--danger-color)';
-        }
-
-        document.body.appendChild(notification);
+        if (!editorPane || !previewPane || !previewContent || !textarea || !previewBtn) return;
         
-        setTimeout(() => {
-            notification.remove();
-        }, 5000);
-    }
-
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInHours = (now - date) / (1000 * 60 * 60);
-        
-        if (diffInHours < 1) {
-            return 'Just now';
-        } else if (diffInHours < 24) {
-            return `${Math.floor(diffInHours)} hours ago`;
-        } else if (diffInHours < 24 * 7) {
-            return `${Math.floor(diffInHours / 24)} days ago`;
+        if (previewPane.classList.contains('hidden')) {
+            // Show preview
+            if (typeof marked !== 'undefined') {
+                const renderedContent = marked.parse(textarea.value || '');
+                previewContent.innerHTML = renderedContent;
+                
+                // Apply syntax highlighting
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAllUnder(previewContent);
+                }
+            } else {
+                previewContent.innerHTML = '<p>Markdown preview not available</p>';
+            }
+            
+            previewPane.classList.remove('hidden');
+            previewBtn.textContent = 'Edit';
         } else {
-            return date.toLocaleDateString();
+            // Hide preview
+            previewPane.classList.add('hidden');
+            previewBtn.textContent = 'Preview';
         }
     }
-
-    // Enhanced search functionality methods
-    createSearchSuggestions() {
-        const searchContainer = document.querySelector('.search-container');
-        if (!searchContainer) return;
-
-        const suggestionsDropdown = document.createElement('div');
-        suggestionsDropdown.id = 'searchSuggestions';
-        suggestionsDropdown.className = 'search-suggestions hidden';
-        suggestionsDropdown.innerHTML = '<div class="suggestions-loading hidden">Loading...</div>';
+    
+    // Close editor
+    closeEditor(doc) {
+        this.isEditing = false;
         
-        searchContainer.appendChild(suggestionsDropdown);
-        this.suggestionsDropdown = suggestionsDropdown;
-        this.selectedSuggestionIndex = -1;
-    }
-
-    async fetchSearchSuggestions(query) {
-        if (!this.suggestionsDropdown) return;
-
-        try {
-            const response = await fetch(`/applications/wiki/api/search/suggestions?q=${encodeURIComponent(query)}&limit=8`);
-            const suggestions = await response.json();
-            
-            this.showSearchSuggestions(suggestions, query);
-        } catch (error) {
-            console.error('Failed to fetch search suggestions:', error);
-        }
-    }
-
-    showSearchSuggestions(suggestions, query) {
-        if (!this.suggestionsDropdown || suggestions.length === 0) {
-            this.hideSearchSuggestions();
-            return;
-        }
-
-        const queryLower = query.toLowerCase();
-        let html = '';
-
-        suggestions.forEach((suggestion, index) => {
-            // Highlight the matching part
-            const highlightedSuggestion = suggestion.replace(
-                new RegExp(`(${queryLower})`, 'gi'),
-                '<mark>$1</mark>'
-            );
-            
-            html += `
-                <div class="suggestion-item" data-index="${index}" data-suggestion="${suggestion}">
-                    <svg class="suggestion-icon" width="16" height="16">
-                        <use href="#icon-search"></use>
-                    </svg>
-                    <span class="suggestion-text">${highlightedSuggestion}</span>
-                </div>
-            `;
-        });
-
-        this.suggestionsDropdown.innerHTML = html;
-        this.suggestionsDropdown.classList.remove('hidden');
-        this.selectedSuggestionIndex = -1;
-
-        // Add click handlers for suggestions
-        this.suggestionsDropdown.querySelectorAll('.suggestion-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const suggestion = e.currentTarget.dataset.suggestion;
-                document.getElementById('globalSearch').value = suggestion;
-                this.performSearch(suggestion);
-                this.hideSearchSuggestions();
-            });
-        });
-
-        this.suggestionsVisible = true;
-    }
-
-    hideSearchSuggestions() {
-        if (this.suggestionsDropdown) {
-            this.suggestionsDropdown.classList.add('hidden');
-        }
-        this.suggestionsVisible = false;
-        this.selectedSuggestionIndex = -1;
-    }
-
-    navigateSuggestions(direction) {
-        const suggestions = this.suggestionsDropdown.querySelectorAll('.suggestion-item');
-        if (suggestions.length === 0) return;
-
-        // Remove previous selection
-        suggestions[this.selectedSuggestionIndex]?.classList.remove('selected');
-
-        if (direction === 'down') {
-            this.selectedSuggestionIndex = Math.min(this.selectedSuggestionIndex + 1, suggestions.length - 1);
-        } else {
-            this.selectedSuggestionIndex = Math.max(this.selectedSuggestionIndex - 1, -1);
-        }
-
-        if (this.selectedSuggestionIndex >= 0) {
-            suggestions[this.selectedSuggestionIndex].classList.add('selected');
-            const selectedSuggestion = suggestions[this.selectedSuggestionIndex].dataset.suggestion;
-            document.getElementById('globalSearch').value = selectedSuggestion;
-        }
-    }
-
-    async performSearch(query) {
-        if (!query.trim()) return;
-
-        // Enhanced search with file type and base type filters
-        const fileTypes = []; // Could be populated from UI filters
-        const baseTypes = []; // Could be populated from UI filters
-
-        document.getElementById('searchQuery').textContent = `"${query}"`;
-        this.showSearch(query);
+        // Remove event listeners
+        document.removeEventListener('keydown', this.handleKeyDown);
         
-        try {
-            const params = new URLSearchParams({
-                q: query,
-                includeContent: 'false'
-            });
-            
-            if (fileTypes.length > 0) {
-                params.set('fileTypes', fileTypes.join(','));
-            }
-            
-            if (baseTypes.length > 0) {
-                params.set('baseTypes', baseTypes.join(','));
-            }
-            
-            const response = await fetch(`/applications/wiki/api/search?${params}`);
-            const results = await response.json();
-            
-            this.renderEnhancedSearchResults(results);
-        } catch (error) {
-            console.error('Search failed:', error);
-            this.renderEnhancedSearchResults([]);
-        }
+        // Return to document view
+        this.showEnhancedDocumentView(this.currentDocument || doc);
     }
-
-    renderEnhancedSearchResults(results) {
-        const container = document.getElementById('searchResults');
-        container.innerHTML = '';
-
-        if (results.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state glassmorphism">
-                    <h3>No results found</h3>
-                    <p>Try different keywords or check your spelling.</p>
-                </div>
-            `;
-            return;
-        }
-
-        results.forEach(result => {
-            const resultCard = document.createElement('div');
-            resultCard.className = 'search-result enhanced-result';
-            
-            // Get appropriate icon based on file type
-            const iconName = this.getFileIcon(result.type);
-            
-            resultCard.innerHTML = `
-                <div class="result-header">
-                    <svg class="result-icon" width="20" height="20">
-                        <use href="#${iconName}"></use>
-                    </svg>
-                    <h3 class="result-title">${result.title}</h3>
-                    <span class="result-type">${result.type}</span>
-                </div>
-                <p class="result-excerpt">${result.excerpt || 'No preview available'}</p>
-                <div class="result-meta">
-                    <span class="result-location">${result.spaceName}</span>
-                    ${result.path ? `<span class="result-path">${result.path}</span>` : ''}
-                    ${result.size ? `<span class="result-size">${this.formatFileSize(result.size)}</span>` : ''}
-                    ${result.modifiedAt ? `<span class="result-date">Modified ${this.formatDate(result.modifiedAt)}</span>` : ''}
-                    <span class="result-relevance">Relevance: ${Math.round(result.relevance * 100)}%</span>
-                </div>
-            `;
-            
-            resultCard.addEventListener('click', () => {
-                this.openSearchResult(result);
-            });
-            
-            container.appendChild(resultCard);
-        });
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
-
-    getFileIcon(fileType) {
-        const iconMap = {
-            'markdown': 'icon-file',
-            'text': 'icon-file',
-            'pdf': 'icon-file',
-            'image': 'icon-file',
-            'office': 'icon-file',
-            'data': 'icon-file',
-            'wiki-document': 'icon-book',
-            'other': 'icon-file'
+    
+    // File type utilities
+    getFileTypeInfo(filePath) {
+        const ext = filePath.split('.').pop()?.toLowerCase() || '';
+        const fileName = filePath.split('/').pop() || '';
+        
+        // File category mappings matching backend - all icons now use consistent gray color
+        const categories = {
+            pdf: { 
+                category: 'pdf', 
+                viewer: 'pdf',
+                extensions: ['pdf'],
+                icon: 'file-pdf',
+                color: '#666666'
+            },
+            image: {
+                category: 'image',
+                viewer: 'image', 
+                extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'],
+                icon: 'image',
+                color: '#666666'
+            },
+            text: {
+                category: 'text',
+                viewer: 'text',
+                extensions: ['txt', 'csv', 'dat', 'log', 'ini', 'cfg', 'conf'],
+                icon: 'file-alt',
+                color: '#666666'
+            },
+            markdown: {
+                category: 'markdown',
+                viewer: 'markdown',
+                extensions: ['md', 'markdown'],
+                icon: 'file-alt',
+                color: '#666666'
+            },
+            code: {
+                category: 'code',
+                viewer: 'code',
+                extensions: ['js', 'ts', 'jsx', 'tsx', 'vue', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'm', 'mm', 'pl', 'sh', 'bash', 'ps1', 'bat', 'cmd'],
+                icon: 'file-code',
+                color: '#666666'
+            },
+            web: {
+                category: 'web',
+                viewer: 'code',
+                extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less'],
+                icon: 'code',
+                color: '#666666'
+            },
+            data: {
+                category: 'data',
+                viewer: 'code',
+                extensions: ['json', 'xml', 'yaml', 'yml', 'toml', 'properties'],
+                icon: 'file-code',
+                color: '#666666'
+            }
         };
-        return iconMap[fileType] || 'icon-file';
+        
+        // Check by extension
+        for (const [key, info] of Object.entries(categories)) {
+            if (info.extensions.includes(ext)) {
+                return {
+                    category: info.category,
+                    viewer: info.viewer,
+                    extension: ext,
+                    fileName: fileName,
+                    icon: info.icon,
+                    color: info.color
+                };
+            }
+        }
+        
+        // Default fallback
+        return {
+            category: 'other',
+            viewer: 'default',
+            extension: ext,
+            fileName: fileName,
+            icon: 'file',
+            color: '#666666'
+        };
     }
-
+    
+    getLanguageFromExtension(extension) {
+        const languageMap = {
+            'js': 'javascript',
+            'jsx': 'jsx',
+            'ts': 'typescript', 
+            'tsx': 'tsx',
+            'vue': 'vue',
+            'py': 'python',
+            'java': 'java',
+            'c': 'c',
+            'cpp': 'cpp',
+            'cc': 'cpp',
+            'cxx': 'cpp',
+            'h': 'c',
+            'hpp': 'cpp',
+            'cs': 'csharp',
+            'php': 'php',
+            'rb': 'ruby',
+            'go': 'go',
+            'rs': 'rust',
+            'swift': 'swift',
+            'kt': 'kotlin',
+            'scala': 'scala',
+            'r': 'r',
+            'pl': 'perl',
+            'sh': 'bash',
+            'bash': 'bash',
+            'ps1': 'powershell',
+            'bat': 'batch',
+            'cmd': 'batch',
+            'html': 'html',
+            'htm': 'html',
+            'css': 'css',
+            'scss': 'scss',
+            'sass': 'sass',
+            'less': 'less',
+            'json': 'json',
+            'xml': 'xml',
+            'yaml': 'yaml',
+            'yml': 'yaml',
+            'toml': 'toml',
+            'sql': 'sql',
+            'md': 'markdown',
+            'markdown': 'markdown'
+        };
+        
+        return languageMap[extension.replace('.', '')] || extension.replace('.', '');
+    }
+    
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -1089,93 +3154,309 @@ class WikiApp {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-
-    openSearchResult(result) {
-        if (result.type === 'wiki-document') {
-            // Open wiki document as before
-            this.showDocument(result);
-        } else {
-            // Open file in appropriate viewer
-            this.openFile(result);
-        }
+    
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+    
+    getFileTypeIconClass(category) {
+        const iconMap = {
+            'pdf': 'fa-file-pdf',
+            'image': 'fa-image', 
+            'text': 'fa-file-alt',
+            'markdown': 'fa-file-alt',
+            'code': 'fa-file-code',
+            'web': 'fa-code',
+            'data': 'fa-file-code', // Use file-code for data files since brackets-curly doesn't exist
+            'other': 'fa-file'
+        };
+        
+        return iconMap[category] || 'fa-file';
     }
 
-    async openFile(fileResult) {
+    getFileNameFromPath(filePath) {
+        if (!filePath) return 'Untitled';
+        return filePath.split('/').pop() || filePath;
+    }
+
+    // User Profile Management
+    async loadUserProfile() {
         try {
-            const path = fileResult.path || fileResult.relativePath;
-            const spaceName = fileResult.spaceName === 'documents' ? 'Personal Space' : fileResult.spaceName;
-            
-            // Request file content with metadata
-            const response = await fetch(`/applications/wiki/api/documents/content?path=${encodeURIComponent(path)}&spaceName=${encodeURIComponent(spaceName)}&enhanced=true`);
-            
+            const response = await fetch('/applications/wiki/api/profile');
             if (response.ok) {
-                const fileData = await response.json();
-                this.showFileViewer(fileData, fileResult);
+                this.userProfile = await response.json();
+                this.updateUserProfileUI();
             } else {
-                this.showNotification(`Could not open ${fileResult.title}`, 'error');
+                console.warn('Failed to load user profile, using defaults');
+                this.userProfile = {
+                    name: 'Admin User',
+                    email: 'admin@example.com',
+                    role: 'administrator'
+                };
+                this.updateUserProfileUI();
             }
         } catch (error) {
-            console.error('Error opening file:', error);
-            this.showNotification('Failed to open file', 'error');
+            console.error('Error loading user profile:', error);
+            // Use default profile
+            this.userProfile = {
+                name: 'Admin User',
+                email: 'admin@example.com', 
+                role: 'administrator'
+            };
+            this.updateUserProfileUI();
         }
     }
 
-    showFileViewer(fileData, fileResult) {
-        // Create a new view for displaying file content
-        this.hideAllViews();
-        document.getElementById('wikiApp').classList.remove('hidden');
+    updateUserProfileUI() {
+        if (!this.userProfile) return;
+
+        // Update header profile
+        const userName = document.getElementById('userName');
+        const userRole = document.getElementById('userRole');
+        const userInitials = document.getElementById('userInitials');
         
-        // For now, show in document view with enhanced metadata
-        const docView = document.getElementById('documentView');
-        docView.classList.remove('hidden');
-        
-        // Update breadcrumb and title
-        document.getElementById('currentDocTitle').textContent = fileResult.title;
-        
-        // Update content based on file type
-        const content = document.getElementById('documentContent');
-        
-        if (fileResult.type === 'markdown' || fileResult.type === 'text') {
-            if (typeof marked !== 'undefined' && fileResult.type === 'markdown') {
-                content.innerHTML = marked.parse(fileData.content || '');
-            } else {
-                content.innerHTML = `<pre class="file-content">${fileData.content || 'No content available'}</pre>`;
-            }
-        } else if (fileResult.type === 'image') {
-            const imagePath = `/applications/wiki/api/documents/content?path=${encodeURIComponent(fileResult.path)}&spaceName=${encodeURIComponent(fileResult.spaceName)}`;
-            content.innerHTML = `
-                <div class="image-viewer">
-                    <img src="${imagePath}" alt="${fileResult.title}" style="max-width: 100%; height: auto;">
-                    <div class="image-meta">
-                        <p>File size: ${this.formatFileSize(fileResult.size)}</p>
-                        <p>Type: ${fileResult.type}</p>
-                    </div>
-                </div>
-            `;
-        } else {
-            content.innerHTML = `
-                <div class="file-preview">
-                    <div class="file-icon-large">
-                        <svg width="64" height="64">
-                            <use href="#${this.getFileIcon(fileResult.type)}"></use>
-                        </svg>
-                    </div>
-                    <h3>${fileResult.title}</h3>
-                    <p>File type: ${fileResult.type}</p>
-                    <p>Size: ${this.formatFileSize(fileResult.size)}</p>
-                    <p>Location: ${fileResult.path}</p>
-                    <a href="/applications/wiki/api/documents/content?path=${encodeURIComponent(fileResult.path)}&spaceName=${encodeURIComponent(fileResult.spaceName)}&download=true" 
-                       class="btn btn-primary" download>
-                        Download File
-                    </a>
-                </div>
-            `;
+        if (userName) userName.textContent = this.userProfile.name || 'Admin User';
+        if (userRole) userRole.textContent = this.capitalizeFirst(this.userProfile.role || 'administrator');
+        if (userInitials) {
+            const initials = this.getInitials(this.userProfile.name || 'Admin User');
+            userInitials.textContent = initials;
         }
+
+        // Update modal profile
+        const profileInitials = document.getElementById('profileInitials');
+        if (profileInitials) {
+            profileInitials.textContent = this.getInitials(this.userProfile.name || 'Admin User');
+        }
+    }
+
+    getInitials(name) {
+        if (!name) return 'AU';
+        return name.split(' ')
+                   .map(part => part.charAt(0))
+                   .join('')
+                   .toUpperCase()
+                   .substring(0, 2);
+    }
+
+    capitalizeFirst(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    showUserProfileModal() {
+        if (!this.userProfile) {
+            this.showNotification('User profile not loaded', 'error');
+            return;
+        }
+
+        // Populate form with current profile data
+        document.getElementById('profileName').value = this.userProfile.name || '';
+        document.getElementById('profileEmail').value = this.userProfile.email || '';
+        document.getElementById('profileRole').value = this.userProfile.role || 'administrator';
+        document.getElementById('profileBio').value = this.userProfile.bio || '';
+        document.getElementById('profileLocation').value = this.userProfile.location || '';
+        document.getElementById('profileTimezone').value = this.userProfile.timezone || 'UTC';
         
-        this.currentView = 'document';
-        this.updateNavigation();
+        // Set preferences
+        document.getElementById('emailNotifications').checked = this.userProfile.preferences?.emailNotifications ?? true;
+        document.getElementById('darkMode').checked = this.userProfile.preferences?.darkMode ?? false;
+        document.getElementById('defaultLanguage').value = this.userProfile.preferences?.defaultLanguage || 'en';
+
+        // Show modal
+        this.showModal('userProfileModal');
+
+        // Bind form events
+        this.bindUserProfileEvents();
+    }
+
+    bindUserProfileEvents() {
+        // Close modal events
+        document.getElementById('closeUserProfileModal')?.addEventListener('click', () => {
+            this.hideModal('userProfileModal');
+        });
+
+        document.getElementById('cancelUserProfile')?.addEventListener('click', () => {
+            this.hideModal('userProfileModal');
+        });
+
+        // Form submission
+        const form = document.getElementById('userProfileForm');
+        if (form) {
+            form.removeEventListener('submit', this.handleUserProfileSubmit);
+            form.addEventListener('submit', (e) => this.handleUserProfileSubmit(e));
+        }
+
+        // Change avatar button (placeholder)
+        document.getElementById('changeAvatarBtn')?.addEventListener('click', () => {
+            this.showNotification('Avatar change feature coming soon!', 'info');
+        });
+    }
+
+    async handleUserProfileSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const profileData = {
+            name: formData.get('profileName'),
+            email: formData.get('profileEmail'),
+            role: formData.get('profileRole'),
+            bio: formData.get('profileBio'),
+            location: formData.get('profileLocation'),
+            timezone: formData.get('profileTimezone'),
+            preferences: {
+                emailNotifications: formData.has('emailNotifications'),
+                darkMode: formData.has('darkMode'),
+                defaultLanguage: formData.get('defaultLanguage')
+            }
+        };
+
+        try {
+            const response = await fetch('/applications/wiki/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(profileData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.userProfile = result.profile;
+                this.updateUserProfileUI();
+                this.hideModal('userProfileModal');
+                this.showNotification('Profile updated successfully!', 'success');
+            } else {
+                throw new Error(result.error || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            this.showNotification('Failed to update profile: ' + error.message, 'error');
+        }
+    }
+
+    // User Activity Management
+    async loadUserActivity() {
+        try {
+            const response = await fetch('/applications/wiki/api/user/activity');
+            if (response.ok) {
+                this.userActivity = await response.json();
+                console.log('User activity loaded:', this.userActivity);
+            } else {
+                console.warn('Failed to load user activity, using defaults');
+                this.userActivity = {
+                    starred: [],
+                    recent: []
+                };
+            }
+        } catch (error) {
+            console.error('Error loading user activity:', error);
+            this.userActivity = {
+                starred: [],
+                recent: []
+            };
+        }
+    }
+
+    async trackDocumentVisit(document, action = 'viewed') {
+        try {
+            const response = await fetch('/applications/wiki/api/user/visit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: document.path,
+                    spaceName: document.spaceName,
+                    title: document.title,
+                    action: action
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.userActivity.recent = result.recent;
+            }
+        } catch (error) {
+            console.error('Error tracking document visit:', error);
+        }
+    }
+
+    async toggleDocumentStar(documentData) {
+        if (!documentData) return;
+
+        const isStarred = this.isDocumentStarred(documentData);
+        const action = isStarred ? 'unstar' : 'star';
+
+        try {
+            const response = await fetch('/applications/wiki/api/user/star', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: documentData.path,
+                    spaceName: documentData.spaceName,
+                    title: documentData.title,
+                    action: action
+                })
+            });
+
+            if (response.status === 401) {
+                this.showNotification('Please log in to star documents', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.userActivity.starred = result.starred;
+                this.updateStarButtonUI(documentData);
+                this.showNotification(
+                    isStarred ? 'Document unstarred' : 'Document starred', 
+                    'success'
+                );
+                
+                // Update home page if visible
+                if (this.currentView === 'home') {
+                    this.updateHomePageContent();
+                }
+            } else {
+                throw new Error(result.error || 'Failed to update star status');
+            }
+        } catch (error) {
+            console.error('Error toggling star:', error);
+            this.showNotification('Failed to update star status: ' + error.message, 'error');
+        }
+    }
+
+    isDocumentStarred(documentData) {
+        if (!this.userActivity || !this.userActivity.starred) return false;
+        return this.userActivity.starred.some(item => 
+            item.path === documentData.path && item.spaceName === documentData.spaceName
+        );
+    }
+
+    updateStarButtonUI(documentData) {
+        const starBtn = document.getElementById('starDocBtn');
+        const starText = starBtn?.querySelector('.star-text');
+        
+        if (!starBtn || !starText) return;
+
+        const isStarred = this.isDocumentStarred(documentData);
+        
+        if (isStarred) {
+            starBtn.classList.add('starred');
+            starText.textContent = 'Starred';
+        } else {
+            starBtn.classList.remove('starred');
+            starText.textContent = 'Star';
+        }
     }
 }
 
-// Initialize the application
-const app = new WikiApp();
+// Initialize the application when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.wikiApp = new WikiApp();
+});

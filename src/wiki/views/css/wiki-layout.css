@@ -464,7 +464,8 @@
     justify-content: space-between;
 }
 
-.file-actions {
+.file-actions,
+.spaces-actions {
     display: flex;
     gap: 4px;
 }
@@ -765,6 +766,69 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+/* Context Menu Styles */
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 2000;
+    min-width: 160px;
+    padding: 4px 0;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background: #f5f5f5;
+}
+
+.context-menu-item svg {
+    stroke: var(--text-secondary);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.context-menu-item:hover svg {
+    stroke: var(--text-primary);
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+.context-menu-item-danger {
+    color: var(--error-color);
+}
+
+.context-menu-item-danger svg {
+    stroke: var(--error-color);
+}
+
+.context-menu-item-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
+.context-menu-item-danger:hover svg {
+    stroke: var(--error-color);
 }
 
 .refresh-btn {
