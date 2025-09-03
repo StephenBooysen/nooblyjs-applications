@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picking Interface - Warehouse</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/applications/warehouse/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📦</div>
+                <span>Warehouse Management</span>
+            </div>
+            
+            <div class="search-container">
+                <button class="search-btn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                <input type="text" class="search-input" placeholder="Search orders..." id="picking-search">
+            </div>
+            
+            <nav class="nav">
+                <a href="/applications/warehouse/" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/applications/warehouse/orders" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Orders
+                </a>
+                <a href="/applications/warehouse/picking" class="nav-link active">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    Picking
+                </a>
+                <a href="/applications/warehouse/inventory" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    Inventory
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <main class="main-content">
+            <div class="view-header">
+                <div>
+                    <h1>Picking Interface</h1>
+                    <nav class="breadcrumb">
+                        <a href="/applications/warehouse/">Dashboard</a>
+                        <span class="breadcrumb-separator">›</span>
+                        <span>Picking</span>
+                    </nav>
+                </div>
+                <div class="view-actions">
+                    <div class="picker-status" id="picker-status">
+                        <span class="status-indicator"></span>
+                        <span>Ready to Pick</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Picking Mode Selection -->
+            <div class="picking-mode-selector" id="picking-mode-selector">
+                <div class="welcome-section">
+                    <h2>Select Picking Mode</h2>
+                    <p>Choose how you want to pick orders today</p>
+                    <div class="quick-actions">
+                        <button class="action-card" id="single-order-mode">
+                            <div class="action-icon">📋</div>
+                            <h3>Single Order</h3>
+                            <p>Pick one order at a time for accuracy</p>
+                        </button>
+                        <button class="action-card" id="batch-picking-mode">
+                            <div class="action-icon">📦</div>
+                            <h3>Batch Picking</h3>
+                            <p>Pick multiple orders by location</p>
+                        </button>
+                        <button class="action-card" id="wave-picking-mode">
+                            <div class="action-icon">🌊</div>
+                            <h3>Wave Picking</h3>
+                            <p>Pick orders in optimized waves</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Selection -->
+            <div class="order-selection hidden" id="order-selection">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Available Orders for Picking</h2>
+                        <button class="btn btn-secondary" id="back-to-mode">← Back to Mode Selection</button>
+                    </div>
+                    <div class="card-content">
+                        <div class="picking-orders-grid" id="picking-orders-grid">
+                            <!-- Available orders will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Picking Interface -->
+            <div class="active-picking hidden" id="active-picking">
+                <div class="picking-header">
+                    <div class="current-order-info">
+                        <h2 id="current-order-id">Order #ORD-001</h2>
+                        <div class="order-meta">
+                            <span id="current-customer">Customer Name</span>
+                            <span class="priority-badge" id="current-priority">High Priority</span>
+                        </div>
+                    </div>
+                    <div class="picking-actions">
+                        <button class="btn btn-secondary" id="pause-picking">⏸️ Pause</button>
+                        <button class="btn btn-secondary" id="skip-order">⏭️ Skip Order</button>
+                        <button class="btn btn-primary" id="complete-order" disabled>✅ Complete Order</button>
+                    </div>
+                </div>
+
+                <div class="picking-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="picking-progress-fill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progress-current">0</span> / <span id="progress-total">0</span> items picked
+                    </div>
+                </div>
+
+                <div class="picking-items" id="picking-items">
+                    <!-- Picking items will be populated here -->
+                </div>
+
+                <!-- Current Item Picking Interface -->
+                <div class="current-item-pick" id="current-item-pick">
+                    <div class="pick-card">
+                        <div class="item-header">
+                            <div class="item-info">
+                                <h3 id="current-item-name">Item Name</h3>
+                                <div class="item-details">
+                                    <span class="item-sku" id="current-item-sku">SKU-001</span>
+                                    <span class="item-location" id="current-item-location">A1-B2-C3</span>
+                                </div>
+                            </div>
+                            <div class="quantity-info">
+                                <div class="quantity-large" id="current-quantity">5</div>
+                                <div class="quantity-label">Required</div>
+                            </div>
+                        </div>
+
+                        <div class="pick-interface">
+                            <div class="quantity-input-section">
+                                <label for="picked-quantity">Quantity Picked:</label>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" id="decrease-quantity">-</button>
+                                    <input type="number" id="picked-quantity" min="0" value="0">
+                                    <button class="quantity-btn" id="increase-quantity">+</button>
+                                </div>
+                            </div>
+
+                            <div class="pick-actions">
+                                <button class="btn btn-lg btn-success" id="complete-pick">
+                                    ✅ Complete Pick
+                                </button>
+                                <button class="btn btn-lg btn-warning" id="short-pick">
+                                    ⚠️ Short Pick
+                                </button>
+                                <button class="btn btn-lg btn-secondary" id="skip-item">
+                                    ⏭️ Skip Item
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="item-notes">
+                            <textarea id="pick-notes" placeholder="Add notes about this pick (optional)"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Picking Summary -->
+            <div class="picking-summary hidden" id="picking-summary">
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <h2>Picking Complete!</h2>
+                        <div class="completion-icon">🎉</div>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-stats">
+                            <div class="stat-item">
+                                <div class="stat-number" id="summary-items-picked">0</div>
+                                <div class="stat-label">Items Picked</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="summary-short-picks">0</div>
+                                <div class="stat-label">Short Picks</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="summary-time">0:00</div>
+                                <div class="stat-label">Time Taken</div>
+                            </div>
+                        </div>
+                        <div class="summary-actions">
+                            <button class="btn btn-primary" id="start-next-order">Start Next Order</button>
+                            <button class="btn btn-secondary" id="return-to-dashboard">Return to Dashboard</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Short Pick Modal -->
+    <div class="overlay hidden" id="short-pick-modal-overlay"></div>
+    <div class="modal hidden" id="short-pick-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Short Pick Reason</h2>
+                <button class="modal-close" id="close-short-pick-modal">×</button>
+            </div>
+            <form id="short-pick-form">
+                <div class="form-group">
+                    <label for="short-pick-reason">Reason for short pick:</label>
+                    <select id="short-pick-reason" required>
+                        <option value="">Select reason</option>
+                        <option value="out_of_stock">Out of stock</option>
+                        <option value="damaged_goods">Damaged goods</option>
+                        <option value="location_empty">Location empty</option>
+                        <option value="incorrect_location">Incorrect location</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="short-pick-notes">Additional notes:</label>
+                    <textarea id="short-pick-notes" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-short-pick">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Confirm Short Pick</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/applications/warehouse/js/picking.js"></script>
+</body>
+</html>

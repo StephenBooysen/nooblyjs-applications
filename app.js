@@ -73,6 +73,29 @@ const marketing = applicationRegistry.getApplication("marketing");
 const warehouse = applicationRegistry.getApplication("warehouse");
 const wiki = applicationRegistry.getApplication("wiki");
 
+// Add sample data for warehouse application
+async function addSampleData() {
+    try {
+        await dataserve.createContainer('inventory');
+        await dataserve.createContainer('orders');
+
+        // Add inventory items
+        await dataserve.add('inventory', { id: 'SKU-001', name: 'Laptop', stock: 10, location: 'A1-B2-C3' });
+        await dataserve.add('inventory', { id: 'SKU-002', name: 'Mouse', stock: 50, location: 'A1-B2-C4' });
+        await dataserve.add('inventory', { id: 'SKU-003', name: 'Keyboard', stock: 30, location: 'A1-B2-C5' });
+
+        // Add orders
+        await dataserve.add('orders', { id: '1001', customerName: 'John Doe', status: 'new', priority: 'high', hasShortPicks: false, items: [{ sku: 'SKU-001', quantity: 1 }] });
+        await dataserve.add('orders', { id: '1002', customerName: 'Jane Smith', status: 'picking', priority: 'medium', hasShortPicks: false, items: [{ sku: 'SKU-002', quantity: 2 }] });
+        await dataserve.add('orders', { id: '1003', customerName: 'Peter Jones', status: 'packing', priority: 'low', hasShortPicks: true, items: [{ sku: 'SKU-003', quantity: 1 }] });
+        await dataserve.add('orders', { id: '1004', customerName: 'Mary Williams', status: 'despatching', priority: 'high', hasShortPicks: false, items: [{ sku: 'SKU-001', quantity: 1 }, { sku: 'SKU-002', quantity: 1 }] });
+        await dataserve.add('orders', { id: '1005', customerName: 'David Brown', status: 'despatched', priority: 'medium', hasShortPicks: false, items: [{ sku: 'SKU-003', quantity: 2 }] });
+    } catch (error) {
+        console.error('Error adding sample data:', error);
+    }
+}
+addSampleData();
+
 // Authentication routes
 const authRoutes = require('./src/auth/routes');
 app.use('/api/auth', authRoutes);

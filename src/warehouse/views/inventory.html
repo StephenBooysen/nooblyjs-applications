@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management - Warehouse</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/applications/warehouse/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📦</div>
+                <span>Warehouse Management</span>
+            </div>
+            
+            <div class="search-container">
+                <button class="search-btn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                <input type="text" class="search-input" placeholder="Search inventory..." id="inventory-search">
+            </div>
+            
+            <nav class="nav">
+                <a href="/applications/warehouse/" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/applications/warehouse/orders" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Orders
+                </a>
+                <a href="/applications/warehouse/picking" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    Picking
+                </a>
+                <a href="/applications/warehouse/inventory" class="nav-link active">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    Inventory
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <main class="main-content">
+            <div class="view-header">
+                <div>
+                    <h1>Inventory Management</h1>
+                    <nav class="breadcrumb">
+                        <a href="/applications/warehouse/">Dashboard</a>
+                        <span class="breadcrumb-separator">›</span>
+                        <span>Inventory</span>
+                    </nav>
+                </div>
+                <div class="view-actions">
+                    <button class="btn btn-secondary" id="export-inventory">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Export
+                    </button>
+                    <button class="btn btn-secondary" id="cycle-count-btn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Cycle Count
+                    </button>
+                    <button class="btn btn-primary" id="add-item-btn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Item
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inventory Statistics -->
+            <div class="quick-actions">
+                <div class="action-card" id="total-items-card">
+                    <div class="action-icon">📦</div>
+                    <h3 id="total-items-count">0</h3>
+                    <p>Total Items</p>
+                </div>
+                <div class="action-card warning" id="low-stock-card">
+                    <div class="action-icon">⚠️</div>
+                    <h3 id="low-stock-count">0</h3>
+                    <p>Low Stock Items</p>
+                </div>
+                <div class="action-card success" id="reorder-needed-card">
+                    <div class="action-icon">🔄</div>
+                    <h3 id="reorder-needed-count">0</h3>
+                    <p>Reorder Needed</p>
+                </div>
+                <div class="action-card" id="total-value-card">
+                    <div class="action-icon">💰</div>
+                    <h3 id="total-inventory-value">$0</h3>
+                    <p>Total Value</p>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel" id="inventory-filters">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="stock-level-filter">Stock Level</label>
+                                <select id="stock-level-filter">
+                                    <option value="">All Levels</option>
+                                    <option value="high">High Stock</option>
+                                    <option value="medium">Medium Stock</option>
+                                    <option value="low">Low Stock</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="location-filter">Location</label>
+                                <input type="text" id="location-filter" placeholder="e.g., A1, B2">
+                            </div>
+                            <div class="form-group">
+                                <label for="supplier-filter">Supplier</label>
+                                <select id="supplier-filter">
+                                    <option value="">All Suppliers</option>
+                                    <!-- Suppliers will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="inventory-container">
+                <div class="inventory-header">
+                    <h2>Inventory Items</h2>
+                    <div class="view-controls">
+                        <button class="btn btn-ghost view-btn active" data-view="table">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0V4a1 1 0 011-1h3M8 3v18M15 3h4a1 1 0 011 1v16a1 1 0 01-1 1h-4"/>
+                            </svg>
+                            Table
+                        </button>
+                        <button class="btn btn-ghost view-btn" data-view="cards">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                            </svg>
+                            Cards
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table View -->
+                <div class="inventory-table-view" id="inventory-table-view">
+                    <div class="loading" id="inventory-loading">Loading inventory...</div>
+                    <div class="inventory-table" id="inventory-table" style="display: none;">
+                        <div class="table-header">
+                            <div class="table-cell">SKU</div>
+                            <div class="table-cell">Name</div>
+                            <div class="table-cell">Location</div>
+                            <div class="table-cell">Stock</div>
+                            <div class="table-cell">Level</div>
+                            <div class="table-cell">Reorder Point</div>
+                            <div class="table-cell">Supplier</div>
+                            <div class="table-cell">Last Updated</div>
+                            <div class="table-cell">Actions</div>
+                        </div>
+                        <div class="table-body" id="inventory-table-body">
+                            <!-- Inventory items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cards View -->
+                <div class="inventory-cards-view hidden" id="inventory-cards-view">
+                    <div class="inventory-cards-grid" id="inventory-cards-grid">
+                        <!-- Inventory cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Item Details Modal -->
+    <div class="overlay hidden" id="item-modal-overlay"></div>
+    <div class="modal hidden" id="item-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-item-title">Item Details</h2>
+                <button class="modal-close" id="close-item-modal">×</button>
+            </div>
+            <div id="modal-item-content">
+                <!-- Item details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Item Modal -->
+    <div class="overlay hidden" id="add-item-modal-overlay"></div>
+    <div class="modal hidden" id="add-item-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="add-item-modal-title">Add New Item</h2>
+                <button class="modal-close" id="close-add-item-modal">×</button>
+            </div>
+            <form id="add-item-form">
+                <div class="form-group">
+                    <label for="item-sku">SKU</label>
+                    <input type="text" id="item-sku" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-name">Name</label>
+                    <input type="text" id="item-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-location">Location</label>
+                    <input type="text" id="item-location" placeholder="e.g., A1-B2-C3" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-stock">Initial Stock</label>
+                    <input type="number" id="item-stock" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-reorder-point">Reorder Point</label>
+                    <input type="number" id="item-reorder-point" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-description">Description</label>
+                    <textarea id="item-description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="item-supplier">Supplier</label>
+                    <input type="text" id="item-supplier">
+                </div>
+                <div class="form-group">
+                    <label for="item-lead-time">Lead Time (days)</label>
+                    <input type="number" id="item-lead-time" min="1">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-add-item">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stock Adjustment Modal -->
+    <div class="overlay hidden" id="stock-adjustment-modal-overlay"></div>
+    <div class="modal hidden" id="stock-adjustment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Stock Adjustment</h2>
+                <button class="modal-close" id="close-stock-adjustment-modal">×</button>
+            </div>
+            <form id="stock-adjustment-form">
+                <div class="current-stock-info">
+                    <h3>Current Stock: <span id="current-stock-display">0</span></h3>
+                </div>
+                <div class="form-group">
+                    <label for="adjustment-type">Adjustment Type</label>
+                    <select id="adjustment-type" required>
+                        <option value="">Select Type</option>
+                        <option value="increase">Stock In (+)</option>
+                        <option value="decrease">Stock Out (-)</option>
+                        <option value="correction">Count Correction</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="adjustment-quantity">Quantity</label>
+                    <input type="number" id="adjustment-quantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="adjustment-reason">Reason</label>
+                    <select id="adjustment-reason" required>
+                        <option value="">Select Reason</option>
+                        <option value="receipt">Stock Receipt</option>
+                        <option value="damage">Damaged Goods</option>
+                        <option value="theft">Stock Loss/Theft</option>
+                        <option value="cycle_count">Cycle Count</option>
+                        <option value="transfer">Location Transfer</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="adjustment-notes">Notes</label>
+                    <textarea id="adjustment-notes" rows="3"></textarea>
+                </div>
+                <div class="new-stock-preview">
+                    <strong>New Stock Level: <span id="new-stock-preview">0</span></strong>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-stock-adjustment">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Apply Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cycle Count Modal -->
+    <div class="overlay hidden" id="cycle-count-modal-overlay"></div>
+    <div class="modal hidden" id="cycle-count-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cycle Count</h2>
+                <button class="modal-close" id="close-cycle-count-modal">×</button>
+            </div>
+            <div id="cycle-count-content">
+                <div class="cycle-count-setup">
+                    <h3>Start Cycle Count</h3>
+                    <div class="form-group">
+                        <label for="count-type">Count Type</label>
+                        <select id="count-type">
+                            <option value="location">By Location</option>
+                            <option value="category">By Category</option>
+                            <option value="random">Random Sample</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="count-criteria">Criteria</label>
+                        <input type="text" id="count-criteria" placeholder="e.g., A1, Electronics">
+                    </div>
+                    <button class="btn btn-primary" id="start-cycle-count">Start Count</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/applications/warehouse/js/inventory.js"></script>
+</body>
+</html>

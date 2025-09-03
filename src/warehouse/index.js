@@ -1,24 +1,27 @@
-/**
- * @fileoverview Warehouse Application
- * Factory module for creating a Warehouse application instance.
- * 
- * @author NooblyJS Team
- * @version 1.0.14
- * @since 2025-08-22
- */
+module.exports = function createWarehouseApplication(options, eventEmitter, serviceRegistry) {
+    const app = {
+        name: 'warehouse',
+        version: '1.0.0',
+        
+        log: serviceRegistry.logger('console'),
+        cache: serviceRegistry.cache('memory'),
+        dataserve: serviceRegistry.dataServe('memory'),
+        
+        initialize() {
+            this.setupRoutes();
+            this.registerEventHandlers();
+        },
+        
+        setupRoutes() {
+            const routes = require('./routes/index')(options, eventEmitter, serviceRegistry);
+            options['express-app'].use('/applications/warehouse', routes);
+        },
 
-'use strict';
-
-const Routes = require('./routes');
-const Views = require('./views');
-
-/**
- * Creates the warehouse service
- * @param {string} type - The logging provider type ('console', 'file')
- * @param {Object} options - Provider-specific configuration options
- * @param {EventEmitter} eventEmitter - Global event emitter for inter-service communication
- */
-module.exports = (options, eventEmitter) => {
-  Routes(options, eventEmitter);
-  Views(options, eventEmitter);
-}
+        registerEventHandlers() {
+            // eventEmitter.on('some-event', () => {});
+        }
+    };
+    
+    app.initialize();
+    return app;
+};

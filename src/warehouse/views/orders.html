@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - Warehouse</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/applications/warehouse/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📦</div>
+                <span>Warehouse Management</span>
+            </div>
+            
+            <div class="search-container">
+                <button class="search-btn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                <input type="text" class="search-input" placeholder="Search orders..." id="order-search">
+            </div>
+            
+            <nav class="nav">
+                <a href="/applications/warehouse/" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/applications/warehouse/orders" class="nav-link active">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Orders
+                </a>
+                <a href="/applications/warehouse/picking" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    Picking
+                </a>
+                <a href="/applications/warehouse/inventory" class="nav-link">
+                    <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    Inventory
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <main class="main-content">
+            <div class="view-header">
+                <div>
+                    <h1>Order Management</h1>
+                    <nav class="breadcrumb">
+                        <a href="/applications/warehouse/">Dashboard</a>
+                        <span class="breadcrumb-separator">›</span>
+                        <span>Orders</span>
+                    </nav>
+                </div>
+                <div class="view-actions">
+                    <button class="btn btn-secondary" id="filter-btn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.121A1 1 0 013 6.414V4z"/>
+                        </svg>
+                        Filter
+                    </button>
+                    <button class="btn btn-primary" id="new-order-btn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel hidden" id="filter-panel">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="status-filter">Status</label>
+                                <select id="status-filter">
+                                    <option value="">All Statuses</option>
+                                    <option value="new">New</option>
+                                    <option value="picking">Picking</option>
+                                    <option value="packing">Packing</option>
+                                    <option value="despatching">Despatching</option>
+                                    <option value="despatched">Despatched</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="priority-filter">Priority</label>
+                                <select id="priority-filter">
+                                    <option value="">All Priorities</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="date-filter">Date Range</label>
+                                <input type="date" id="date-from">
+                                <input type="date" id="date-to">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Statistics -->
+            <div class="quick-actions">
+                <div class="action-card" id="new-orders-card">
+                    <div class="action-icon">🆕</div>
+                    <h3 id="new-orders-count">0</h3>
+                    <p>New Orders</p>
+                </div>
+                <div class="action-card" id="picking-orders-card">
+                    <div class="action-icon">📋</div>
+                    <h3 id="picking-orders-count">0</h3>
+                    <p>Being Picked</p>
+                </div>
+                <div class="action-card" id="short-picks-card">
+                    <div class="action-icon">⚠️</div>
+                    <h3 id="short-picks-count">0</h3>
+                    <p>Short Picks</p>
+                </div>
+                <div class="action-card" id="completed-orders-card">
+                    <div class="action-icon">✅</div>
+                    <h3 id="completed-orders-count">0</h3>
+                    <p>Completed Today</p>
+                </div>
+            </div>
+
+            <!-- Orders List -->
+            <div class="orders-container">
+                <div class="orders-header">
+                    <h2>Orders</h2>
+                    <div class="view-controls">
+                        <button class="btn btn-ghost view-btn active" data-view="list">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                            </svg>
+                            List
+                        </button>
+                        <button class="btn btn-ghost view-btn" data-view="kanban">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                            </svg>
+                            Kanban
+                        </button>
+                    </div>
+                </div>
+
+                <!-- List View -->
+                <div class="orders-list-view" id="orders-list-view">
+                    <div class="loading" id="orders-loading">Loading orders...</div>
+                    <div class="orders-table" id="orders-table" style="display: none;">
+                        <div class="table-header">
+                            <div class="table-cell">Order ID</div>
+                            <div class="table-cell">Customer</div>
+                            <div class="table-cell">Status</div>
+                            <div class="table-cell">Priority</div>
+                            <div class="table-cell">Items</div>
+                            <div class="table-cell">Created</div>
+                            <div class="table-cell">Actions</div>
+                        </div>
+                        <div class="table-body" id="orders-table-body">
+                            <!-- Orders will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kanban View -->
+                <div class="orders-kanban-view hidden" id="orders-kanban-view">
+                    <div class="kanban-board">
+                        <div class="kanban-column">
+                            <div class="kanban-header">
+                                <h3>New Orders</h3>
+                                <span class="kanban-count" id="kanban-new-count">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-new"></div>
+                        </div>
+                        <div class="kanban-column">
+                            <div class="kanban-header">
+                                <h3>Picking</h3>
+                                <span class="kanban-count" id="kanban-picking-count">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-picking"></div>
+                        </div>
+                        <div class="kanban-column">
+                            <div class="kanban-header">
+                                <h3>Packing</h3>
+                                <span class="kanban-count" id="kanban-packing-count">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-packing"></div>
+                        </div>
+                        <div class="kanban-column">
+                            <div class="kanban-header">
+                                <h3>Despatching</h3>
+                                <span class="kanban-count" id="kanban-despatching-count">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-despatching"></div>
+                        </div>
+                        <div class="kanban-column">
+                            <div class="kanban-header">
+                                <h3>Despatched</h3>
+                                <span class="kanban-count" id="kanban-despatched-count">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-despatched"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="overlay hidden" id="order-modal-overlay"></div>
+    <div class="modal hidden" id="order-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-order-title">Order Details</h2>
+                <button class="modal-close" id="close-order-modal">×</button>
+            </div>
+            <div id="modal-order-content">
+                <!-- Order details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- New Order Modal -->
+    <div class="overlay hidden" id="new-order-modal-overlay"></div>
+    <div class="modal hidden" id="new-order-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Order</h2>
+                <button class="modal-close" id="close-new-order-modal">×</button>
+            </div>
+            <form id="new-order-form">
+                <div class="form-group">
+                    <label for="customer-name">Customer Name</label>
+                    <input type="text" id="customer-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select id="priority" required>
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="shipping-address">Shipping Address</label>
+                    <textarea id="shipping-address" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="special-instructions">Special Instructions</label>
+                    <textarea id="special-instructions"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-new-order">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/applications/warehouse/js/orders.js"></script>
+</body>
+</html>
